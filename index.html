@@ -624,6 +624,8 @@ body {
   var LOOK_NAMES = ['Blue', 'Red', 'Green', 'Yellow', 'Purple', 'Orange', 'White', 'Pink'];
   var HATS = ['Bare', 'Cap', 'Beanie', 'Band'];
   var MAXP = 4;
+  function angDiff(a, b) { return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))); }
+  var CONE_HALF = 0.35;   // two-thumb aiming: the cone is about 40 degrees wide
   function r1(v) { return Math.round(v * 10) / 10; }
   function r2(v) { return Math.round(v * 100) / 100; }
   function pById(id) { for (var i = 0; i < players.length; i++) if (players[i].id === id) return players[i]; return null; }
@@ -680,7 +682,7 @@ body {
       perkT: { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 },
       slots: [makeGun('glock'), null, null], unlocked: 1, special: null, sel: 0, lastSel: 0,
       cards: [], pendingGun: null, boxPrize: null, rebuildLeft: 0,
-      inx: 0, iny: 0, mvx: 0, mvy: 0, csnd: 0, mhp: 0, cur: null, down: false, rev: 0, tgt: null, pev: [], conn: null
+      inx: 0, iny: 0, cone: false, aimAng: null, mvx: 0, mvy: 0, csnd: 0, mhp: 0, cur: null, down: false, rev: 0, tgt: null, pev: [], conn: null
     };
     P.hp = maxHpNow(P);
     rollCards(P);
@@ -1355,10 +1357,11 @@ body {
     // auto aim: nearest zombie in the active weapon's range
     var ref = curRef(P), st = wstats(P, ref), rng = st.d.range;
     var tgt = null, bd = rng * rng;
+    var useCone = P.cone && P.aimAng !== null && P.aimAng !== undefined;
     for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
       var ddx = z.x - P.x, ddy = z.y - P.y, dd = ddx * ddx + ddy * ddy;
-      if (dd < bd) { bd = dd; tgt = z; }
+      if (dd < bd && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF)) { bd = dd; tgt = z; }
     }
     P.tgt = tgt;
     if (tgt) P.idle = 0; else P.idle += dt;
@@ -1397,7 +1400,8 @@ body {
       } else if (P.fireCd < 0) P.fireCd = 0;
     } else {
       P.fireCd = Math.max(0, P.fireCd - dt);
-      if (len > 0) P.ang = Math.atan2(P.mvy, P.mvx);
+      if (useCone) P.ang = P.aimAng;
+      else if (len > 0) P.ang = Math.atan2(P.mvy, P.mvx);
     }
   }
 
@@ -1739,6 +1743,8 @@ body {
     } else if (screen === 'settings') {
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
+      h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
+      h += '<div class="swipe">' + (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic') + '</div>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
       h += '<button class="go" data-a="back" data-to="main" type="button">Back</button>';
@@ -1751,7 +1757,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 22';
+  var updMsg = '', VERSION = 'Version 23';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1768,7 +1774,7 @@ body {
   function showScreen(name) {
     screen = name;
     if (name) {
-      joy.active = false; joy.x = joy.y = 0;
+      joy.active = false; joy.x = joy.y = 0; aim.active = false;
       renderScreen(); ov.hidden = false;
     } else ov.hidden = true;
   }
@@ -1814,6 +1820,7 @@ body {
     else if (a === 'hstart') hostStart();
     else if (a === 'resume') showScreen('');
     else if (a === 'refresh') refreshApp();
+    else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
     else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
@@ -1845,6 +1852,7 @@ body {
   var HELP = [
     { t: 'Move', x: 'Put your thumb anywhere on the screen and drag. Drag further to go faster.', art: 'move' },
     { t: 'Shooting is automatic', x: 'Your character aims and fires at the closest zombie by itself. Your job is to stay alive.', art: 'shoot' },
+    { t: 'Two-thumb aiming', x: 'Optional, in Settings. Left thumb walks. Right thumb aims the yellow cone. Your gun only fires at zombies inside the cone.', art: 'aim' },
     { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
     { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
@@ -1888,6 +1896,17 @@ body {
       c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(150, 92); c.lineTo(212, 58); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#d2692a'; c.beginPath(); c.moveTo(222, 53); c.lineTo(205, 52); c.lineTo(212, 66); c.fill();
       pl(150, 98, -0.5, 0);
+    } else if (k === 'aim') {
+      c.strokeStyle = 'rgba(235,227,212,0.4)'; c.lineWidth = 2; c.fillStyle = 'rgba(235,227,212,0.07)';
+      c.beginPath(); c.arc(34, 112, 24, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(235,227,212,0.45)'; c.beginPath(); c.arc(40, 106, 11, 0, 6.283); c.fill();
+      c.strokeStyle = 'rgba(242,193,78,0.5)'; c.fillStyle = 'rgba(242,193,78,0.07)';
+      c.beginPath(); c.arc(246, 112, 24, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(242,193,78,0.6)'; c.beginPath(); c.arc(234, 100, 11, 0, 6.283); c.fill();
+      c.fillStyle = 'rgba(242,193,78,0.16)'; c.beginPath(); c.moveTo(70, 56); c.arc(70, 56, 150, -0.35, 0.35); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(242,193,78,0.35)'; c.lineWidth = 1.5; c.stroke();
+      pl(70, 56, 0, 0); zb(200, 62, 3.14, 'walker', 1.5); zb(170, 12, 3.14, 'runner', 1.3);
+      txt('shoots', 200, 92, 14, '#f2c14e'); txt('ignored', 170, 36, 14, '#9c8f7e');
     } else if (k === 'shoot') {
       pl(55, 75, 0, 0); zb(215, 75, 3.14, 'walker');
       c.strokeStyle = '#ffd089'; c.lineWidth = 2.5;
@@ -2182,28 +2201,44 @@ body {
   }
 
   // ---------- input ----------
-  var JR = 56;
+  var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
+  var ctrlMode = 'one';   // 'one' = one finger, auto aim. 'two' = left thumb walks, right thumb aims a cone
+  try { if (localStorage.getItem('zs-ctrl') === 'two') ctrlMode = 'two'; } catch (e) {}
+  function setCtrl(m) { ctrlMode = m; try { localStorage.setItem('zs-ctrl', m); } catch (e) {} joy.active = false; joy.x = joy.y = 0; aim.active = false; }
   game.addEventListener('pointerdown', function (e) {
-    if (state !== 'play' || joy.active || blocked()) return;
+    if (state !== 'play' || blocked()) return;
     if (e.target.closest && e.target.closest('button')) return;
-    var r = cv.getBoundingClientRect();
-    joy.active = true; joy.id = e.pointerId; joy.ox = e.clientX - r.left; joy.oy = e.clientY - r.top; joy.x = joy.y = 0;
+    var r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (ctrlMode === 'two' && x > r.width / 2) {
+      if (aim.active) return;
+      aim.active = true; aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0;
+    } else {
+      if (joy.active) return;
+      joy.active = true; joy.id = e.pointerId; joy.ox = x; joy.oy = y; joy.x = joy.y = 0;
+    }
     try { game.setPointerCapture(e.pointerId); } catch (err) {}
   });
-  game.addEventListener('pointermove', function (e) {
-    if (!joy.active || e.pointerId !== joy.id) return;
+  function dragStick(s, e) {
     var r = cv.getBoundingClientRect();
-    var dx = e.clientX - r.left - joy.ox, dy = e.clientY - r.top - joy.oy;
+    var dx = e.clientX - r.left - s.ox, dy = e.clientY - r.top - s.oy;
     var d = Math.hypot(dx, dy);
     if (d > JR) {
       var over = d - JR;
-      joy.ox += (dx / d) * over; joy.oy += (dy / d) * over;
+      s.ox += (dx / d) * over; s.oy += (dy / d) * over;
       dx = (dx / d) * JR; dy = (dy / d) * JR;
     }
-    joy.x = dx / JR; joy.y = dy / JR;
+    s.x = dx / JR; s.y = dy / JR;
+  }
+  game.addEventListener('pointermove', function (e) {
+    if (joy.active && e.pointerId === joy.id) dragStick(joy, e);
+    else if (aim.active && e.pointerId === aim.id) {
+      dragStick(aim, e);
+      if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
+    }
   });
   function endJoy(e) {
     if (joy.active && e.pointerId === joy.id) { joy.active = false; joy.x = joy.y = 0; }
+    if (aim.active && e.pointerId === aim.id) { aim.active = false; aim.x = aim.y = 0; }
   }
   game.addEventListener('pointerup', endJoy);
   game.addEventListener('pointercancel', endJoy);
@@ -2233,6 +2268,8 @@ body {
       if (keys.l) mx -= 1; if (keys.r) mx += 1; if (keys.u) my -= 1; if (keys.d) my += 1;
     }
     me.inx = mx; me.iny = my;
+    me.cone = ctrlMode === 'two';
+    if (me.cone) { if (aim.ang !== null) me.aimAng = aim.ang; else if (me.aimAng === null) me.aimAng = me.ang; }
   }
 
   // ---------- sizing ----------
@@ -2592,6 +2629,13 @@ body {
         ctx.beginPath(); ctx.moveTo(b.x - b.dx * tl, b.y - b.dy * tl); ctx.lineTo(b.x, b.y); ctx.stroke();
       }
     }
+    if (me && me.cone && !me.down && state === 'play' && me.aimAng !== null) {
+      var cr = Math.min(420, defOf(viewRef(me)).range);
+      var cg = ctx.createRadialGradient(me.x, me.y, 10, me.x, me.y, cr);
+      cg.addColorStop(0, 'rgba(242,193,78,0.16)'); cg.addColorStop(1, 'rgba(242,193,78,0.02)');
+      ctx.fillStyle = cg; ctx.strokeStyle = 'rgba(242,193,78,0.14)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(me.x, me.y); ctx.arc(me.x, me.y, cr, me.aimAng - CONE_HALF, me.aimAng + CONE_HALF); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
     // muzzle flashes, reload bar, revive rings, names
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
@@ -2655,6 +2699,12 @@ body {
       ctx.beginPath(); ctx.arc(joy.ox, joy.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
       ctx.fillStyle = 'rgba(235,227,212,0.4)';
       ctx.beginPath(); ctx.arc(joy.ox + joy.x * JR, joy.oy + joy.y * JR, 24, 0, 6.283); ctx.fill();
+    }
+    if (aim.active) {
+      ctx.fillStyle = 'rgba(242,193,78,0.06)'; ctx.strokeStyle = 'rgba(242,193,78,0.4)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(aim.ox, aim.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(242,193,78,0.45)';
+      ctx.beginPath(); ctx.arc(aim.ox + aim.x * JR, aim.oy + aim.y * JR, 24, 0, 6.283); ctx.fill();
     }
     if (state === 'play' && me) drawMini();
   }
@@ -2739,7 +2789,10 @@ body {
       if (state === 'play') addLatePlayer(seat);
     } else if (m.k === 'in' && seat) {
       P = pById(seat.id);
-      if (P) { P.inx = Math.max(-1, Math.min(1, (+m.x || 0) / 100)); P.iny = Math.max(-1, Math.min(1, (+m.y || 0) / 100)); }
+      if (P) {
+        P.inx = Math.max(-1, Math.min(1, (+m.x || 0) / 100)); P.iny = Math.max(-1, Math.min(1, (+m.y || 0) / 100));
+        P.cone = !!m.cn; P.aimAng = m.cn ? Math.max(-7, Math.min(7, (+m.a || 0) / 100)) : null;
+      }
     } else if (m.k === 'cmd' && seat) {
       P = pById(seat.id);
       if (P && (m.c === 'swap' || m.c === 'shop' || m.c === 'box')) hostCmd(P, { c: m.c, a: String(m.a || ''), id: m.id });
@@ -2998,8 +3051,9 @@ body {
       inT += dt;
       if (state === 'play' && inT >= 0.033) {
         inT = 0;
-        var is = Math.round(me.inx * 100) + ',' + Math.round(me.iny * 100);
-        if (is !== lastIn || now - lastInAt > 250) { lastIn = is; lastInAt = now; netSend({ k: 'in', x: Math.round(me.inx * 100), y: Math.round(me.iny * 100) }); }
+        var ca = me.cone && me.aimAng !== null ? Math.round(me.aimAng * 100) : 0;
+        var is = Math.round(me.inx * 100) + ',' + Math.round(me.iny * 100) + ',' + (me.cone ? 1 : 0) + ',' + ca;
+        if (is !== lastIn || now - lastInAt > 250) { lastIn = is; lastInAt = now; netSend({ k: 'in', x: Math.round(me.inx * 100), y: Math.round(me.iny * 100), cn: me.cone ? 1 : 0, a: ca }); }
       }
     } else {
       if (state === 'play' && !frozen()) update(dt);
