@@ -69,9 +69,27 @@ body {
 .swap.special small { color: var(--rust); }
 .swap.warn small { color: var(--gold); }
 .swap.dry { border-color: var(--blood); }
-.swap.dry small { color: #e0614f; }.mm { position: absolute; left: 12px; bottom: 12px; width: 96px; height: 96px; border-radius: 50%; border: 1px solid #5a4d44; background: rgba(0, 0, 0, 0.5); pointer-events: none; }
+.swap.dry small { color: #e0614f; }.mm { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 68px; width: 96px; height: 96px; border-radius: 50%; border: 1px solid #5a4d44; background: rgba(0, 0, 0, 0.5); pointer-events: none; }
 
 .boxbtn { position: absolute; right: 16px; bottom: 92px; min-height: 48px; padding: 8px 14px; background: var(--gold); color: #1a0e08; border: 0; border-radius: 6px; font: 700 16px/1.1 var(--face-ui); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.stats, .perks, .team { max-width: calc(100% - 118px); }
+@media (max-height: 520px) {
+  .hud { padding-top: max(6px, env(safe-area-inset-top, 0px)); gap: 3px; }
+  .row { gap: 8px; }
+  .hp { height: 18px; }
+  .hptxt { font-size: 13px; line-height: 16px; }
+  .wave { font-size: 18px; }
+  .wave small { font-size: 12px; margin-top: 1px; }
+  .pause { width: 38px; height: 38px; font-size: 15px; }
+  .shopbtn { min-width: 50px; font-size: 13px; }
+  .stats { font-size: 12px; }
+  .perk { font-size: 12px; padding: 2px 6px; }
+  .mm { top: 52px; width: 76px; height: 76px; }
+  .swap { min-width: 92px; min-height: 50px; padding: 4px 10px; font-size: 14px; bottom: 12px; }
+  .swap small { font-size: 13px; margin-top: 2px; }
+  .boxbtn { bottom: 72px; min-height: 40px; padding: 6px 12px; font-size: 14px; }
+}
+}
 .boxbtn:disabled { opacity: 0.45; cursor: default; }
 .boxui { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 8, 7, 0.9); }
 .boxcard { width: min(100%, 360px); padding: 18px; background: rgba(43, 37, 32, 0.95); border: 1px solid var(--gold); border-radius: 6px; display: flex; flex-direction: column; gap: 10px; }
@@ -186,6 +204,23 @@ body {
 .note { font: 500 15px/1.3 var(--face-ui); color: var(--dim); flex-shrink: 0; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .banner { animation: none; } .hpfill { transition: none; } }
+@media (max-height: 520px) {
+  .overlay { gap: 8px; padding: 12px 16px; }
+  .overlay h1 { font-size: 34px; }
+  .overlay p { font-size: 16px; max-width: 54ch; }
+  .go { min-height: 44px; }
+  .go.alt { min-height: 40px; }
+  .slides { width: min(560px, 100%); }
+  .slide { gap: 6px; }
+  .slide h2 { font-size: 24px; }
+  .slide p { min-height: 4em; }
+  .slide canvas { height: 118px; width: 220px; }
+  .shop { padding: 8px 16px; gap: 6px; }
+  .shead h2 { font-size: 24px; }
+  .sstats { font-size: 12px; }
+  .card { padding: 6px 10px; }
+  .card .n { font-size: 18px; }
+  .card .d { font-size: 14px; }
 </style>
 
 <div class="game" id="game">
@@ -1780,7 +1815,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 32';
+  var updMsg = '', VERSION = 'Version 33';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
