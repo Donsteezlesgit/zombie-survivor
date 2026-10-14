@@ -1,0 +1,14 @@
+{
+  "name": "Zombie Survivor",
+  "short_name": "Zombies",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#15110e",
+  "theme_color": "#15110e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
