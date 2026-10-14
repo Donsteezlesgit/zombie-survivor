@@ -1,7 +1,7 @@
 // Zombie Survivor service worker: network-first so new versions show up on the next online launch,
 // cache fallback so the game still opens offline.
-var CACHE = 'zs-v1';
-var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+var CACHE = 'zs-v2';
+var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './peerjs.min.js'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }).then(function () { return self.skipWaiting(); }));
 });

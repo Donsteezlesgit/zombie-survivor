@@ -109,6 +109,32 @@ body {
 }
 .go:focus-visible, .chip:focus-visible, .pause:focus-visible, .swap:focus-visible, .buy:focus-visible, .tab:focus-visible { outline: 2px solid var(--bone); outline-offset: 2px; }
 
+/* menus */
+.overlay { overflow-y: auto; justify-content: flex-start; overscroll-behavior: contain; }
+.overlay::before, .overlay::after { content: ''; margin: auto; }
+.overlay > * { flex-shrink: 0; }
+.field { width: min(280px, 100%); min-height: 48px; padding: 0 14px; font: 600 20px/1 var(--face-ui); letter-spacing: 0.06em; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #5a4d44; border-radius: 4px; text-align: center; -webkit-user-select: text; user-select: text; box-sizing: border-box; }
+.field.code { font-size: 34px; letter-spacing: 0.4em; text-transform: uppercase; min-height: 64px; padding-left: 0.4em; }
+.lab { font: 700 13px/1 var(--face-ui); letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+.sws { display: grid; grid-template-columns: repeat(4, 44px); gap: 10px; }
+.sw { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #000; padding: 0; cursor: pointer; }
+.sw[aria-pressed="true"] { border-color: var(--bone); box-shadow: 0 0 0 2px #000 inset; }
+.hats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip[aria-pressed="true"] { background: var(--rust); border-color: var(--rust); color: #1a0e08; }
+.go:disabled { opacity: 0.4; cursor: default; }
+.bigcode { font: 400 64px/1 var(--face-display); letter-spacing: 0.12em; padding-left: 0.12em; }
+.roster { width: min(280px, 100%); display: flex; flex-direction: column; gap: 6px; }
+.rrow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(0, 0, 0, 0.45); border: 1px solid #3a322d; border-radius: 4px; font: 700 18px/1 var(--face-ui); text-align: left; }
+.rrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rrow small { color: var(--dim); font: 600 13px/1 var(--face-ui); letter-spacing: 0.1em; text-transform: uppercase; }
+.dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.msg { min-height: 1.2em; font: 600 15px/1.3 var(--face-ui); color: var(--rust); max-width: 30ch; }
+#prev { width: 120px; height: 120px; }
+.team { display: flex; flex-direction: column; gap: 3px; max-width: 160px; margin-top: 2px; }
+.tm { display: flex; align-items: center; gap: 6px; font: 700 13px/1 var(--face-ui); letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
+.tmbar { flex: 1; height: 5px; min-width: 40px; background: rgba(0, 0, 0, 0.6); }
+.tmbar i { display: block; height: 100%; background: currentColor; }
+
 /* shop */
 .shop { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 14px; background: rgba(10, 8, 7, 0.95); min-height: 0; }
 .shead { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-width: 0; }
@@ -157,6 +183,7 @@ body {
     </div>
     <div class="stats" id="stats">Coins <b class="gold">0</b> &middot; Kills <b>0</b></div>
     <div class="perks" id="perks"></div>
+    <div class="team" id="team"></div>
   </div>
   <canvas class="mm" id="mm" width="96" height="96" aria-hidden="true"></canvas>
   <button class="swap" id="swapBtn" type="button" aria-label="Swap weapon"></button>
@@ -179,15 +206,10 @@ body {
     <button class="go" id="nextBtn" type="button">Back to game</button>
   </div>
 
-  <div class="overlay" id="ov">
-    <h1 id="ovTitle">Zombie Survivor</h1>
-    <p id="ovText">Drag anywhere with one thumb to move. You shoot on your own. Kill zombies for <b>coins</b>, watch your <b>ammo</b>, and spend between waves.</p>
-    <button class="go" id="goBtn" type="button">Start</button>
-    <button class="go alt" id="contBtn" type="button" hidden>Continue</button>
-    <button class="chip" id="muteBtn" type="button">Sound on</button>
-  </div>
+  <div class="overlay" id="ov" hidden></div>
 </div>
 
+<script src="peerjs.min.js"></script>
 <script>
 (function () {
   // ---------- tuning ----------
@@ -204,7 +226,7 @@ body {
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
     specStep: 10, specDmg: 0.6, specAmmo: 0.2,
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
-    throwGap: 3.6, grace: 10,
+    throwGap: 3.6, grace: 20, coopCount: 0.55, coopHp: 0.2, coopCap: 30, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45
   };
   var TYPES = {
@@ -312,13 +334,14 @@ body {
     mg:  { name: 'Magnet',           col: '#d9a0ff', letter: 'MG', w: 1 }
   };
 
+
   // ---------- dom ----------
   function $(id) { return document.getElementById(id); }
   var game = $('game'), cv = $('c'), ctx = cv.getContext('2d');
   var lcv = document.createElement('canvas'), lctx = lcv.getContext('2d');
-  var ov = $('ov'), ovTitle = $('ovTitle'), ovText = $('ovText');
-  var mm = $('mm'), mmx = mm.getContext('2d'), boxBtn = $('boxBtn'), boxUI = $('boxUI'), boxBody = $('boxBody'), contBtn = $('contBtn'), goBtn = $('goBtn'), muteBtn = $('muteBtn'), pauseBtn = $('pauseBtn'), swapBtn = $('swapBtn');
-  var hpfill = $('hpfill'), hptxt = $('hptxt'), waveN = $('waveN'), leftEl = $('left'), statsEl = $('stats'), perksEl = $('perks');
+  var ov = $('ov');
+  var mm = $('mm'), mmx = mm.getContext('2d'), boxBtn = $('boxBtn'), boxUI = $('boxUI'), boxBody = $('boxBody'), pauseBtn = $('pauseBtn'), swapBtn = $('swapBtn');
+  var hpfill = $('hpfill'), hptxt = $('hptxt'), waveN = $('waveN'), leftEl = $('left'), statsEl = $('stats'), perksEl = $('perks'), teamEl = $('team');
   var banner = $('banner'), bnTitle = $('bnTitle'), bnText = $('bnText');
   var shop = $('shop'), shopTitle = $('shopTitle'), purseEl = $('purse'), sstats = $('sstats'), panel = $('panel'), nextBtn = $('nextBtn');
   var tabs = $('tabs'), tabEls = { upg: $('tabUpg'), guns: $('tabGuns'), gear: $('tabGear') };
@@ -326,11 +349,10 @@ body {
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // ---------- storage (optional) ----------
-  var bestWave = 0, muted = false;
+  var bestWave = 0, muted = false, myName = '', myLook = { c: 0, h: 0 }, savedLook = null;
   try { bestWave = parseInt(localStorage.getItem('zs-best-wave') || '0', 10) || 0; } catch (e) {}
   try { muted = localStorage.getItem('zs-muted') === '1'; } catch (e) {}
-  function paintMute() { muteBtn.textContent = muted ? 'Sound off' : 'Sound on'; }
-  paintMute();
+  try { myName = String(localStorage.getItem('zs-name') || '').slice(0, 12); savedLook = JSON.parse(localStorage.getItem('zs-look') || 'null'); } catch (e) {}
 
   // ---------- world layers ----------
   function makeLayer() {
@@ -571,25 +593,39 @@ body {
   // ---------- game state ----------
   var W = 0, H = 0, dpr = 1, zoom = 1, K = 1;
   var cam = { x: 0, y: 0 };
-  var state = 'ready';             // ready | play | paused | shop | over
+  var state = 'ready';             // ready | play | over  (the simulation itself)
   var time = 0;
-  var player, zombies = [], bullets = [], parts = [], fx = [], coins = [], pickups = [], ebullets = [], bolts = [], boxes = [];
-  var curTgt = null, rebuildLeft = 0;
-  var wave = 1, kills = 0, queue = [];
-  var phase = 'spawning', phaseTimer = 0, graceT = 0, spawnTimer = 0, bannerTimer = 0;
+  var players = [], me = null, localId = 0;
+  var zombies = [], bullets = [], parts = [], fx = [], coins = [], pickups = [], ebullets = [], bolts = [], boxes = [];
+  var wave = 1, kills = 0, queue = [], leftN = 0, gen = 0;
+  var phase = 'spawning', graceT = 0, spawnTimer = 0, bannerTimer = 0;
   var shake = 0, hurtFlash = 0;
-  var wallet = 0, waveCoins = 0;
-  var armor = { head: 0, body: 0, legs: 0 };
-  var upg = { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0 };
-  var perkT = { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 };
-  var slots = [null, null, null], unlocked = 1, special = null, sel = 0, lastSel = 0;
-  var shopTab = 'upg', cards = [], pendingGun = null;
+  var shopTab = 'upg', zid = 1, overBest = false;
+  var net = { mode: 'off' };       // off | host | client
+  var evq = [];
   var joy = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0 };
   var keys = { l: false, r: false, u: false, d: false };
+  var TYPE_KEYS = Object.keys(TYPES);
 
-  function armVal(part) { var t = armor[part]; return t > 0 ? ARM[part].val[t - 1] : 0; }
-  function maxHpNow() { return TUNE.hpBase * (1 + 0.1 * upg.hp) + armVal('body'); }
-  function spdNow() { return TUNE.spdBase * (1 + 0.1 * upg.spd + armVal('legs')) * (perkT.spd > 0 ? 1.6 : 1); }
+  // ---------- players ----------
+  var LOOK_COLS = ['#4a90e2', '#e0453a', '#5fb878', '#f2c14e', '#a56bd8', '#ff9a3a', '#e6e6e6', '#ff6fae'];
+  var LOOK_NAMES = ['Blue', 'Red', 'Green', 'Yellow', 'Purple', 'Orange', 'White', 'Pink'];
+  var HATS = ['Bare', 'Cap', 'Beanie', 'Band'];
+  var MAXP = 4;
+  function r1(v) { return Math.round(v * 10) / 10; }
+  function r2(v) { return Math.round(v * 100) / 100; }
+  function pById(id) { for (var i = 0; i < players.length; i++) if (players[i].id === id) return players[i]; return null; }
+  function cleanName(s) { return String(s || '').replace(/[^\w \-.!?']/g, '').trim().slice(0, 12); }
+  function cleanLook(l, id) {
+    var c = l && +l.c, h = l && +l.h;
+    if (!(c >= 0 && c < LOOK_COLS.length)) c = id % LOOK_COLS.length;
+    if (!(h >= 0 && h < HATS.length)) h = 0;
+    return { c: Math.floor(c), h: Math.floor(h) };
+  }
+
+  function armVal(P, part) { var t = P.armor[part]; return t > 0 ? ARM[part].val[t - 1] : 0; }
+  function maxHpNow(P) { return TUNE.hpBase * (1 + 0.1 * P.upg.hp) + armVal(P, 'body'); }
+  function spdNow(P) { return TUNE.spdBase * (1 + 0.1 * P.upg.spd + armVal(P, 'legs')) * (P.perkT.spd > 0 ? 1.6 : 1); }
 
   function specStage() { return Math.floor(wave / TUNE.specStep); }
   function specMult() { return 1 + TUNE.specDmg * specStage(); }
@@ -598,36 +634,100 @@ body {
   function makeGun(id) { var d = WEAPONS[id]; return { id: id, tier: 1, mag: gunMag(d), res: d.res, reload: 0 }; }
   function refillGun(g) { var d = WEAPONS[g.id]; g.mag = gunMag(d); g.res = d.res; g.reload = 0; }
   function defOf(ref) { return WEAPONS[ref.id] || SPECIALS[ref.id]; }
-  function curRef() {
-    if (sel === 3 && special) return special;
-    return slots[sel] || slots[lastSel] || slots[0];
+  function curRef(P) {
+    if (P.sel === 3 && P.special) return P.special;
+    return P.slots[P.sel] || P.slots[P.lastSel] || P.slots[0];
   }
-  function isSpecialActive() { return sel === 3 && !!special; }
-  function wstats(ref, base) {
+  function isSpecialActive(P) { return P.sel === 3 && !!P.special; }
+  function wstats(P, ref, base) {
     var d = defOf(ref), t = ref.tier || 1;
     return {
       d: d,
-      dmg: TUNE.baseDmg * d.dmg * (1 + 0.3 * (t - 1)) * (1 + 0.1 * upg.dmg) * (d.special ? specMult() : 1),
-      rate: d.rate * (1 + 0.1 * (t - 1)) * (1 + 0.1 * upg.rate) * (!base && perkT.rf > 0 ? 2 : 1)
+      dmg: TUNE.baseDmg * d.dmg * (1 + 0.3 * (t - 1)) * (1 + 0.1 * P.upg.dmg) * (d.special ? specMult() : 1),
+      rate: d.rate * (1 + 0.1 * (t - 1)) * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1)
     };
   }
-  function setSel(n) {
-    var old = curRef();
+  function setSel(P, n) {
+    var old = curRef(P);
     if (old && old.reload > 0) old.reload = 0;
-    if (sel !== 3) lastSel = sel;
-    sel = n;
-    if (n !== 3) lastSel = n;
-    player.fireCd = 0.12;
+    if (P.sel !== 3) P.lastSel = P.sel;
+    P.sel = n;
+    if (n !== 3) P.lastSel = n;
+    P.fireCd = 0.12;
   }
 
-  function freshPlayer() {
-    return { x: WORLD / 2, y: WORLD / 2, ang: -Math.PI / 2, hp: maxHpNow(), fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0 };
+  function newPlayer(id, name, look) {
+    var a = id * 1.571;
+    var P = {
+      id: id, name: name, look: look,
+      x: WORLD / 2 + Math.cos(a) * 26, y: WORLD / 2 + Math.sin(a) * 26, ang: -Math.PI / 2, r: PR - 1,
+      hp: 0, fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0,
+      wallet: 0, waveCoins: 0, kills: 0,
+      armor: { head: 0, body: 0, legs: 0 },
+      upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0 },
+      perkT: { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 },
+      slots: [makeGun('glock'), null, null], unlocked: 1, special: null, sel: 0, lastSel: 0,
+      cards: [], pendingGun: null, boxPrize: null, rebuildLeft: 0,
+      inx: 0, iny: 0, mvx: 0, mvy: 0, csnd: 0, mhp: 0, cur: null, down: false, rev: 0, tgt: null, pev: [], conn: null
+    };
+    P.hp = maxHpNow(P);
+    rollCards(P);
+    return P;
   }
-  player = freshPlayer();
-  slots[0] = makeGun('glock');
 
+  // ---------- effects and sounds that remote players must also see and hear ----------
+  function rec(ev) { if (net.mode === 'host' && evq.length < 160) evq.push(ev); }
+  function addBlood0(x, y, dx, dy, n, speed) {
+    for (var i = 0; i < n && parts.length < 320; i++) {
+      var a = Math.atan2(dy, dx) + rnd(-0.9, 0.9), s = rnd(0.3, 1) * speed;
+      parts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.25, 0.6), r: rnd(1, 2.4) });
+    }
+  }
+  function addFx0(x, y, n, speed, life, r, c) {
+    for (var i = 0; i < n && fx.length < 260; i++) {
+      var a = rnd(0, 6.283), s = rnd(0.2, 1) * speed;
+      fx.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(life * 0.5, life), max: life, r: rnd(r * 0.6, r), c: c });
+    }
+  }
+  function addBlood(x, y, dx, dy, n, speed) { addBlood0(x, y, dx, dy, n, speed); rec(['b', r1(x), r1(y), r2(dx), r2(dy), n, speed]); }
+  function addFx(x, y, n, speed, life, r, c) { addFx0(x, y, n, speed, life, r, c); rec(['f', r1(x), r1(y), n, speed, life, r, c]); }
+  function ssplat(x, y, r, a) { splat(x, y, r, a); rec(['s', r1(x), r1(y), r, a]); }
+  function sscorch(x, y, r) { scorch(x, y, r); rec(['c', r1(x), r1(y), r]); }
+  function stone(a, b, c, d, e, f) { tone(a, b, c, d, e, f); rec(['T', a, b, c, d, e, f]); }
+  function snoise(d, f, v) { noise(d, f, v); rec(['N', d, f, v]); }
+  function sgun(cls) { gunSound(cls); rec(['G', cls]); }
+  function bannerAll(t, x, s) { showBanner(t, x, s); rec(['B', t, x, s]); }
+  function shakeAt(x, y, v) { if (me && Math.hypot(me.x - x, me.y - y) < 520) shake = Math.max(shake, v); rec(['sh', v, r1(x), r1(y)]); }
+  function applyEv(e) {
+    switch (e[0]) {
+      case 'b': addBlood0(e[1], e[2], e[3], e[4], e[5], e[6]); break;
+      case 'f': addFx0(e[1], e[2], e[3], e[4], e[5], e[6], e[7]); break;
+      case 's': splat(e[1], e[2], e[3], e[4]); break;
+      case 'c': scorch(e[1], e[2], e[3]); break;
+      case 'T': tone(e[1], e[2], e[3], e[4], e[5], e[6]); break;
+      case 'N': noise(e[1], e[2], e[3]); break;
+      case 'G': gunSound(e[1]); break;
+      case 'B': showBanner(e[1], e[2], e[3]); break;
+      case 'z': bolts.push({ pts: e[1], life: 0.16 }); break;
+      case 'sh': if (me && Math.hypot(me.x - e[2], me.y - e[3]) < 520) shake = Math.max(shake, e[1]); break;
+      case 'H': hurtFlash = 0.35; shake = Math.min(9, 4 + e[1] * 0.2); tone(120, 60, 0.15, 'square', 0.09); noise(0.08, 500, 0.07); buzz(35); break;
+      case 'V': buzz(e[1]); break;
+    }
+  }
+  // events meant for one player only (your own hurt flash, pickups, private banners)
+  function priv(P, ev) { if (P === me) applyEv(ev); else if (P.conn && P.pev.length < 40) P.pev.push(ev); }
+  function ptone(P, a, b, c, d, e, f) { priv(P, ['T', a, b, c, d, e, f]); }
+  function bannerTo(P, t, x, s) { priv(P, ['B', t, x, s]); }
+
+  function showBanner(title, text, secs) {
+    bnTitle.textContent = title; bnText.textContent = text; bannerTimer = secs;
+    banner.hidden = true; void banner.offsetWidth; banner.hidden = false;
+  }
+
+  // ---------- waves ----------
   function buildQueue(w) {
-    var q = [], n = 6 + 4 * (w - 1), i;
+    var np = Math.max(1, players.length);
+    var q = [], n = Math.round((6 + 4 * (w - 1)) * (1 + TUNE.coopCount * (np - 1))), i;
     var tankP = w >= 5 ? Math.min(0.2, 0.04 * (w - 4)) : 0;
     var runnerP = w >= 3 ? Math.min(0.35, 0.08 * (w - 2)) : 0;
     for (i = 0; i < n; i++) {
@@ -640,17 +740,28 @@ body {
     }
     return q;
   }
-  queue = buildQueue(1);
+
+  function nearestAlive(x, y) {
+    var best = null, bd = 1e12, i, P, d;
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; if (P.down) continue;
+      d = (P.x - x) * (P.x - x) + (P.y - y) * (P.y - y);
+      if (d < bd) { bd = d; best = P; }
+    }
+    return best;
+  }
+  function allDown() { for (var i = 0; i < players.length; i++) if (!players[i].down) return false; return players.length > 0; }
 
   function pickSpawn() {
-    var idx = [0, 1, 2, 3], i, j, t, cnt = [0, 0, 0, 0], z, best = -1;
+    var idx = [0, 1, 2, 3], i, j, t, cnt = [0, 0, 0, 0], z, best = -1, cap = 8 + 3 * (players.length - 1);
     for (i = idx.length - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
     for (i = 0; i < zombies.length; i++) { z = zombies[i]; if (z.pocket >= 0) cnt[z.pocket]++; }
     for (i = 0; i < 4; i++) {
       j = idx[i];
       if (BLD[j].bar.planks > 0 && cnt[j] >= 5) continue;
-      if (cnt[j] >= 8) continue;
-      if (Math.hypot(BLD[j].sx - player.x, BLD[j].sy - player.y) < 260) { if (best < 0) best = -2 - j; continue; }
+      if (cnt[j] >= cap) continue;
+      var np = nearestAlive(BLD[j].sx, BLD[j].sy);
+      if (np && Math.hypot(BLD[j].sx - np.x, BLD[j].sy - np.y) < 260) { if (best < 0) best = -2 - j; continue; }
       return j;
     }
     return best <= -2 ? -2 - best : -1;
@@ -663,14 +774,15 @@ body {
     var x = b.sx + b.tx * jit, y = b.sy + b.ty * jit;
     var hpS = 1 + TUNE.zHpScale * (wave - 1), dS = 1 + TUNE.zDmgScale * (wave - 1);
     if (wave >= TUNE.l25.wave) { hpS *= TUNE.l25.hp; dS *= TUNE.l25.dmg; }
+    hpS *= 1 + TUNE.coopHp * (Math.max(1, players.length) - 1);
     zombies.push({
-      x: x, y: y, type: type, r: t.r, hp: t.hp * hpS, maxhp: t.hp * hpS, boss: !!t.boss, kind: t.kind || '',
+      id: zid++, x: x, y: y, type: type, r: t.r, hp: t.hp * hpS, maxhp: t.hp * hpS, boss: !!t.boss, kind: t.kind || '',
       spd: t.spd * (0.92 + Math.random() * 0.16), dmg: t.dmg * dS, cd: t.cd,
       atk: 0.4, ang: 0, flash: 0, vx: 0, vy: 0, seed: Math.random() * 10,
       skin: t.skin, cloth: t.cloth, pocket: bi, side: Math.random() < 0.5 ? 1 : -1,
       stick: 0, t: 0, next: 2 + Math.random() * 2, dash: 0, dashA: 0, rest: 0, warn: 0, breath: 0, tick: 0
     });
-    if (t.boss) { tone(80, 40, 0.7, 'sawtooth', 0.09); buzz(40); showBanner(t.name, 'Watch yourself.', 1.8); }
+    if (t.boss) { stone(80, 40, 0.7, 'sawtooth', 0.09); buzz(40); bannerAll(t.name, 'Watch yourself.', 1.8); }
     return true;
   }
 
@@ -680,104 +792,113 @@ body {
     var n = 0, tries = 0, x, y, ok, i;
     while (n < TUNE.boxes && tries++ < 200) {
       x = rnd(WALL + 70, WORLD - WALL - 70); y = rnd(WALL + 70, WORLD - WALL - 70);
-      ok = Math.hypot(x - player.x, y - player.y) > 180;
+      ok = true;
+      for (i = 0; ok && i < players.length; i++) if (Math.hypot(x - players[i].x, y - players[i].y) < 180) ok = false;
       for (i = 0; ok && i < RECTS.length; i++) if (distRect(x, y, RECTS[i]) < 50) ok = false;
       for (i = 0; ok && i < boxes.length; i++) if (Math.hypot(x - boxes[i].x, y - boxes[i].y) < 350) ok = false;
       if (ok) { boxes.push({ x: x, y: y }); n++; }
     }
   }
-  function nearBox() {
-    for (var i = 0; i < boxes.length; i++) if (Math.hypot(boxes[i].x - player.x, boxes[i].y - player.y) < 52) return boxes[i];
+  function nearBox(P) {
+    for (var i = 0; i < boxes.length; i++) if (Math.hypot(boxes[i].x - P.x, boxes[i].y - P.y) < 52) return boxes[i];
     return null;
-  }
-
-  function showBanner(title, text, secs) {
-    bnTitle.textContent = title; bnText.textContent = text; bannerTimer = secs;
-    banner.hidden = true; void banner.offsetWidth; banner.hidden = false;
   }
 
   function startWave(n) {
     wave = n; queue = buildQueue(n);
-    phase = 'spawning'; spawnTimer = 1.2; waveCoins = 0;
-    var boss = n % 5 === 0, bi;
+    phase = 'spawning'; spawnTimer = 1.2;
+    var boss = n % 5 === 0, bi, i;
     // barriers stay as they were between waves; only a new game rebuilds them
     if (n === 1) for (bi = 0; bi < BLD.length; bi++) { BLD[bi].bar.planks = BLD[bi].bar.max; BLD[bi].bar.acc = 0; BLD[bi].bar.rt = 0; }
-    rebuildLeft = (30 + 8 * n) * barBonus(n); ebullets = []; bolts = [];
+    for (i = 0; i < players.length; i++) { players[i].waveCoins = 0; players[i].rebuildLeft = (30 + 8 * n) * barBonus(n); }
+    ebullets = []; bolts = [];
     placeBoxes();
-    showBanner('Wave ' + n, (n === 1 ? 'Stand at a broken barrier to rebuild it.' : (boss ? 'Something big is coming.' : queue.length + ' zombies incoming.')), 2.6);
+    bannerAll('Wave ' + n, (n === 1 ? 'Stand at a broken barrier to rebuild it.' : (boss ? 'Something big is coming.' : queue.length + ' zombies incoming.')), 2.6);
   }
 
-  function equipSpecial(id, quiet) {
-    var d = SPECIALS[id], max = Math.round(d.ammo * (1 + 0.25 * upg.sammo) * specAmmoMult());
-    special = { id: id, ammo: max, max: max };
-    setSel(3);
-    tone(500, 900, 0.15, 'square', 0.06);
-    if (!quiet) showBanner(d.name, max + ' shots. Make them count.', 1.8);
+  function equipSpecial(P, id, quiet) {
+    var d = SPECIALS[id], max = Math.round(d.ammo * (1 + 0.25 * P.upg.sammo) * specAmmoMult());
+    P.special = { id: id, ammo: max, max: max };
+    setSel(P, 3);
+    ptone(P, 500, 900, 0.15, 'square', 0.06);
+    if (!quiet) bannerTo(P, d.name, max + ' shots. Make them count.', 1.8);
   }
 
-  function dropSpecial() {
+  function dropSpecial(P) {
     var i;
-    special = null;
-    if (slots[lastSel] && lastSel < unlocked) { sel = lastSel; }
-    else { for (i = 0; i < 3; i++) if (slots[i]) { sel = i; break; } }
-    lastSel = sel;
-    player.fireCd = 0.12;
+    P.special = null;
+    if (P.slots[P.lastSel] && P.lastSel < P.unlocked) { P.sel = P.lastSel; }
+    else { for (i = 0; i < 3; i++) if (P.slots[i]) { P.sel = i; break; } }
+    P.lastSel = P.sel;
+    P.fireCd = 0.12;
   }
 
-  function refillAllGuns() {
-    for (var i = 0; i < 3; i++) if (slots[i]) refillGun(slots[i]);
+  function refillAllGuns(P) {
+    for (var i = 0; i < 3; i++) if (P.slots[i]) refillGun(P.slots[i]);
   }
 
-  function maxAmmo() {
-    refillAllGuns();
-    if (special) special.ammo = special.max;
-    tone(400, 800, 0.12, 'square', 0.06); tone(600, 1000, 0.15, 'square', 0.06, 0.1);
-    showBanner('Max ammo', 'Every gun refilled.', 1.4);
+  function maxAmmo(P) {
+    refillAllGuns(P);
+    if (P.special) P.special.ammo = P.special.max;
+    ptone(P, 400, 800, 0.12, 'square', 0.06); ptone(P, 600, 1000, 0.15, 'square', 0.06, 0.1);
+    bannerTo(P, 'Max ammo', 'Every gun refilled.', 1.4);
   }
 
-  function healPlayer(n) { player.hp = Math.min(maxHpNow(), player.hp + n); tone(520, 780, 0.15, 'sine', 0.07); }
+  function healPlayer(P, n) { if (P.down) return; P.hp = Math.min(maxHpNow(P), P.hp + n); ptone(P, 520, 780, 0.15, 'sine', 0.07); }
+
+  function revivePlayer(P, frac) {
+    P.down = false; P.rev = 0; P.hp = Math.max(1, maxHpNow(P) * frac); P.inv = 2;
+    ptone(P, 400, 900, 0.3, 'sine', 0.08);
+    bannerTo(P, 'Back up', 'Stay close to your team.', 1.6);
+  }
 
   function waveCleared() {
     var i, keep = [];
-    // coins and other drops stay on the floor until you pick them up; special weapons vanish
+    // coins and other drops stay on the floor until somebody picks them up; special weapons vanish
     for (i = 0; i < pickups.length; i++) {
       if (pickups[i].kind !== 'special') { pickups[i].t = 1e9; keep.push(pickups[i]); }
     }
     pickups = keep;
-    refillAllGuns();
-    rollCards();
+    for (i = 0; i < players.length; i++) {
+      refillAllGuns(players[i]);
+      rollCards(players[i]);
+      if (players[i].down) revivePlayer(players[i], 0.5);
+    }
     phase = 'grace'; graceT = TUNE.grace;
-    showBanner('Wave ' + wave + ' cleared', 'Next wave in ' + TUNE.grace + 's · shop is open any time', 2.6);
-    tone(330, 330, 0.12, 'square', 0.06); tone(494, 494, 0.12, 'square', 0.06, 0.12); tone(659, 659, 0.2, 'square', 0.06, 0.24);
+    bannerAll('Wave ' + wave + ' cleared', 'Next wave in ' + TUNE.grace + 's · shop is open any time', 2.6);
+    stone(330, 330, 0.12, 'square', 0.06); stone(494, 494, 0.12, 'square', 0.06, 0.12); stone(659, 659, 0.2, 'square', 0.06, 0.24);
     saveGame();
   }
 
-  function newGame() {
-    wallet = 0; waveCoins = 0;
-    armor.head = armor.body = armor.legs = 0;
-    for (var k in upg) upg[k] = 0;
-    for (var p in perkT) perkT[p] = 0;
-    slots = [makeGun('glock'), null, null]; unlocked = 1; special = null; sel = 0; lastSel = 0;
-    player = freshPlayer();
-    zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = [];
-    kills = 0; shake = 0; hurtFlash = 0; pendingGun = null; rollCards();
+  // specs: [{ id, name, look, conn }]
+  function newGame(specs) {
+    var i, s, P;
+    players = [];
+    for (i = 0; i < specs.length; i++) {
+      s = specs[i]; P = newPlayer(s.id, s.name, s.look); P.conn = s.conn || null; players.push(P);
+    }
+    me = pById(localId) || players[0];
+    zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = []; evq = [];
+    kills = 0; shake = 0; hurtFlash = 0; gen++;
     bloodL.x.clearRect(0, 0, WORLD, WORLD);
     state = 'play';
     startWave(1);
-    hideOverlay(); shop.hidden = true;
+    shopOpen = false; shop.hidden = true; boxUI.hidden = true;
+    showScreen('');
   }
 
-  // ---------- save / continue (this device only) ----------
+  // ---------- save / continue (offline only, this device) ----------
   var SAVE_KEY = 'zs-save-v1';
   function saveGame() {
-    var cw = phase === 'spawning' ? wave - 1 : wave;   // last fully cleared wave
+    if (net.mode !== 'off' || !players[0]) return;
+    var P = players[0], cw = phase === 'spawning' ? wave - 1 : wave;   // last fully cleared wave
     if (cw < 1) return;
     try {
       var data = {
-        wave: cw, wallet: wallet, kills: kills, hp: player.hp, unlocked: unlocked,
-        upg: upg, armor: armor,
+        wave: cw, wallet: P.wallet, kills: P.kills, hp: P.hp, unlocked: P.unlocked,
+        upg: P.upg, armor: P.armor,
         bar: BLD.map(function (b) { return b.bar.planks; }),
-        slots: slots.map(function (g) { return g ? { id: g.id, tier: g.tier } : null; })
+        slots: P.slots.map(function (g) { return g ? { id: g.id, tier: g.tier } : null; })
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     } catch (e) {}
@@ -790,118 +911,918 @@ body {
     } catch (e) { return null; }
   }
   function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
-  function paintCont() {
-    var d = readSave();
-    contBtn.hidden = !d || state === 'paused';
-    if (d) contBtn.textContent = 'Continue (wave ' + d.wave + ' cleared)';
-  }
   function loadGame() {
     var d = readSave(); if (!d) return false;
-    newGame();
-    var k, i, g;
-    wave = d.wave; wallet = +d.wallet || 0; kills = +d.kills || 0;
-    for (k in upg) upg[k] = (d.upg && +d.upg[k]) || 0;
-    for (k in armor) armor[k] = Math.min(4, (d.armor && +d.armor[k]) || 0);
-    unlocked = Math.max(1, Math.min(3, +d.unlocked || 1));
-    slots = [null, null, null];
+    net = { mode: 'off' }; localId = 0;
+    newGame([{ id: 0, name: myName || 'You', look: myLook }]);
+    var P = players[0], k, i, g;
+    wave = d.wave; P.wallet = +d.wallet || 0; P.kills = +d.kills || 0; kills = P.kills;
+    for (k in P.upg) P.upg[k] = (d.upg && +d.upg[k]) || 0;
+    for (k in P.armor) P.armor[k] = Math.min(4, (d.armor && +d.armor[k]) || 0);
+    P.unlocked = Math.max(1, Math.min(3, +d.unlocked || 1));
+    P.slots = [null, null, null];
     for (i = 0; i < 3; i++) {
       g = d.slots[i];
-      if (g && WEAPONS[g.id] && i < unlocked) { slots[i] = makeGun(g.id); slots[i].tier = Math.max(1, Math.min(4, +g.tier || 1)); }
+      if (g && WEAPONS[g.id] && i < P.unlocked) { P.slots[i] = makeGun(g.id); P.slots[i].tier = Math.max(1, Math.min(4, +g.tier || 1)); }
     }
-    if (!slots[0]) slots[0] = makeGun('glock');
-    special = null; sel = 0; lastSel = 0;
+    if (!P.slots[0]) P.slots[0] = makeGun('glock');
+    P.special = null; P.sel = 0; P.lastSel = 0;
     if (d.bar && d.bar.length) for (i = 0; i < BLD.length; i++) {
       var bb = BLD[i].bar, pl = +d.bar[i];
       if (pl >= 0 && pl <= bb.max) { bb.planks = Math.floor(pl); bb.acc = 0; bb.rt = 0; }
     }
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; queue = []; ebullets = []; bolts = [];
-    player = freshPlayer();
-    player.hp = Math.max(1,Math.min(maxHpNow(), +d.hp || maxHpNow()));
-    hideOverlay();
-    rollCards();
+    P.hp = Math.max(1, Math.min(maxHpNow(P), +d.hp || maxHpNow(P)));
+    rollCards(P);
     phase = 'grace'; graceT = TUNE.grace; state = 'play';
     showBanner('Wave ' + wave + ' cleared', 'Next wave in ' + TUNE.grace + 's · shop is open any time', 2.6);
     return true;
   }
 
-  // ---------- overlay ----------
-  function showOverlay(title, html, btn) {
-    ovTitle.textContent = title; ovText.innerHTML = html; goBtn.textContent = btn;
-    ov.hidden = false; paintCont();
-    try { goBtn.focus({ preventScroll: true }); } catch (e) {}
-  }
-  function hideOverlay() { ov.hidden = true; }
-  function pauseGame() {
-    if (state !== 'play') return;
-    state = 'paused'; joy.active = false; joy.x = joy.y = 0;
-    showOverlay('Paused', 'Wave <b>' + wave + '</b> · <b>' + kills + '</b> kills. Take a breath.', 'Resume');
-  }
-  goBtn.addEventListener('click', function () {
-    ensureAudio();
-    if (state === 'ready' || state === 'over') newGame();
-    else if (state === 'paused') { state = 'play'; hideOverlay(); }
-    tone(300, 200, 0.08, 'square', 0.05);
-  });
-  pauseBtn.addEventListener('click', function () { ensureAudio(); pauseGame(); });
-  contBtn.addEventListener('click', function () {
-    ensureAudio();
-    if (state === 'ready' || state === 'over') { loadGame(); tone(300, 200, 0.08, 'square', 0.05); }
-  });
-  muteBtn.addEventListener('click', function () {
-    muted = !muted; paintMute(); ensureAudio();
-    try { localStorage.setItem('zs-muted', muted ? '1' : '0'); } catch (e) {}
-    tone(500, 400, 0.06, 'square', 0.05);
-  });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) pauseGame(); });
-
   // ---------- weapon swap ----------
-  function swapWeapon() {
-    if (state !== 'play') return;
+  function swapWeapon(P) {
+    if (state !== 'play' || P.down) return;
     var order = [], i;
-    for (i = 0; i < unlocked; i++) if (slots[i]) order.push(i);
-    if (special) order.push(3);
+    for (i = 0; i < P.unlocked; i++) if (P.slots[i]) order.push(i);
+    if (P.special) order.push(3);
     if (order.length < 2) return;
-    var k = order.indexOf(sel);
-    setSel(order[(k + 1) % order.length]);
-    tone(420, 620, 0.06, 'square', 0.05);
+    var k = order.indexOf(P.sel);
+    setSel(P, order[(k + 1) % order.length]);
+    ptone(P, 420, 620, 0.06, 'square', 0.05);
   }
-  swapBtn.addEventListener('click', function () { ensureAudio(); swapWeapon(); });
-
   // find another gun with ammo when the current one is completely dry
-  function autoSwitch() {
-    var order = [lastSel, 0, 1, 2], i, k;
+  function autoSwitch(P) {
+    var order = [P.lastSel, 0, 1, 2], i, k;
     for (i = 0; i < order.length; i++) {
       k = order[i];
-      if (k !== sel && k < unlocked && slots[k] && (slots[k].mag > 0 || slots[k].res > 0)) { setSel(k); tone(420, 620, 0.06, 'square', 0.05); return true; }
+      if (k !== P.sel && k < P.unlocked && P.slots[k] && (P.slots[k].mag > 0 || P.slots[k].res > 0)) { setSel(P, k); ptone(P, 420, 620, 0.06, 'square', 0.05); return true; }
     }
     return false;
   }
 
-  // ---------- shop ----------
-  function upgCost(id) { return Math.round(UPG[id].base * (1 + 0.4 * upg[id])); }
+  // ---------- shop rules (run on the host for every player) ----------
+  function upgCost(P, id) { return Math.round(UPG[id].base * (1 + 0.4 * P.upg[id])); }
   function gunUpCost(s) { var w = WEAPONS[s.id]; return Math.max(50, Math.round((w.price || w.upv || 0) * 0.3)) * s.tier; }
-  function ownsGun(id) { for (var i = 0; i < 3; i++) if (slots[i] && slots[i].id === id) return true; return false; }
+  function ownsGun(P, id) { for (var i = 0; i < 3; i++) if (P.slots[i] && P.slots[i].id === id) return true; return false; }
   function fmt(n) { return n < 10 ? n.toFixed(1) : String(Math.round(n)); }
   function ammoTxt(d) { return d.noRes ? gunMag(d) + ' shots' : d.mag + ' | ' + (d.res === Infinity ? '∞' : d.res); }
-
   // the three upgrade cards are rolled once per wave, so reopening the shop never rerolls them
-  function rollCards() {
+  function rollCards(P) {
     var ids = Object.keys(UPG), i, j, t;
     for (i = ids.length - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
-    cards = [{ id: ids[0], bought: false }, { id: ids[1], bought: false }, { id: ids[2], bought: false }];
+    P.cards = [{ id: ids[0], bought: false }, { id: ids[1], bought: false }, { id: ids[2], bought: false }];
   }
 
-  // the shop can be opened any time during play; the game pauses while it is open
-  var shopBtn = $('shopBtn');
+  // returns true when something changed
+  function shopAct(P, a, id) {
+    var i, s, cost, w, c, t;
+    if (a === 'upg') {
+      if (!UPG[id]) return false;
+      for (i = 0; i < P.cards.length; i++) if (P.cards[i].id === id) c = P.cards[i];
+      if (!c || c.bought) return false;
+      cost = upgCost(P, id); if (P.wallet < cost) return false;
+      P.wallet -= cost; c.bought = true; P.upg[id]++;
+      if (id === 'hp' && !P.down) P.hp += TUNE.hpBase * 0.1;
+    } else if (a === 'gunup') {
+      s = P.slots[+id]; if (!s || s.tier >= 4) return false;
+      cost = gunUpCost(s); if (P.wallet < cost) return false;
+      P.wallet -= cost; s.tier++;
+    } else if (a === 'slot') {
+      if (P.unlocked >= 3 || +id !== P.unlocked) return false;
+      cost = SLOT_COST[P.unlocked]; if (P.wallet < cost) return false;
+      P.wallet -= cost; P.unlocked++;
+    } else if (a === 'buygun') {
+      w = WEAPONS[id]; if (!w || w.price <= 0 || P.wallet < w.price || ownsGun(P, id)) return false;
+      var empty = -1;
+      for (i = 0; i < P.unlocked; i++) if (!P.slots[i]) { empty = i; break; }
+      if (empty >= 0) { P.wallet -= w.price; P.slots[empty] = makeGun(id); if (P.sel !== 3) setSel(P, empty); }
+      else { P.pendingGun = id; }
+    } else if (a === 'replace') {
+      w = P.pendingGun ? WEAPONS[P.pendingGun] : null; i = +id;
+      if (w && i < P.unlocked && P.slots[i] && P.wallet >= w.price) { P.wallet -= w.price; P.slots[i] = makeGun(P.pendingGun); if (P.sel === i) P.fireCd = 0.12; }
+      P.pendingGun = null;
+    } else if (a === 'cancel') {
+      P.pendingGun = null;
+    } else if (a === 'armour') {
+      if (!ARM[id]) return false;
+      t = P.armor[id]; if (t >= 4) return false;
+      cost = ARM[id].cost[t]; if (P.wallet < cost) return false;
+      P.wallet -= cost; P.armor[id] = t + 1;
+      if (id === 'body' && !P.down) P.hp += ARM.body.val[t] - (t > 0 ? ARM.body.val[t - 1] : 0);
+    } else if (a === 'heal') {
+      var it = HEALS[+id]; if (!it || P.down || P.wallet < it.price || P.hp >= maxHpNow(P) - 0.5) return false;
+      P.wallet -= it.price;
+      P.hp = it.full ? maxHpNow(P) : Math.min(maxHpNow(P), P.hp + it.hp);
+    } else { return false; }
+    return true;
+  }
+
+  // ---------- mystery box rules ----------
+  function rollBox(P) {
+    var ids = [], ws = [], tot = 0, i, r;
+    if (Math.random() >= TUNE.boxSpecial) {
+      for (i = 0; i < SHOP_GUNS.length; i++) {
+        if (ownsGun(P, SHOP_GUNS[i])) continue;
+        ids.push(SHOP_GUNS[i]); ws.push(1 / (WEAPONS[SHOP_GUNS[i]].price + 150)); tot += ws[ws.length - 1];
+      }
+      if (ids.length) {
+        r = Math.random() * tot;
+        for (i = 0; i < ids.length; i++) { r -= ws[i]; if (r <= 0) return ids[i]; }
+        return ids[ids.length - 1];
+      }
+    }
+    var pool = BOX_SPECIALS.filter(function (k) { return !ownsGun(P, 'k_' + k); });
+    if (!pool.length) pool = BOX_SPECIALS;
+    return 'k_' + pool[Math.floor(Math.random() * pool.length)];
+  }
+  function freeSlot(P) { for (var i = 0; i < P.unlocked; i++) if (!P.slots[i]) return i; return -1; }
+  function openBox(P) {
+    if (state !== 'play' || P.down || P.boxPrize || !nearBox(P) || P.wallet < TUNE.boxCost) return;
+    P.wallet -= TUNE.boxCost;
+    P.boxPrize = rollBox(P);
+    P.inx = P.iny = 0;
+    ptone(P, 300, 900, 0.3, 'square', 0.06); ptone(P, 600, 1200, 0.3, 'square', 0.05, 0.15);
+  }
+  function boxAct(P, a, id) {
+    if (!P.boxPrize) return;
+    var i = +id;
+    if (a === 'take') { if (!P.slots[i]) { P.slots[i] = makeGun(P.boxPrize); if (P.sel !== 3) setSel(P, i); } }
+    else if (a === 'swap') { if (P.slots[i]) { P.slots[i] = makeGun(P.boxPrize); if (P.sel === i) P.fireCd = 0.12; } }
+    else if (a !== 'discard') return;
+    P.boxPrize = null;
+    ptone(P, 500, 700, 0.08, 'square', 0.05);
+  }
+
+  // commands from a player's screen (the host runs them for everybody)
+  function hostCmd(P, m) {
+    if (!P || state !== 'play') return;
+    if (m.c === 'swap') swapWeapon(P);
+    else if (m.c === 'shop') { if (shopAct(P, m.a, m.id)) { if (m.a !== 'cancel') ptone(P, 700, 1100, 0.07, 'square', 0.05); if (P === me) saveGame(); } }
+    else if (m.c === 'box') { if (m.a === 'open') openBox(P); else boxAct(P, m.a, m.id); }
+  }
+
+  // ---------- simulation ----------
+  function hurtPlayer(P, dmg) {
+    if (P.inv > 0 || P.down || state !== 'play') return;
+    dmg *= 1 - armVal(P, 'head');
+    P.hp -= dmg; P.inv = 0.2;
+    priv(P, ['H', dmg]);
+    addBlood(P.x, P.y, 0, 0, 6, 120);
+    if (P.hp <= 0) { P.hp = 0; downPlayer(P); }
+  }
+  function downPlayer(P) {
+    P.down = true; P.rev = 0; P.tgt = null; P.inx = P.iny = 0; P.boxPrize = null;
+    if (allDown()) { gameOver(); return; }
+    bannerTo(P, 'You are down', 'A teammate can revive you. Or wait for the wave to end.', 2.4);
+    stone(160, 60, 0.4, 'sawtooth', 0.07);
+  }
+  function gameOver() {
+    if (state !== 'play') return;
+    state = 'over'; joy.active = false; joy.x = joy.y = 0;
+    if (net.mode === 'off') clearSave();
+    overBest = wave > bestWave;
+    if (overBest) { bestWave = wave; try { localStorage.setItem('zs-best-wave', String(wave)); } catch (e) {} }
+    stone(200, 40, 0.9, 'sawtooth', 0.09);
+    showScreen('over');
+  }
+
+  function addPickup(x, y, kind, id, life) {
+    var np = { x: x + rnd(-10, 10), y: y + rnd(-10, 10), kind: kind, id: id, t: life };
+    evictFromPockets(np, false);
+    pickups.push(np);
+  }
+  function pickPerk() {
+    var ids = Object.keys(PERKS), tot = 0, i;
+    for (i = 0; i < ids.length; i++) tot += PERKS[ids[i]].w;
+    var r = Math.random() * tot;
+    for (i = 0; i < ids.length; i++) { r -= PERKS[ids[i]].w; if (r <= 0) return ids[i]; }
+    return ids[0];
+  }
+
+  function killZombie(i, ownerId) {
+    var z = zombies[i], k, O = pById(ownerId);
+    ssplat(z.x, z.y, z.r * 1.7, 0.55);
+    addBlood(z.x, z.y, rnd(-1, 1), rnd(-1, 1), z.boss ? 26 : 9, 150);
+    zombies.splice(i, 1);
+    kills++; if (O) O.kills++;
+    // coins carry the killer's coin upgrades; anyone can pick them up
+    var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1);
+    var n = z.boss ? 8 : (z.type === 'tank' ? 4 : 1);
+    for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n }; evictFromPockets(nc, true); coins.push(nc); }
+    // drops
+    if (z.boss || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)], TUNE.crateLife);
+    if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', TUNE.healLife);
+    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife);
+    if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
+    if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
+    if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
+  }
+
+  function collect(P, p) {
+    var i, g, d;
+    if (p.kind === 'special') { equipSpecial(P, p.id, false); }
+    else if (p.kind === 'health') { healPlayer(P, TUNE.healAmount); }
+    else if (p.kind === 'ammo') {
+      for (i = 0; i < 3; i++) {
+        g = P.slots[i]; if (!g) continue;
+        d = WEAPONS[g.id];
+        g.res = Math.min(d.res, g.res + Math.max(1, Math.round(d.mag * 0.5)));
+      }
+      ptone(P, 240, 360, 0.08, 'square', 0.05); ptone(P, 360, 480, 0.06, 'square', 0.05, 0.07);
+    } else if (p.kind === 'perk') {
+      if (p.id === 'ma') maxAmmo(P);
+      else { P.perkT[p.id] = TUNE.perkDur; ptone(P, 500, 1000, 0.18, 'square', 0.06); }
+      priv(P, ['V', 15]);
+    }
+  }
+
+  function explode(x, y, R, dmg, exclude, small, owner) {
+    for (var j = zombies.length - 1; j >= 0; j--) {
+      var z = zombies[j];
+      if (z === exclude) continue;
+      var d = Math.hypot(z.x - x, z.y - y);
+      if (d < R + z.r) {
+        var f = Math.max(0.35, 1 - d / (R + z.r));
+        z.hp -= dmg * f; z.flash = 0.1;
+        var nx = (z.x - x) / (d || 1), ny = (z.y - y) / (d || 1), kb = (small ? 120 : 260) * (10 / z.r);
+        z.vx += nx * kb; z.vy += ny * kb;
+        if (z.hp <= 0) killZombie(j, owner);
+      }
+    }
+    if (small) {
+      addFx(x, y, 8, 140, 0.3, 3.5, '255,130,50');
+      snoise(0.08, 700, 0.04);
+    } else {
+      addFx(x, y, 28, 260, 0.5, 5, '255,150,50');
+      addFx(x, y, 10, 120, 0.4, 7, '255,230,150');
+      sscorch(x, y, R * 0.7);
+      shakeAt(x, y, 6);
+      snoise(0.3, 500, 0.12); stone(110, 40, 0.3, 'sawtooth', 0.1);
+    }
+  }
+
+  function shoot(P) {
+    var ref = curRef(P), st = wstats(P, ref), d = st.d, i, a, crit;
+    var critP = 0.1 * P.upg.crit, expl = P.perkT.ex > 0;
+    var mx = P.x + Math.cos(P.ang) * (d.len + 10), my = P.y + Math.sin(P.ang) * (d.len + 10);
+    for (i = 0; d.kind !== 'zap' && i < d.pellets; i++) {
+      if (d.pellets > 1) a = P.ang + ((i / (d.pellets - 1)) - 0.5) * d.spread + rnd(-0.04, 0.04);
+      else a = P.ang + rnd(-d.spread / 2, d.spread / 2);
+      crit = Math.random() < critP;
+      bullets.push({
+        x: mx, y: my, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
+        dmg: st.dmg * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
+        kind: d.kind || 'bullet', blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : 3)),
+        long: d.cls === 'rifle' || d.cls === 'sniper', explosive: expl && !d.kind
+      });
+    }
+    if (d.kind === 'zap') zapShoot(P, st, mx, my);
+    P.flash = 0.06;
+    shotN++;
+    var id = d.sid || ref.id, cls = d.cls;
+    if (GUNSND[cls]) sgun(cls);
+    else if (id === 'ray') { stone(1000, 220, 0.2, 'sawtooth', 0.06); snoise(0.05, 3500, 0.04); }
+    else if (id === 'zap') { stone(1300, 260, 0.14, 'sawtooth', 0.06); snoise(0.1, 4500, 0.06); }
+    else if (id === 'rocket') { snoise(0.2, 900, 0.1); stone(140, 50, 0.25, 'sawtooth', 0.06); }
+    else if (shotN % 3 === 0) { snoise(0.05, id === 'flame' ? 3000 : 1800, 0.05); }
+    if (id === 'flame') addFx(mx, my, 1, 90, 0.3, 4, '255,160,60');
+
+    if (isSpecialActive(P)) {
+      P.special.ammo--;
+      if (P.special.ammo <= 0) {
+        dropSpecial(P);
+        bannerTo(P, 'Out of ammo', 'Back to your ' + defOf(curRef(P)).name + '.', 1.4);
+      }
+    } else {
+      ref.mag--;
+    }
+  }
+
+  function zapHit(z, dmg, owner) {
+    var j = zombies.indexOf(z);
+    if (j >= 0) damageZombie(j, { x: z.x, y: z.y, dx: 0, dy: 0, kind: 'zap', crit: false, dmg: dmg, owner: owner });
+  }
+  function zapShoot(P, st, mx, my) {
+    var first = P.tgt, critP = 0.1 * P.upg.crit;
+    if (!first) return;
+    var pts = [{ x: mx, y: my }, { x: first.x, y: first.y }], seen = [first], cur = first, dmg = st.dmg, i, k, best, bd, z, dd;
+    zapHit(first, dmg * (Math.random() < critP ? 2 : 1), P.id);
+    for (i = 0; i < 4; i++) {
+      best = null; bd = 150 * 150;
+      for (k = 0; k < zombies.length; k++) {
+        z = zombies[k]; if (seen.indexOf(z) >= 0) continue;
+        dd = (z.x - cur.x) * (z.x - cur.x) + (z.y - cur.y) * (z.y - cur.y);
+        if (dd < bd) { bd = dd; best = z; }
+      }
+      if (!best) break;
+      dmg *= 0.85; seen.push(best); pts.push({ x: best.x, y: best.y });
+      cur = best;
+      zapHit(best, dmg * (Math.random() < critP ? 2 : 1), P.id);
+    }
+    bolts.push({ pts: pts, life: 0.16 });
+    rec(['z', pts.map(function (p) { return { x: r1(p.x), y: r1(p.y) }; })]);
+    addFx(first.x, first.y, 5, 120, 0.25, 2.5, '150,200,255');
+  }
+
+  // barrier repair is worth a bit more every 10 waves
+  function barBonus(n) { return 1 + TUNE.barStep * Math.floor(n / 10); }
+
+  // each rock gets its own lumpy outline
+  function rockShape(seed) { var s = [], k, v; for (k = 0; k < 9; k++) { v = Math.abs(Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453) % 1; s.push(r2(0.72 + 0.4 * v)); } return s; }
+
+  // thrown rocks can be shot out of the air (if you're lucky enough to hit one)
+  function breakRock(eb) {
+    var k = ebullets.indexOf(eb);
+    if (k < 0) return;
+    addFx(eb.x, eb.y, 7, 130, 0.3, 3, '170,150,120');
+    snoise(0.05, 1200, 0.05); stone(260, 120, 0.08, 'square', 0.04);
+    ebullets.splice(k, 1);
+  }
+
+  function damageZombie(j, b) {
+    var z = zombies[j];
+    z.hp -= b.dmg; z.flash = 0.08;
+    var kb = (b.kind === 'fire' ? 20 : 90) * (10 / z.r); z.vx += b.dx * kb; z.vy += b.dy * kb;
+    addBlood(b.x, b.y, b.dx, b.dy, b.kind === 'fire' ? 1 : 3, 160);
+    if (b.crit) addFx(b.x, b.y, 5, 160, 0.25, 2, '255,255,255');
+    if (b.kind !== 'fire' && Math.random() < 0.35) ssplat(z.x, z.y, z.r * 0.6, 0.3);
+    if (b.kind !== 'fire') snoise(0.04, 600, 0.05);
+    if (z.hp <= 0) killZombie(j, b.owner);
+  }
+
+  function updateBullets(dt) {
+    for (var i = bullets.length - 1; i >= 0; i--) {
+      var b = bullets[i], move = b.speed * dt, steps = Math.max(1, Math.ceil(move / 5)), sd = move / steps, dead = false;
+      for (var s = 0; s < steps && !dead; s++) {
+        b.x += b.dx * sd; b.y += b.dy * sd; b.dist += sd;
+        for (var j = zombies.length - 1; j >= 0; j--) {
+          var z = zombies[j];
+          if (!z) break;
+          if (b.hit.indexOf(z) >= 0) continue;
+          if (Math.hypot(z.x - b.x, z.y - b.y) < z.r + b.r) {
+            if (b.kind === 'rocket') { explode(b.x, b.y, b.blast, b.dmg, null, false, b.owner); dead = true; break; }
+            if (b.kind === 'ray') {
+              b.hit.push(z); damageZombie(j, b);
+              explode(b.x, b.y, b.blast, b.dmg * 0.5, z, true, b.owner);
+              addFx(b.x, b.y, 12, 180, 0.38, 4.5, '255,60,90');
+              dead = true; break;
+            }
+            b.hit.push(z);
+            damageZombie(j, b);
+            var boom = b.explosive && b.kind === 'bullet';
+            if (boom) explode(b.x, b.y, 46, b.dmg * 0.6, z, true, b.owner);
+            if (b.pierce > 0) b.pierce--; else dead = true;
+            if (boom || dead) break;
+          }
+        }
+        for (var rk = ebullets.length - 1; rk >= 0 && !dead; rk--) {
+          var rEb = ebullets[rk];
+          if (Math.hypot(rEb.x - b.x, rEb.y - b.y) < rEb.r + b.r + 3) {
+            breakRock(rEb);
+            if (b.kind === 'rocket') { explode(b.x, b.y, b.blast, b.dmg, null, false, b.owner); dead = true; }
+            else if (b.kind === 'ray') dead = true;
+            else if (b.pierce > 0) b.pierce--; else dead = true;
+          }
+        }
+        if (!dead && (b.dist > b.max || b.x < WALL || b.x > WORLD - WALL || b.y < WALL || b.y > WORLD - WALL)) {
+          if (b.kind === 'rocket') explode(b.x, b.y, b.blast, b.dmg, null, false, b.owner);
+          dead = true;
+        }
+      }
+      if (dead) bullets.splice(i, 1);
+    }
+  }
+
+  // flames travel exactly as far as the damage reaches (fx slow down by 0.05^dt, so work out the launch speed from that)
+  // this runs on the host and on every remote screen, so the picture matches the real damage
+  function pyroFx(z) {
+    var mxp = z.x + Math.cos(z.ang) * z.r, myp = z.y + Math.sin(z.ang) * z.r, q2;
+    var fL = 0.42, fT = (1 - Math.pow(0.05, fL)) / -Math.log(0.05), fv = (TUNE.fireRange - z.r - 4) / fT;
+    for (q2 = 0; q2 < 4 && fx.length < 250; q2++) {
+      var fa = z.ang + rnd(-TUNE.fireCone, TUNE.fireCone), fs = fv * rnd(0.55, 1.1);
+      fx.push({ x: mxp, y: myp, vx: Math.cos(fa) * fs, vy: Math.sin(fa) * fs, life: fL, max: fL, r: rnd(4, 8), c: '255,' + ((110 + Math.random() * 90) | 0) + ',40' });
+    }
+  }
+
+  // one step of walking for a player; the host does it for everyone and each phone predicts its own
+  function movePlayer(P, dt, mx, my) {
+    var len = Math.hypot(mx, my);
+    if (len > 1) { mx /= len; my /= len; len = 1; }
+    if (len < 0.12) { mx = 0; my = 0; len = 0; }
+    P.mvx = mx; P.mvy = my;
+    var sp = spdNow(P);
+    P.x += mx * sp * dt; P.y += my * sp * dt;
+    var lim = WALL + PR + 2;
+    P.x = Math.max(lim, Math.min(WORLD - lim, P.x));
+    P.y = Math.max(lim, Math.min(WORLD - lim, P.y));
+    for (var ei = 0; ei < BLD.length; ei++) {
+      var eb0 = BLD[ei];
+      if (eb0.bar.planks > 0 && inRect(P.x, P.y, eb0.pocket)) {
+        var eo = POCKET_D + WALL_T + PR + 8;
+        if (Math.abs(eb0.nx) > 0.5) P.x = eb0.ex + eb0.nx * eo; else P.y = eb0.ey + eb0.ny * eo;
+      }
+    }
+    P.r = PR - 1; collide(P);
+    P.x = Math.max(lim, Math.min(WORLD - lim, P.x));
+    P.y = Math.max(lim, Math.min(WORLD - lim, P.y));
+    if (len > 0) P.step += len * sp * dt * 0.09;
+    return len;
+  }
+
+  function updatePlayer(P, dt) {
+    var i, z;
+    if (P.csnd > 0) P.csnd -= dt;
+    if (P.inv > 0) P.inv -= dt;
+    if (P.flash > 0) P.flash -= dt;
+    if (P.down) { P.tgt = null; return; }
+    // perk timers hold while a special weapon is out
+    if (!isSpecialActive(P)) for (var pk in P.perkT) if (P.perkT[pk] > 0) P.perkT[pk] = Math.max(0, P.perkT[pk] - dt);
+
+    var len = movePlayer(P, dt, P.inx, P.iny);
+
+    // auto aim: nearest zombie in the active weapon's range
+    var ref = curRef(P), st = wstats(P, ref), rng = st.d.range;
+    var tgt = null, bd = rng * rng;
+    for (i = 0; i < zombies.length; i++) {
+      z = zombies[i];
+      var ddx = z.x - P.x, ddy = z.y - P.y, dd = ddx * ddx + ddy * ddy;
+      if (dd < bd) { bd = dd; tgt = z; }
+    }
+    P.tgt = tgt;
+    if (tgt) P.idle = 0; else P.idle += dt;
+
+    // reload / ammo state for the active gun
+    var canFire = true;
+    if (!isSpecialActive(P)) {
+      var gd = st.d;
+      if (ref.reload > 0) {
+        ref.reload -= dt * (P.perkT.rf > 0 ? 2 : 1);
+        canFire = false;
+        if (ref.reload <= 0) {
+          ref.reload = 0;
+          var take = Math.min(gd.mag - ref.mag, ref.res);
+          ref.mag += take; ref.res -= take;
+          ptone(P, 300, 520, 0.05, 'square', 0.04);
+        }
+      } else if (ref.mag <= 0) {
+        canFire = false;
+        if (ref.res > 0) { ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04); }
+        else autoSwitch(P);
+      } else if (!tgt && P.idle > 1 && ref.mag < gd.mag && ref.res > 0) {
+        ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04);
+      }
+    }
+
+    if (tgt) {
+      P.ang = Math.atan2(tgt.y - P.y, tgt.x - P.x);
+      P.fireCd -= dt;
+      if (canFire) {
+        if (P.fireCd <= 0) {
+          shoot(P);
+          P.fireCd += 1 / st.rate;
+          if (P.fireCd < -0.05) P.fireCd = 0;
+        }
+      } else if (P.fireCd < 0) P.fireCd = 0;
+    } else {
+      P.fireCd = Math.max(0, P.fireCd - dt);
+      if (len > 0) P.ang = Math.atan2(P.mvy, P.mvx);
+    }
+  }
+
+  function updateFx(dt) {
+    var i;
+    for (i = parts.length - 1; i >= 0; i--) {
+      var p = parts[i];
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      var pd = Math.pow(0.04, dt); p.vx *= pd; p.vy *= pd;
+      p.life -= dt;
+      if (p.life <= 0) { if (Math.random() < 0.3) { bloodL.x.fillStyle = 'rgba(95,10,10,0.5)'; bloodL.x.fillRect(p.x, p.y, p.r, p.r); } parts.splice(i, 1); }
+    }
+    for (i = fx.length - 1; i >= 0; i--) {
+      var f = fx[i];
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      var fd = Math.pow(0.05, dt); f.vx *= fd; f.vy *= fd;
+      f.life -= dt;
+      if (f.life <= 0) fx.splice(i, 1);
+    }
+    for (i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
+  }
+
+  // timers that only affect this screen
+  function tickVisuals(dt) {
+    time += dt;
+    if (killSnd > 0) killSnd -= dt;
+    if (coinSnd > 0) coinSnd -= dt;
+    if (hurtFlash > 0) hurtFlash -= dt;
+    shake = Math.max(0, shake - dt * 22);
+    if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) banner.hidden = true; }
+  }
+
+  // host (or offline) world step
+  function update(dt) {
+    var i, j, z, P, T;
+    for (i = 0; i < players.length; i++) updatePlayer(players[i], dt);
+
+    // waves
+    if (phase === 'spawning') {
+      spawnTimer -= dt;
+      var cap = TUNE.cap + TUNE.coopCap * (Math.max(1, players.length) - 1);
+      if (queue.length && spawnTimer <= 0 && zombies.length < cap) {
+        if (spawnZombie(queue[0])) { queue.shift(); spawnTimer = Math.max(0.22, 0.85 - wave * 0.04); }
+        else spawnTimer = 0.5;
+      }
+      if (!queue.length && zombies.length === 0) waveCleared();
+    } else if (phase === 'grace') {
+      // short breather between waves; opening the shop pauses this countdown when playing offline
+      graceT -= dt;
+      if (graceT <= 0) startWave(wave + 1);
+    }
+
+    // zombies
+    for (i = 0; i < zombies.length; i++) {
+      z = zombies[i];
+      T = nearestAlive(z.x, z.y) || players[0];
+      var pdx = T.x - z.x, pdy = T.y - z.y, pdist = Math.hypot(pdx, pdy) || 1;
+      var pi = pocketOf(z), bar = null, tx = T.x, ty = T.y;
+      z.pocket = pi;
+      if (pi >= 0 && BLD[pi].bar.planks > 0) { bar = BLD[pi].bar; tx = bar.cx; ty = bar.cy; }
+      var dx = tx - z.x, dy = ty - z.y, d = Math.hypot(dx, dy) || 1;
+      z.ang = Math.atan2(pdy, pdx);
+      var mv = 1, ma = Math.atan2(dy, dx);
+      var lurch = 0.72 + 0.28 * Math.sin(time * 3 + z.seed);
+      var drift = bar ? 0 : Math.sin(time * 1.6 + z.seed * 3) * 0.35 * Math.min(1, d / 220);
+      if (z.boss && !bar) {
+        z.t += dt;
+        if (z.kind === 'run') {
+          if (z.dash > 0) {
+            // charging in the direction it locked, ignores where you are now
+            z.dash -= dt; ma = z.dashA; d = 999; mv = 420 / z.spd; lurch = 1;
+            if (z.dash <= 0) { z.rest = 1.3; z.next = z.t + 4.5; }
+          } else if (z.warn > 0) {
+            z.warn -= dt; mv = 0;
+            if (z.warn > 0.4) z.dashA = Math.atan2(pdy, pdx);
+            if (z.warn <= 0) { z.dash = 0.9; stone(160, 320, 0.25, 'sawtooth', 0.07); }
+          } else if (z.rest > 0) {
+            z.rest -= dt; mv = 0.1;
+          } else if (z.t > z.next && pdist < 480 && pdist > 140) {
+            z.warn = 0.95; z.dashA = Math.atan2(pdy, pdx); stone(300, 200, 0.3, 'square', 0.06);
+          }
+        } else if (z.kind === 'throw') {
+          if (pdist < 200) mv = -0.8; else if (pdist < 270) mv = 0;
+          if (z.t > z.next && pdist < 480) {
+            z.next = z.t + TUNE.throwGap;
+            var ta = Math.atan2(pdy, pdx), nr = wave >= 20 ? 3 : (wave >= 10 ? 2 : 1), kk;
+            for (kk = 0; kk < nr; kk++) {
+              var rid = zid++;
+              var ra = ta + (kk - (nr - 1) / 2) * 0.22;
+              ebullets.push({ x: z.x + Math.cos(ra) * z.r, y: z.y + Math.sin(ra) * z.r, dx: Math.cos(ra), dy: Math.sin(ra), spd: 250, dmg: z.dmg * 0.8, r: 8, life: 2.4, spin: 0, rock: true, id: rid, shape: rockShape(rid) });
+            }
+            stone(200, 90, 0.18, 'square', 0.06);
+          }
+        } else if (z.kind === 'fire') {
+          if (z.breath > 0) {
+            z.breath -= dt; mv = 0.12; z.tick -= dt;
+            pyroFx(z);
+            if (z.tick <= 0) {
+              z.tick = 0.25;
+              for (j = 0; j < players.length; j++) {
+                P = players[j]; if (P.down) continue;
+                var pa = Math.atan2(P.y - z.y, P.x - z.x), da = Math.abs(Math.atan2(Math.sin(z.ang - pa), Math.cos(z.ang - pa)));
+                if (Math.hypot(P.x - z.x, P.y - z.y) < TUNE.fireRange && da < TUNE.fireCone) hurtPlayer(P, z.dmg * 0.3);
+              }
+            }
+            if (z.breath <= 0) z.next = z.t + 3.2;
+            if (shotN % 4 === 0) snoise(0.06, 1500, 0.05);
+          } else if (pdist < TUNE.fireRange + 10 && z.t > z.next) { z.breath = 1.5; z.tick = 0.05; stone(120, 70, 0.4, 'sawtooth', 0.08); }
+          else if (pdist < 150) mv = 0.4;
+        }
+      }
+      var stopD = bar ? 0 : z.r + PR - 1;
+      if (d > stopD || mv < 0) {
+        z.x += Math.cos(ma + drift) * z.spd * lurch * mv * dt;
+        z.y += Math.sin(ma + drift) * z.spd * lurch * mv * dt;
+      }
+      z.x += z.vx * dt; z.y += z.vy * dt;
+      var damp = Math.pow(0.02, dt); z.vx *= damp; z.vy *= damp;
+      var wh = collide(z);
+      if (wh && z.dash > 0) { z.dash = 0; z.rest = 1.4; z.next = z.t + 4.5; shakeAt(z.x, z.y, 5); snoise(0.12, 600, 0.1); }
+      if (wh && !bar) {
+        var tdx = -wh.ny, tdy = wh.nx, tdot = tdx * Math.cos(ma) + tdy * Math.sin(ma);
+        if (z.stick <= 0 && Math.abs(tdot) > 0.15) z.side = tdot > 0 ? 1 : -1;
+        z.stick = 0.6;
+        z.x += tdx * z.side * z.spd * 0.8 * dt; z.y += tdy * z.side * z.spd * 0.8 * dt;
+      }
+      if (bar && distRect(z.x, z.y, bar) < z.r + 4) {
+        bar.acc += z.dmg * 0.4 * dt;
+        if (bar.acc >= 10) { bar.acc -= 10; bar.planks--; snoise(0.1, 900, 0.07); stone(140, 80, 0.1, 'square', 0.05); addFx(bar.cx, bar.cy, 5, 90, 0.3, 2.5, '170,120,70'); }
+      }
+      if (z.flash > 0) z.flash -= dt;
+      if (z.stick > 0) z.stick -= dt;
+      z.atk -= dt;
+      if (z.atk <= 0) {
+        for (j = 0; j < players.length; j++) {
+          P = players[j];
+          if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg); z.atk = z.cd; break; }
+        }
+      }
+      if (z.atk < -1) z.atk = -1;
+    }
+    for (i = 0; i < zombies.length; i++) {
+      var a = zombies[i];
+      for (j = i + 1; j < zombies.length; j++) {
+        var b = zombies[j], sx = b.x - a.x, sy = b.y - a.y, min = a.r + b.r - 2;
+        if (Math.abs(sx) > min || Math.abs(sy) > min) continue;
+        var sd = Math.hypot(sx, sy);
+        if (sd < min && sd > 0.001) {
+          var push = (min - sd) * 0.5, nx = sx / sd, ny = sy / sd, wa = b.r / (a.r + b.r), wb = a.r / (a.r + b.r);
+          a.x -= nx * push * 2 * wa; a.y -= ny * push * 2 * wa;
+          b.x += nx * push * 2 * wb; b.y += ny * push * 2 * wb;
+        }
+      }
+    }
+    for (i = 0; i < zombies.length; i++) {
+      z = zombies[i];
+      collide(z);
+      z.x = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.x));
+      z.y = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.y));
+    }
+
+    // barriers: stand next to one to rebuild it (the coins go to whoever is repairing)
+    for (i = 0; i < BLD.length; i++) {
+      var br = BLD[i].bar, rp = null;
+      if (br.planks < br.max) {
+        for (j = 0; j < players.length; j++) {
+          P = players[j];
+          if (!P.down && distRect(P.x, P.y, br) < 60 && !inRect(P.x, P.y, BLD[i].pocket)) { rp = P; break; }
+        }
+      }
+      if (rp) {
+        br.rt += dt;
+        if (br.rt >= TUNE.rebuildTime) {
+          br.rt = 0; br.planks++; br.acc = 0;
+          var rf0 = 150 + 330 * (br.planks / br.max);
+          stone(rf0, rf0 * 0.78, 0.17, 'triangle', 0.14); stone(rf0 * 2, rf0 * 1.6, 0.06, 'square', 0.03); snoise(0.05, 900, 0.06);
+          if (br.planks >= br.max) { stone(660, 990, 0.2, 'square', 0.06, 0.08); stone(990, 1320, 0.25, 'square', 0.05, 0.2); }
+          if (rp.rebuildLeft > 0) {
+            var rbase = (1.5 + wave * 0.12) * barBonus(wave);
+            var rc = Math.min(rp.rebuildLeft, rbase) * (1 + 0.1 * rp.upg.cval) * (rp.perkT.dp > 0 ? 2 : 1);
+            rp.rebuildLeft -= Math.min(rp.rebuildLeft, rbase); rp.wallet += rc; rp.waveCoins += rc;
+          }
+        }
+      } else br.rt = 0;
+    }
+
+    // thrown rocks
+    for (i = ebullets.length - 1; i >= 0; i--) {
+      var eb = ebullets[i], hitP = false;
+      eb.x += eb.dx * eb.spd * dt; eb.y += eb.dy * eb.spd * dt; eb.life -= dt; eb.spin += dt * 9;
+      for (j = 0; j < players.length; j++) {
+        P = players[j];
+        if (!P.down && Math.hypot(P.x - eb.x, P.y - eb.y) < PR + eb.r) { hurtPlayer(P, eb.dmg); hitP = true; break; }
+      }
+      if (hitP) { addFx(eb.x, eb.y, 6, 120, 0.3, 3, '150,130,110'); ebullets.splice(i, 1); continue; }
+      if (eb.life <= 0 || wallHit(eb.x, eb.y, eb.r * 0.6) || eb.x < WALL || eb.x > WORLD - WALL || eb.y < WALL || eb.y > WORLD - WALL) { addFx(eb.x, eb.y, 5, 100, 0.25, 3, '150,130,110'); ebullets.splice(i, 1); }
+    }
+
+    updateBullets(dt);
+
+    // coins: scatter, then get pulled toward the nearest player
+    for (i = coins.length - 1; i >= 0; i--) {
+      var c = coins[i];
+      T = nearestAlive(c.x, c.y);
+      var cdmp = Math.pow(0.03, dt); c.vx *= cdmp; c.vy *= cdmp;
+      c.x += c.vx * dt; c.y += c.vy * dt;
+      var cd = 1e9;
+      if (T) {
+        var cdx = T.x - c.x, cdy = T.y - c.y, magR = TUNE.magBase * (1 + 0.25 * T.upg.mag);
+        cd = Math.hypot(cdx, cdy) || 1;
+        if (T.perkT.mg > 0) {
+          // magnet perk: every coin on the map flies to you
+          var mstep = Math.min(640 * dt, cd);
+          c.x += (cdx / cd) * mstep; c.y += (cdy / cd) * mstep;
+        } else if (cd < magR) {
+          var pull = 240 + (1 - cd / magR) * 360;
+          c.x += (cdx / cd) * pull * dt; c.y += (cdy / cd) * pull * dt;
+        }
+      }
+      evictFromPockets(c, true);
+      c.x = Math.max(WALL + 4, Math.min(WORLD - WALL - 4, c.x));
+      c.y = Math.max(WALL + 4, Math.min(WORLD - WALL - 4, c.y));
+      if (T && cd < 15) {
+        T.wallet += c.v; T.waveCoins += c.v; coins.splice(i, 1);
+        if (T.csnd <= 0) { ptone(T, 900, 1300, 0.05, 'square', 0.03); T.csnd = 0.05; }
+      }
+    }
+    // pickups: walk over them
+    for (i = pickups.length - 1; i >= 0; i--) {
+      var pu = pickups[i];
+      pu.t -= dt;
+      evictFromPockets(pu, false);
+      T = nearestAlive(pu.x, pu.y);
+      if (T && pu.kind === 'ammo') {
+        var adx = T.x - pu.x, ady = T.y - pu.y, ad = Math.hypot(adx, ady) || 1, aR = TUNE.magBase * (1 + 0.25 * T.upg.mag);
+        if (ad < aR) { var apull = 200 + (1 - ad / aR) * 300; pu.x += (adx / ad) * apull * dt; pu.y += (ady / ad) * apull * dt; }
+      }
+      if (T && Math.hypot(T.x - pu.x, T.y - pu.y) < 22) { var got = pu; pickups.splice(i, 1); collect(T, got); }
+      else if (pu.t <= 0) pickups.splice(i, 1);
+    }
+
+    // downed players get revived by a teammate standing next to them
+    for (i = 0; i < players.length; i++) {
+      P = players[i];
+      if (!P.down) continue;
+      var helpers = 0;
+      for (j = 0; j < players.length; j++) if (!players[j].down && Math.hypot(players[j].x - P.x, players[j].y - P.y) < 46) helpers++;
+      if (helpers > 0) { P.rev += dt * (helpers > 1 ? 1.5 : 1) / TUNE.reviveT; if (P.rev >= 1) revivePlayer(P, 0.5); }
+      else P.rev = Math.max(0, P.rev - dt * 0.4);
+    }
+
+    updateFx(dt);
+  }
+
+  // ---------- screens (menus) ----------
+  var screen = 'main', shopOpen = false, joinCode = '', netStatus = '', roster = [], hostCode = '';
+  var setupNext = 'main', hasPeer = typeof Peer !== 'undefined';
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function blocked() { return !!screen || shopOpen || !!(me && me.boxPrize); }
+  function frozen() { return net.mode === 'off' && (screen === 'pause' || shopOpen || !!(me && me.boxPrize)); }
+
+  function rosterHtml() {
+    var h = '<div class="roster">', i, r;
+    for (i = 0; i < roster.length; i++) {
+      r = roster[i];
+      h += '<div class="rrow"><i class="dot" style="background:' + LOOK_COLS[r.look.c] + '"></i><span>' + esc(r.name) + '</span>' + (r.id === 0 ? '<small>host</small>' : '') + '</div>';
+    }
+    return h + '</div>';
+  }
+
+  function renderScreen() {
+    var h = '', i, d;
+    if (screen === 'main') {
+      h += '<h1>Zombie Survivor</h1>';
+      h += '<p>Drag anywhere with one thumb to move. You shoot on your own. Kill zombies for <b>coins</b>, watch your <b>ammo</b>, and spend between waves.</p>';
+      h += '<button class="go" data-a="offline" type="button">Play offline</button>';
+      h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
+      h += '<button class="go alt" data-a="me" type="button">Your player</button>';
+      h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
+      if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
+    } else if (screen === 'offline') {
+      d = readSave();
+      h += '<h1>Offline</h1><p>Just you against the dead. Your game saves on this phone after every wave.</p>';
+      h += '<button class="go" data-a="start" type="button">Start new game</button>';
+      if (d) h += '<button class="go alt" data-a="cont" type="button">Continue (wave ' + d.wave + ' cleared)</button>';
+      h += '<button class="chip" data-a="back" data-to="main" type="button">Back</button>';
+    } else if (screen === 'me') {
+      h += '<h1>Your player</h1>';
+      h += '<canvas id="prev" width="120" height="120" aria-hidden="true"></canvas>';
+      h += '<div class="lab">Name</div><input class="field" id="nameIn" maxlength="12" placeholder="Player name (optional)" value="' + esc(myName) + '" autocomplete="off" autocapitalize="words" enterkeyhint="done">';
+      h += '<div class="lab">Colour</div><div class="sws">';
+      for (i = 0; i < LOOK_COLS.length; i++) h += '<button class="sw" type="button" data-a="col" data-i="' + i + '" aria-label="' + LOOK_NAMES[i] + '" aria-pressed="' + (myLook.c === i) + '" style="background:' + LOOK_COLS[i] + '"></button>';
+      h += '</div><div class="lab">Headwear</div><div class="hats">';
+      for (i = 0; i < HATS.length; i++) h += '<button class="chip" type="button" data-a="hat" data-i="' + i + '" aria-pressed="' + (myLook.h === i) + '">' + HATS[i] + '</button>';
+      h += '</div><button class="go" data-a="done" type="button">' + (setupNext === 'online' ? 'Next' : 'Done') + '</button>';
+    } else if (screen === 'online') {
+      h += '<h1>Online</h1><p>Up to four players. One of you hosts and the rest join with the host\'s code.</p>';
+      h += '<button class="go" data-a="host" type="button">Host a game</button>';
+      h += '<button class="go" data-a="join" type="button">Join a game</button>';
+      h += '<div class="msg">' + esc(netStatus) + '</div>';
+      h += '<button class="chip" data-a="back" data-to="main" type="button">Back</button>';
+    } else if (screen === 'host') {
+      h += '<h1>Your game</h1><div class="lab">Tell the others this code</div><div class="bigcode">' + esc(hostCode || '....') + '</div>';
+      h += rosterHtml();
+      h += '<div class="msg">' + esc(netStatus) + '</div>';
+      h += '<button class="go" data-a="hstart" type="button"' + (hostCode ? '' : ' disabled') + '>Start game</button>';
+      h += '<button class="chip" data-a="leave" type="button">Cancel</button>';
+    } else if (screen === 'join') {
+      h += '<h1>Join a game</h1><div class="lab">Host\'s code</div>';
+      h += '<input class="field code" id="codeIn" maxlength="4" placeholder="ABCD" value="' + esc(joinCode) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">';
+      h += '<div class="msg">' + esc(netStatus) + '</div>';
+      h += '<button class="go" data-a="dojoin" type="button">Join</button>';
+      h += '<button class="chip" data-a="leave" type="button">Back</button>';
+    } else if (screen === 'wait') {
+      h += '<h1>You\'re in</h1>' + rosterHtml() + '<p>Waiting for the host to start the game.</p>';
+      h += '<button class="chip" data-a="leave" type="button">Leave</button>';
+    } else if (screen === 'pause') {
+      h += '<h1>' + (net.mode === 'off' ? 'Paused' : 'Menu') + '</h1>';
+      h += '<p>Wave <b>' + wave + '</b> · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : 'The game keeps running while this is open.') + '</p>';
+      h += '<button class="go" data-a="resume" type="button">Resume</button>';
+      h += '<button class="go alt" data-a="leave" type="button">' + (net.mode === 'off' ? 'Quit to menu' : 'Leave game') + '</button>';
+      h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
+    } else if (screen === 'over') {
+      var team = players.length > 1, tot = 0;
+      h += '<h1>' + (team ? 'Game over' : 'You died') + '</h1>';
+      h += '<p>Reached wave <b>' + wave + '</b>.<br>' + (overBest ? 'New best wave.' : 'Best wave: <b>' + bestWave + '</b>.') + '</p>';
+      if (team) {
+        h += '<div class="roster">';
+        for (i = 0; i < players.length; i++) h += '<div class="rrow"><i class="dot" style="background:' + LOOK_COLS[players[i].look.c] + '"></i><span>' + esc(players[i].name) + '</span><small>' + players[i].kills + ' kills</small></div>';
+        h += '</div>';
+      } else h += '<p><b>' + (me ? me.kills : 0) + '</b> kills.</p>';
+      if (net.mode === 'client') h += '<p>Waiting for the host to start again.</p><button class="chip" data-a="leave" type="button">Leave</button>';
+      else {
+        h += '<button class="go" data-a="again" type="button">' + (net.mode === 'host' ? 'Play again' : 'Try again') + '</button>';
+        h += '<button class="chip" data-a="leave" type="button">Menu</button>';
+      }
+    } else if (screen === 'lost') {
+      h += '<h1>Connection lost</h1><p>' + esc(netStatus || 'The host went away.') + '</p><button class="go" data-a="leave" type="button">Menu</button>';
+    }
+    ov.innerHTML = h;
+    if (screen === 'me') drawPreview();
+  }
+  function showScreen(name) {
+    screen = name;
+    if (name) {
+      joy.active = false; joy.x = joy.y = 0;
+      renderScreen(); ov.hidden = false;
+    } else ov.hidden = true;
+  }
+  function drawPreview() {
+    var c = $('prev'); if (!c) return;
+    var x = c.getContext('2d'), P = { x: 0, y: 0, ang: -0.5, look: myLook, armor: { head: 0, body: 0, legs: 0 }, inv: 0, step: 0, down: false };
+    x.clearRect(0, 0, 120, 120);
+    x.save(); x.translate(60, 60); x.scale(3.4, 3.4);
+    drawPlayerBody(x, P, WEAPONS.glock, 1);
+    x.restore();
+  }
+  function saveMe() {
+    var el = $('nameIn');
+    if (el) myName = cleanName(el.value);
+    try { localStorage.setItem('zs-name', myName); localStorage.setItem('zs-look', JSON.stringify(myLook)); } catch (e) {}
+  }
+  function startOffline() {
+    net = { mode: 'off' }; localId = 0;
+    newGame([{ id: 0, name: myName || 'You', look: myLook }]);
+  }
+  function leaveGame() {
+    netClose();
+    net = { mode: 'off' }; state = 'ready'; localId = 0; roster = []; netStatus = '';
+    myLook = cleanLook(savedLook, Math.floor(Math.random() * LOOK_COLS.length));
+  players = [newPlayer(0, 'You', myLook)]; me = players[0];
+    zombies = []; bullets = []; coins = []; pickups = []; ebullets = []; boxes = []; fx = []; parts = [];
+    shopOpen = false; shop.hidden = true; boxUI.hidden = true;
+    showScreen('main');
+  }
+  function ovAct(a, b) {
+    var el;
+    if (a === 'offline') showScreen('offline');
+    else if (a === 'start') { startOffline(); tone(300, 200, 0.08, 'square', 0.05); }
+    else if (a === 'cont') { net = { mode: 'off' }; if (loadGame()) { showScreen(''); tone(300, 200, 0.08, 'square', 0.05); } }
+    else if (a === 'online') { setupNext = 'online'; showScreen('me'); }
+    else if (a === 'me') { setupNext = 'main'; showScreen('me'); }
+    else if (a === 'col') { saveMe(); myLook.c = +b.dataset.i; saveMe(); renderScreen(); }
+    else if (a === 'hat') { saveMe(); myLook.h = +b.dataset.i; saveMe(); renderScreen(); }
+    else if (a === 'done') { saveMe(); showScreen(setupNext); }
+    else if (a === 'host') netHost();
+    else if (a === 'join') { netStatus = ''; showScreen('join'); }
+    else if (a === 'dojoin') { el = $('codeIn'); joinCode = String(el ? el.value : joinCode).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); netJoin(joinCode); }
+    else if (a === 'hstart') hostStart();
+    else if (a === 'resume') showScreen('');
+    else if (a === 'leave') leaveGame();
+    else if (a === 'again') { if (net.mode === 'host') hostStart(); else startOffline(); }
+    else if (a === 'back') showScreen(b.dataset.to);
+    else if (a === 'mute') {
+      muted = !muted; ensureAudio();
+      try { localStorage.setItem('zs-muted', muted ? '1' : '0'); } catch (e) {}
+      tone(500, 400, 0.06, 'square', 0.05); renderScreen();
+    }
+  }
+  ov.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-a]') : null;
+    if (!b || b.disabled) return;
+    ensureAudio(); ovAct(b.dataset.a, b);
+  });
+  ov.addEventListener('input', function (e) { if (e.target && e.target.id === 'codeIn') { joinCode = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); e.target.value = joinCode; } });
+
+  function pauseGame() {
+    if (state !== 'play' || screen) return;
+    showScreen('pause');
+  }
+  pauseBtn.addEventListener('click', function () { ensureAudio(); pauseGame(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden && net.mode === 'off') pauseGame(); });
+
+  // ---------- commands (the host runs them for every player) ----------
+  function cmd(c, a, id) {
+    if (net.mode === 'client') { netSend({ k: 'cmd', c: c, a: a, id: id }); return; }
+    hostCmd(me, { c: c, a: a, id: id });
+  }
+  swapBtn.addEventListener('click', function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('swap'); });
+
+  // ---------- shop ----------
+  var shopBtn = $('shopBtn'), lastShopKey = '';
   function openShop() {
-    state = 'shop'; joy.active = false; joy.x = joy.y = 0;
+    if (state !== 'play' || screen || shopOpen || !me) return;
+    shopOpen = true; joy.active = false; joy.x = joy.y = 0;
     banner.hidden = true; bannerTimer = 0;
-    if (!cards.length) rollCards();
-    shopTab = 'upg'; pendingGun = null;
+    shopTab = 'upg';
+    if (me.pendingGun) cmd('shop', 'cancel', 0);
     shopTitle.textContent = phase === 'grace' ? 'Wave ' + wave + ' cleared' : 'Shop · wave ' + wave;
     shop.hidden = false;
-    renderShop();
+    lastShopKey = ''; renderShop();
     panel.scrollTop = 0;
+  }
+  function closeShop() { shopOpen = false; shop.hidden = true; }
+  function shopKey() {
+    return [Math.floor(me.wallet), me.cards.map(function (c) { return c.id + (c.bought ? 1 : 0); }).join(), me.slots.map(function (s) { return s ? s.id + s.tier : '-'; }).join(),
+      me.unlocked, me.armor.head, me.armor.body, me.armor.legs, JSON.stringify(me.upg), me.pendingGun, Math.round(me.hp / 5), shopTab, me.down ? 1 : 0, phase].join('|');
   }
 
   function buyBtn(act, id, price, enabled, cls) {
@@ -913,50 +1834,51 @@ body {
   function doneBtn(label) { return '<button class="buy alt" type="button" disabled>' + label + '</button>'; }
   function lvTag(s) { return '<span class="lv">' + s + '</span>'; }
   function gunLine(id, tier) {
-    var st = wstats({ id: id, tier: tier || 1 }, true), d = st.d;
+    var st = wstats(me, { id: id, tier: tier || 1 }, true), d = st.d;
     return fmt(st.dmg) + (d.pellets > 1 ? '×' + d.pellets : '') + ' dmg · ' + st.rate.toFixed(1) + '/s · ' + ammoTxt(d);
   }
 
   function renderShop() {
-    var h = '', i, id, s, d, c, p, t;
+    var h = '', i, id, s, d, c, p, t, st, keep = panel.scrollTop, P = me, wallet = P.wallet;
+    lastShopKey = shopKey();
     purseEl.textContent = Math.floor(wallet);
-    sstats.textContent = 'Damage +' + (upg.dmg * 10) + '% · Health ' + Math.round(player.hp) + '/' + Math.round(maxHpNow()) + ' · Speed ' + Math.round(spdNow()) + ' · Armour H' + armor.head + ' B' + armor.body + ' L' + armor.legs;
+    sstats.textContent = 'Damage +' + (P.upg.dmg * 10) + '% · Health ' + Math.round(P.hp) + '/' + Math.round(maxHpNow(P)) + ' · Speed ' + Math.round(spdNow(P)) + ' · Armour H' + P.armor.head + ' B' + P.armor.body + ' L' + P.armor.legs;
     for (id in tabEls) tabEls[id].setAttribute('aria-selected', shopTab === id ? 'true' : 'false');
 
     if (shopTab === 'upg') {
       h += '<div class="sec">Pick any of these three</div>';
-      for (i = 0; i < cards.length; i++) {
-        c = cards[i]; id = c.id;
-        h += card(UPG[id].name, upg[id] > 0 ? lvTag('Lv ' + upg[id]) : '', UPG[id].desc,
-          c.bought ? doneBtn('Bought') : buyBtn('upg', id, upgCost(id), wallet >= upgCost(id)));
+      for (i = 0; i < P.cards.length; i++) {
+        c = P.cards[i]; id = c.id;
+        h += card(UPG[id].name, P.upg[id] > 0 ? lvTag('Lv ' + P.upg[id]) : '', UPG[id].desc,
+          c.bought ? doneBtn('Bought') : buyBtn('upg', id, upgCost(P, id), wallet >= upgCost(P, id)));
       }
     } else if (shopTab === 'guns') {
       h += '<div class="sec">Your guns</div>';
       for (i = 0; i < 3; i++) {
-        if (i >= unlocked) continue;
-        s = slots[i];
+        if (i >= P.unlocked) continue;
+        s = P.slots[i];
         if (!s) { h += card('Empty slot', '', 'Buy a gun below to fill it.', ''); continue; }
-        st = wstats(s, true);
+        st = wstats(P, s, true);
         h += card(WEAPONS[s.id].name, lvTag('Mk ' + ROMAN[s.tier]).replace('class="lv"', 'class="lv tier' + s.tier + '"' + (s.tier >= 4 ? ' style="color:' + RAR[5] + '"' : '')),
           fmt(st.dmg) + (st.d.pellets > 1 ? '×' + st.d.pellets : '') + ' dmg · ' + st.rate.toFixed(1) + '/s · ' + ammoTxt(st.d),
           s.tier >= 4 ? doneBtn('Max') : '<button class="buy" type="button" data-act="gunup" data-id="' + i + '"' + (wallet >= gunUpCost(s) ? '' : ' disabled') + '>Mk ' + ROMAN[s.tier + 1] + ' · ' + gunUpCost(s) + '</button>', rarCol(WEAPONS[s.id]));
       }
-      if (unlocked < 3) {
+      if (P.unlocked < 3) {
         h += '<div class="sec">Gun slots</div>';
-        h += card('Gun slot ' + (unlocked + 1), '', 'Carry one more gun. Swap with the button bottom-right.', buyBtn('slot', unlocked, SLOT_COST[unlocked], wallet >= SLOT_COST[unlocked]));
+        h += card('Gun slot ' + (P.unlocked + 1), '', 'Carry one more gun. Swap with the button bottom-right.', buyBtn('slot', P.unlocked, SLOT_COST[P.unlocked], wallet >= SLOT_COST[P.unlocked]));
       }
       h += '<div class="sec">Guns for sale</div>';
-      if (pendingGun) {
-        h += '<div class="warn">No free slot. Replace which gun with the ' + WEAPONS[pendingGun].name + '? The old gun and its tier are lost.<div class="acts">';
-        for (i = 0; i < unlocked; i++) if (slots[i]) h += '<button class="buy alt" type="button" data-act="replace" data-id="' + i + '">' + WEAPONS[slots[i].id].name + '</button>';
+      if (P.pendingGun) {
+        h += '<div class="warn">No free slot. Replace which gun with the ' + WEAPONS[P.pendingGun].name + '? The old gun and its tier are lost.<div class="acts">';
+        for (i = 0; i < P.unlocked; i++) if (P.slots[i]) h += '<button class="buy alt" type="button" data-act="replace" data-id="' + i + '">' + WEAPONS[P.slots[i].id].name + '</button>';
         h += '<button class="buy alt" type="button" data-act="cancel" data-id="0">Cancel</button></div></div>';
-      } else if (unlocked === 1) {
+      } else if (P.unlocked === 1) {
         h += '<div class="note">Tip: buy a gun slot first or a new gun will replace your Glock.</div>';
       }
       var any = false;
       for (i = 0; i < SHOP_GUNS.length; i++) {
         id = SHOP_GUNS[i]; d = WEAPONS[id];
-        if (ownsGun(id)) continue;
+        if (ownsGun(P, id)) continue;
         any = true;
         h += card(d.name, '<span class="cls">' + CLS[d.cls].label + '</span>', gunLine(id), buyBtn('buygun', id, d.price, wallet >= d.price), rarCol(d));
       }
@@ -964,7 +1886,7 @@ body {
     } else {
       h += '<div class="sec">Armour</div>';
       for (i = 0; i < ARM_PARTS.length; i++) {
-        p = ARM_PARTS[i]; t = armor[p]; d = ARM[p];
+        p = ARM_PARTS[i]; t = P.armor[p]; d = ARM[p];
         var worn = t > 0 ? d.names[t - 1] : 'None';
         var now = t > 0 ? d.eff(d.val[t - 1]) : 'No bonus yet';
         var nextTxt = t < 4 ? ' Next: ' + d.eff(d.val[t]) + '.' : '';
@@ -973,171 +1895,105 @@ body {
       }
       h += '<div class="sec">Healing</div>';
       for (i = 0; i < HEALS.length; i++) {
-        h += card(HEALS[i].name, '', HEALS[i].desc, buyBtn('heal', i, HEALS[i].price, wallet >= HEALS[i].price && player.hp < maxHpNow() - 0.5));
+        h += card(HEALS[i].name, '', HEALS[i].desc, buyBtn('heal', i, HEALS[i].price, wallet >= HEALS[i].price && !P.down && P.hp < maxHpNow(P) - 0.5));
       }
     }
     panel.innerHTML = h;
+    panel.scrollTop = keep;
   }
 
-  function shopAct(a, id) {
-    var i, s, cost, w, c, t;
-    if (a === 'upg') {
-      for (i = 0; i < cards.length; i++) if (cards[i].id === id) c = cards[i];
-      if (!c || c.bought) return;
-      cost = upgCost(id); if (wallet < cost) return;
-      wallet -= cost; c.bought = true; upg[id]++;
-      if (id === 'hp') player.hp += TUNE.hpBase * 0.1;
-    } else if (a === 'gunup') {
-      s = slots[+id]; if (!s || s.tier >= 4) return;
-      cost = gunUpCost(s); if (wallet < cost) return;
-      wallet -= cost; s.tier++;
-    } else if (a === 'slot') {
-      if (unlocked >= 3 || +id !== unlocked) return;
-      cost = SLOT_COST[unlocked]; if (wallet < cost) return;
-      wallet -= cost; unlocked++;
-    } else if (a === 'buygun') {
-      w = WEAPONS[id]; if (!w || w.price <= 0 || wallet < w.price || ownsGun(id)) return;
-      var empty = -1;
-      for (i = 0; i < unlocked; i++) if (!slots[i]) { empty = i; break; }
-      if (empty >= 0) { wallet -= w.price; slots[empty] = makeGun(id); if (sel !== 3) setSel(empty); }
-      else { pendingGun = id; }
-    } else if (a === 'replace') {
-      w = pendingGun ? WEAPONS[pendingGun] : null; i = +id;
-      if (w && i < unlocked && slots[i] && wallet >= w.price) { wallet -= w.price; slots[i] = makeGun(pendingGun); if (sel === i) player.fireCd = 0.12; }
-      pendingGun = null;
-    } else if (a === 'cancel') {
-      pendingGun = null;
-    } else if (a === 'armour') {
-      if (!ARM[id]) return;
-      t = armor[id]; if (t >= 4) return;
-      cost = ARM[id].cost[t]; if (wallet < cost) return;
-      wallet -= cost; armor[id] = t + 1;
-      if (id === 'body') player.hp += ARM.body.val[t] - (t > 0 ? ARM.body.val[t - 1] : 0);
-    } else if (a === 'heal') {
-      var it = HEALS[+id]; if (!it || wallet < it.price || player.hp >= maxHpNow() - 0.5) return;
-      wallet -= it.price;
-      player.hp = it.full ? maxHpNow() : Math.min(maxHpNow(), player.hp + it.hp);
-    } else { return; }
-    tone(700, 1100, 0.07, 'square', 0.05);
-    renderShop();
-    saveGame();
-  }
   panel.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-act]') : null;
     if (!b || b.disabled) return;
     ensureAudio();
-    shopAct(b.dataset.act, b.dataset.id);
+    cmd('shop', b.dataset.act, b.dataset.id);
+    if (net.mode !== 'client') renderShop();
   });
   tabs.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-tab]') : null;
     if (!b) return;
-    shopTab = b.dataset.tab; pendingGun = null; renderShop(); panel.scrollTop = 0;
+    shopTab = b.dataset.tab; if (me.pendingGun) cmd('shop', 'cancel', 0); renderShop(); panel.scrollTop = 0;
   });
   nextBtn.addEventListener('click', function () {
-    if (state !== 'shop') return;
-    ensureAudio();
-    shop.hidden = true; state = 'play';
+    if (!shopOpen) return;
+    ensureAudio(); closeShop();
     tone(300, 200, 0.08, 'square', 0.05);
   });
   shopBtn.addEventListener('click', function () {
     ensureAudio();
-    if (state !== 'play') return;
+    if (state !== 'play' || blocked()) return;
     openShop();
     tone(500, 700, 0.06, 'square', 0.05);
   });
 
-  // ---------- mystery box ----------
-  var boxPrize = null;
-  function rollBox() {
-    var ids = [], ws = [], tot = 0, i, r;
-    if (Math.random() >= TUNE.boxSpecial) {
-      for (i = 0; i < SHOP_GUNS.length; i++) {
-        if (ownsGun(SHOP_GUNS[i])) continue;
-        ids.push(SHOP_GUNS[i]); ws.push(1 / (WEAPONS[SHOP_GUNS[i]].price + 150)); tot += ws[ws.length - 1];
-      }
-      if (ids.length) {
-        r = Math.random() * tot;
-        for (i = 0; i < ids.length; i++) { r -= ws[i]; if (r <= 0) return ids[i]; }
-        return ids[ids.length - 1];
-      }
-    }
-    var pool = BOX_SPECIALS.filter(function (k) { return !ownsGun('k_' + k); });
-    if (!pool.length) pool = BOX_SPECIALS;
-    return 'k_' + pool[Math.floor(Math.random() * pool.length)];
-  }
-  function freeSlot() { for (var i = 0; i < unlocked; i++) if (!slots[i]) return i; return -1; }
+  // ---------- mystery box screen ----------
+  var boxShown = '';
   function renderBox() {
-    var d = WEAPONS[boxPrize], h = '', i, fs = freeSlot();
+    var P = me, d = WEAPONS[P.boxPrize], h = '', i, fs = freeSlot(P);
     h += '<div class="bn" style="color:' + rarCol(d) + '">' + d.name + (d.special ? '<span class="lv tier4">Special</span>' : '<span class="cls">' + CLS[d.cls].label + '</span>') + '</div>';
-    h += '<div class="bd">' + gunLine(boxPrize, 1) + '</div>';
-    h += '<div class="bd">' + (fs >= 0 ? 'You have a free slot.' : 'No free slot. Swapping loses the old gun and its tier.') + '</div>';
+    h += '<div class="bd">' + gunLine(P.boxPrize, 1) + '</div>';
+    h += '<div class="bd">' + (fs >= 0 ? 'You have a free slot.' : 'No free slot. Swapping loses the old gun and its tier.') + (net.mode === 'off' ? '' : ' The game is still running!') + '</div>';
     h += '<div class="bacts">';
     if (fs >= 0) h += '<button class="buy" type="button" data-box="take" data-id="' + fs + '">Take it</button>';
-    else for (i = 0; i < unlocked; i++) if (slots[i]) h += '<button class="buy" type="button" data-box="swap" data-id="' + i + '">Swap for ' + WEAPONS[slots[i].id].name + '</button>';
+    else for (i = 0; i < P.unlocked; i++) if (P.slots[i]) h += '<button class="buy" type="button" data-box="swap" data-id="' + i + '">Swap for ' + WEAPONS[P.slots[i].id].name + '</button>';
     h += '<button class="buy alt" type="button" data-box="discard" data-id="0">Discard</button></div>';
     boxBody.innerHTML = h;
-  }
-  function openBox() {
-    if (state !== 'play' || !nearBox() || wallet < TUNE.boxCost) return;
-    wallet -= TUNE.boxCost;
-    boxPrize = rollBox();
-    state = 'box'; joy.active = false; joy.x = joy.y = 0;
-    renderBox(); boxUI.hidden = false;
-    tone(300, 900, 0.3, 'square', 0.06); tone(600, 1200, 0.3, 'square', 0.05, 0.15);
-  }
-  function boxAct(a, id) {
-    if (state !== 'box' || !boxPrize) return;
-    var i = +id;
-    if (a === 'take') { if (!slots[i]) { slots[i] = makeGun(boxPrize); if (sel !== 3) setSel(i); } }
-    else if (a === 'swap') { if (slots[i]) { slots[i] = makeGun(boxPrize); if (sel === i) player.fireCd = 0.12; } }
-    else if (a !== 'discard') return;
-    boxPrize = null; boxUI.hidden = true; state = 'play';
-    tone(500, 700, 0.08, 'square', 0.05);
   }
   boxBody.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-box]') : null;
     if (!b) return;
-    ensureAudio(); boxAct(b.dataset.box, b.dataset.id);
+    ensureAudio(); cmd('box', b.dataset.box, b.dataset.id);
   });
-  boxBtn.addEventListener('click', function () { ensureAudio(); openBox(); });
+  boxBtn.addEventListener('click', function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('box', 'open'); });
 
   // ---------- hud ----------
   var hudCache = {};
   function setText(el, key, val) { if (hudCache[key] !== val) { hudCache[key] = val; el.textContent = val; } }
   function updateHud() {
-    var mx = Math.round(maxHpNow()), hp = Math.max(0, Math.ceil(player.hp));
-    setText(hptxt, 'hp', hp + ' / ' + mx);
-    var w = Math.max(0, Math.min(100, (player.hp / maxHpNow()) * 100)).toFixed(1) + '%';
+    if (!me) return;
+    var mx = Math.round(maxHpNow(me)), hp = Math.max(0, Math.ceil(me.hp));
+    setText(hptxt, 'hp', me.down ? 'DOWN' : hp + ' / ' + mx);
+    var w = Math.max(0, Math.min(100, (me.hp / maxHpNow(me)) * 100)).toFixed(1) + '%';
     if (hudCache.hpw !== w) { hudCache.hpw = w; hpfill.style.width = w; }
     setText(waveN, 'wave', 'Wave ' + wave);
-    setText(leftEl, 'left', phase === 'grace' ? 'Next wave ' + Math.max(0, Math.ceil(graceT)) + 's' : (queue.length + zombies.length) + ' left');
-    var anyArm = armor.head + armor.body + armor.legs > 0;
-    var s = 'Coins <b class="gold">' + Math.floor(wallet) + '</b> · Kills <b>' + kills + '</b>' + (anyArm ? ' · Armour <b>H' + armor.head + ' B' + armor.body + ' L' + armor.legs + '</b>' : '');
+    setText(leftEl, 'left', phase === 'grace' ? 'Next wave ' + Math.max(0, Math.ceil(graceT)) + 's' : leftN + ' left');
+    var anyArm = me.armor.head + me.armor.body + me.armor.legs > 0;
+    var s = 'Coins <b class="gold">' + Math.floor(me.wallet) + '</b> · Kills <b>' + me.kills + '</b>' + (anyArm ? ' · Armour <b>H' + me.armor.head + ' B' + me.armor.body + ' L' + me.armor.legs + '</b>' : '');
     if (hudCache.stats !== s) { hudCache.stats = s; statsEl.innerHTML = s; }
 
     // perk timers
     var ph = '', k;
-    for (k in perkT) if (perkT[k] > 0) ph += '<span class="perk" style="color:' + PERKS[k].col + '">' + PERKS[k].name + ' ' + Math.ceil(perkT[k]) + 's' + (isSpecialActive() ? ' (held)' : '') + '</span>';
+    for (k in me.perkT) if (me.perkT[k] > 0) ph += '<span class="perk" style="color:' + PERKS[k].col + '">' + PERKS[k].name + ' ' + Math.ceil(me.perkT[k]) + 's' + (isSpecialActive(me) ? ' (held)' : '') + '</span>';
     if (hudCache.perks !== ph) { hudCache.perks = ph; perksEl.innerHTML = ph; }
 
-    var showMM = state === 'play' || state === 'paused' || state === 'box';
+    // teammates
+    var th = '', i, q;
+    if (players.length > 1) for (i = 0; i < players.length; i++) {
+      q = players[i]; if (q === me) continue;
+      var qm = q.mhp || maxHpNow(q), pct = q.down ? 0 : Math.max(0, Math.min(100, q.hp / qm * 100));
+      th += '<div class="tm" style="color:' + LOOK_COLS[q.look.c] + '"><span>' + esc(q.name) + '</span><span class="tmbar"><i style="width:' + pct.toFixed(0) + '%"></i></span>' + (q.down ? '<span>down</span>' : '') + '</div>';
+    }
+    if (hudCache.team !== th) { hudCache.team = th; teamEl.innerHTML = th; }
+
+    var playing = state === 'play';
+    var showMM = playing && !shopOpen;
     if (hudCache.mmShow !== showMM) { hudCache.mmShow = showMM; mm.hidden = !showMM; }
 
     // mystery box button
-    var nb = state === 'play' && !!nearBox();
+    var nb = playing && !blocked() && !me.down && !!nearBox(me);
     if (hudCache.boxShow !== nb) { hudCache.boxShow = nb; boxBtn.hidden = !nb; }
-    if (nb) { var cant = wallet < TUNE.boxCost; if (hudCache.boxCant !== cant) { hudCache.boxCant = cant; boxBtn.disabled = cant; } }
+    if (nb) { var cant = me.wallet < TUNE.boxCost; if (hudCache.boxCant !== cant) { hudCache.boxCant = cant; boxBtn.disabled = cant; } }
 
     // shop button
-    var showShop = state === 'play';
+    var showShop = playing && !blocked();
     if (hudCache.shopShow !== showShop) { hudCache.shopShow = showShop; shopBtn.hidden = !showShop; }
 
     // ammo / swap button
-    var showSwap = state === 'play' || state === 'paused';
+    var showSwap = playing && !shopOpen;
     if (hudCache.swapShow !== showSwap) { hudCache.swapShow = showSwap; swapBtn.hidden = !showSwap; }
     if (showSwap) {
-      var ref = curRef(), d = defOf(ref), sub, cls = 'swap';
-      if (isSpecialActive()) { sub = special.ammo + ' / ' + special.max; cls += ' special'; }
+      var ref = curRef(me), d = defOf(ref), sub, cls = 'swap';
+      if (isSpecialActive(me)) { sub = me.special.ammo + ' / ' + me.special.max; cls += ' special'; }
       else if (ref.reload > 0) { sub = 'Reloading'; cls += ' warn'; }
       else if (ref.mag <= 0 && ref.res <= 0) { sub = 'No ammo'; cls += ' dry'; }
       else if (d.noRes) { sub = ref.mag + ' / ' + gunMag(d); cls += ' special'; }
@@ -1148,12 +2004,18 @@ body {
       var bc = cls.indexOf('dry') >= 0 ? '' : rc;
       if (hudCache.swapBc !== bc) { hudCache.swapBc = bc; swapBtn.style.borderColor = bc; }
     }
+
+    // keep open screens in step with what the host says
+    if (shopOpen && shopKey() !== lastShopKey) renderShop();
+    var bk = me.boxPrize || '';
+    if (bk !== boxShown) { boxShown = bk; if (bk) renderBox(); boxUI.hidden = !bk; }
+    else if (bk && net.mode === 'client') { /* prize unchanged */ }
   }
 
   // ---------- input ----------
   var JR = 56;
   game.addEventListener('pointerdown', function (e) {
-    if (state !== 'play' || joy.active) return;
+    if (state !== 'play' || joy.active || blocked()) return;
     if (e.target.closest && e.target.closest('button')) return;
     var r = cv.getBoundingClientRect();
     joy.active = true; joy.id = e.pointerId; joy.ox = e.clientX - r.left; joy.oy = e.clientY - r.top; joy.x = joy.y = 0;
@@ -1176,14 +2038,16 @@ body {
   }
   game.addEventListener('pointerup', endJoy);
   game.addEventListener('pointercancel', endJoy);
+  function typing() { var a = document.activeElement; return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'); }
   window.addEventListener('keydown', function (e) {
+    if (typing()) return;
     var k = e.key;
     if (k === 'ArrowLeft' || k === 'a') keys.l = true;
     if (k === 'ArrowRight' || k === 'd') keys.r = true;
     if (k === 'ArrowUp' || k === 'w') keys.u = true;
     if (k === 'ArrowDown' || k === 's') keys.d = true;
     if (k === 'p' || k === 'Escape') pauseGame();
-    if (k === 'q' || k === 'e') swapWeapon();
+    if ((k === 'q' || k === 'e') && state === 'play' && !blocked()) cmd('swap');
   });
   window.addEventListener('keyup', function (e) {
     var k = e.key;
@@ -1192,6 +2056,15 @@ body {
     if (k === 'ArrowUp' || k === 'w') keys.u = false;
     if (k === 'ArrowDown' || k === 's') keys.d = false;
   });
+  // the stick and keys become this player's walking input
+  function gatherInput() {
+    var mx = 0, my = 0;
+    if (!blocked() && state === 'play') {
+      mx = joy.x; my = joy.y;
+      if (keys.l) mx -= 1; if (keys.r) mx += 1; if (keys.u) my -= 1; if (keys.d) my += 1;
+    }
+    me.inx = mx; me.iny = my;
+  }
 
   // ---------- sizing ----------
   function fit() {
@@ -1207,525 +2080,6 @@ body {
   }
   window.addEventListener('resize', fit);
   fit();
-
-  // ---------- simulation ----------
-  function addBlood(x, y, dx, dy, n, speed) {
-    for (var i = 0; i < n && parts.length < 320; i++) {
-      var a = Math.atan2(dy, dx) + rnd(-0.9, 0.9), s = rnd(0.3, 1) * speed;
-      parts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(0.25, 0.6), r: rnd(1, 2.4) });
-    }
-  }
-  function addFx(x, y, n, speed, life, r, c) {
-    for (var i = 0; i < n && fx.length < 260; i++) {
-      var a = rnd(0, 6.283), s = rnd(0.2, 1) * speed;
-      fx.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(life * 0.5, life), max: life, r: rnd(r * 0.6, r), c: c });
-    }
-  }
-
-  function hurtPlayer(dmg) {
-    if (player.inv > 0 || state !== 'play') return;
-    dmg *= 1 - armVal('head');
-    player.hp -= dmg; player.inv = 0.2;
-    hurtFlash = 0.35; shake = Math.min(9, 4 + dmg * 0.2);
-    tone(120, 60, 0.15, 'square', 0.09); noise(0.08, 500, 0.07); buzz(35);
-    addBlood(player.x, player.y, 0, 0, 6, 120);
-    if (player.hp <= 0) {
-      player.hp = 0; clearSave(); state = 'over'; joy.active = false; joy.x = joy.y = 0;
-      var isBest = wave > bestWave;
-      if (isBest) { bestWave = wave; try { localStorage.setItem('zs-best-wave', String(wave)); } catch (e) {} }
-      tone(200, 40, 0.9, 'sawtooth', 0.09);
-      showOverlay('You died', 'Reached wave <b>' + wave + '</b> with <b>' + kills + '</b> kills.<br>' + (isBest ? 'New best wave.' : 'Best wave: <b>' + bestWave + '</b>.'), 'Try again');
-    }
-  }
-
-  function addPickup(x, y, kind, id, life) {
-    var np = { x: x + rnd(-10, 10), y: y + rnd(-10, 10), kind: kind, id: id, t: life };
-    evictFromPockets(np, false);
-    pickups.push(np);
-  }
-  function pickPerk() {
-    var ids = Object.keys(PERKS), tot = 0, i;
-    for (i = 0; i < ids.length; i++) tot += PERKS[ids[i]].w;
-    var r = Math.random() * tot;
-    for (i = 0; i < ids.length; i++) { r -= PERKS[ids[i]].w; if (r <= 0) return ids[i]; }
-    return ids[0];
-  }
-
-  function killZombie(i) {
-    var z = zombies[i], k;
-    splat(z.x, z.y, z.r * 1.7, 0.55);
-    addBlood(z.x, z.y, rnd(-1, 1), rnd(-1, 1), z.boss ? 26 : 9, 150);
-    zombies.splice(i, 1);
-    kills++;
-    // coins
-    var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * upg.cval) * (perkT.dp > 0 ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1);
-    var n = z.boss ? 8 : (z.type === 'tank' ? 4 : 1);
-    for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n }; evictFromPockets(nc, true); coins.push(nc); }
-    // drops
-    if (z.boss || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)], TUNE.crateLife);
-    if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', TUNE.healLife);
-    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife);
-    if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
-    if (killSnd <= 0) { tone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
-    if (z.boss) { shake = 8; tone(70, 30, 0.8, 'sawtooth', 0.1); }
-  }
-
-  function collect(p) {
-    var i, g, d;
-    if (p.kind === 'special') { equipSpecial(p.id, false); }
-    else if (p.kind === 'health') { healPlayer(TUNE.healAmount); }
-    else if (p.kind === 'ammo') {
-      for (i = 0; i < 3; i++) {
-        g = slots[i]; if (!g) continue;
-        d = WEAPONS[g.id];
-        g.res = Math.min(d.res, g.res + Math.max(1, Math.round(d.mag * 0.5)));
-      }
-      tone(240, 360, 0.08, 'square', 0.05); tone(360, 480, 0.06, 'square', 0.05, 0.07);
-    } else if (p.kind === 'perk') {
-      if (p.id === 'ma') maxAmmo();
-      else { perkT[p.id] = TUNE.perkDur; tone(500, 1000, 0.18, 'square', 0.06); }
-      buzz(15);
-    }
-  }
-
-  function explode(x, y, R, dmg, exclude, small) {
-    for (var j = zombies.length - 1; j >= 0; j--) {
-      var z = zombies[j];
-      if (z === exclude) continue;
-      var d = Math.hypot(z.x - x, z.y - y);
-      if (d < R + z.r) {
-        var f = Math.max(0.35, 1 - d / (R + z.r));
-        z.hp -= dmg * f; z.flash = 0.1;
-        var nx = (z.x - x) / (d || 1), ny = (z.y - y) / (d || 1), kb = (small ? 120 : 260) * (10 / z.r);
-        z.vx += nx * kb; z.vy += ny * kb;
-        if (z.hp <= 0) killZombie(j);
-      }
-    }
-    if (small) {
-      addFx(x, y, 8, 140, 0.3, 3.5, '255,130,50');
-      noise(0.08, 700, 0.04);
-    } else {
-      addFx(x, y, 28, 260, 0.5, 5, '255,150,50');
-      addFx(x, y, 10, 120, 0.4, 7, '255,230,150');
-      scorch(x, y, R * 0.7);
-      shake = Math.max(shake, 6);
-      noise(0.3, 500, 0.12); tone(110, 40, 0.3, 'sawtooth', 0.1); buzz(25);
-    }
-  }
-
-  function shoot() {
-    var ref = curRef(), st = wstats(ref), d = st.d, i, a, crit;
-    var critP = 0.1 * upg.crit, expl = perkT.ex > 0;
-    var mx = player.x + Math.cos(player.ang) * (d.len + 10), my = player.y + Math.sin(player.ang) * (d.len + 10);
-    for (i = 0; d.kind !== 'zap' && i < d.pellets; i++) {
-      if (d.pellets > 1) a = player.ang + ((i / (d.pellets - 1)) - 0.5) * d.spread + rnd(-0.04, 0.04);
-      else a = player.ang + rnd(-d.spread / 2, d.spread / 2);
-      crit = Math.random() < critP;
-      bullets.push({
-        x: mx, y: my, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
-        dmg: st.dmg * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [],
-        kind: d.kind || 'bullet', blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : 3)),
-        long: d.cls === 'rifle' || d.cls === 'sniper', explosive: expl && !d.kind
-      });
-    }
-    if (d.kind === 'zap') zapShoot(st, mx, my);
-    player.flash = 0.06;
-    shotN++;
-    var id = d.sid || ref.id, cls = d.cls;
-    if (GUNSND[cls]) gunSound(cls);
-    else if (id === 'ray') { tone(1000, 220, 0.2, 'sawtooth', 0.06); noise(0.05, 3500, 0.04); }
-    else if (id === 'zap') { tone(1300, 260, 0.14, 'sawtooth', 0.06); noise(0.1, 4500, 0.06); }
-    else if (id === 'rocket') { noise(0.2, 900, 0.1); tone(140, 50, 0.25, 'sawtooth', 0.06); }
-    else if (shotN % 3 === 0) { noise(0.05, id === 'flame' ? 3000 : 1800, 0.05); }
-    if (id === 'flame') addFx(mx, my, 1, 90, 0.3, 4, '255,160,60');
-
-    if (isSpecialActive()) {
-      special.ammo--;
-      if (special.ammo <= 0) {
-        dropSpecial();
-        showBanner('Out of ammo', 'Back to your ' + defOf(curRef()).name + '.', 1.4);
-      }
-    } else {
-      ref.mag--;
-    }
-  }
-
-  function zapHit(z, dmg) {
-    var j = zombies.indexOf(z);
-    if (j >= 0) damageZombie(j, { x: z.x, y: z.y, dx: 0, dy: 0, kind: 'zap', crit: false, dmg: dmg });
-  }
-  function zapShoot(st, mx, my) {
-    var first = curTgt, critP = 0.1 * upg.crit;
-    if (!first) return;
-    var pts = [{ x: mx, y: my }, { x: first.x, y: first.y }], seen = [first], cur = first, dmg = st.dmg, i, k, best, bd, z, dd;
-    zapHit(first, dmg * (Math.random() < critP ? 2 : 1));
-    for (i = 0; i < 4; i++) {
-      best = null; bd = 150 * 150;
-      for (k = 0; k < zombies.length; k++) {
-        z = zombies[k]; if (seen.indexOf(z) >= 0) continue;
-        dd = (z.x - cur.x) * (z.x - cur.x) + (z.y - cur.y) * (z.y - cur.y);
-        if (dd < bd) { bd = dd; best = z; }
-      }
-      if (!best) break;
-      dmg *= 0.85; seen.push(best); pts.push({ x: best.x, y: best.y });
-      cur = best;
-      zapHit(best, dmg * (Math.random() < critP ? 2 : 1));
-    }
-    bolts.push({ pts: pts, life: 0.16 });
-    addFx(first.x, first.y, 5, 120, 0.25, 2.5, '150,200,255');
-  }
-
-  // barrier repair is worth a bit more every 10 waves
-  function barBonus(n) { return 1 + TUNE.barStep * Math.floor(n / 10); }
-
-  // each rock gets its own lumpy outline
-  function rockShape() { var s = [], k; for (k = 0; k < 9; k++) s.push(rnd(0.72, 1.12)); return s; }
-
-  // thrown rocks can be shot out of the air (if you're lucky enough to hit one)
-  function breakRock(eb) {
-    var k = ebullets.indexOf(eb);
-    if (k < 0) return;
-    addFx(eb.x, eb.y, 7, 130, 0.3, 3, '170,150,120');
-    noise(0.05, 1200, 0.05); tone(260, 120, 0.08, 'square', 0.04);
-    ebullets.splice(k, 1);
-  }
-
-  function damageZombie(j, b) {
-    var z = zombies[j];
-    z.hp -= b.dmg; z.flash = 0.08;
-    var kb = (b.kind === 'fire' ? 20 : 90) * (10 / z.r); z.vx += b.dx * kb; z.vy += b.dy * kb;
-    addBlood(b.x, b.y, b.dx, b.dy, b.kind === 'fire' ? 1 : 3, 160);
-    if (b.crit) addFx(b.x, b.y, 5, 160, 0.25, 2, '255,255,255');
-    if (b.kind !== 'fire' && Math.random() < 0.35) splat(z.x, z.y, z.r * 0.6, 0.3);
-    if (b.kind !== 'fire') noise(0.04, 600, 0.05);
-    if (z.hp <= 0) killZombie(j);
-  }
-
-  function updateBullets(dt) {
-    for (var i = bullets.length - 1; i >= 0; i--) {
-      var b = bullets[i], move = b.speed * dt, steps = Math.max(1, Math.ceil(move / 5)), sd = move / steps, dead = false;
-      for (var s = 0; s < steps && !dead; s++) {
-        b.x += b.dx * sd; b.y += b.dy * sd; b.dist += sd;
-        for (var j = zombies.length - 1; j >= 0; j--) {
-          var z = zombies[j];
-          if (!z) break;
-          if (b.hit.indexOf(z) >= 0) continue;
-          if (Math.hypot(z.x - b.x, z.y - b.y) < z.r + b.r) {
-            if (b.kind === 'rocket') { explode(b.x, b.y, b.blast, b.dmg, null, false); dead = true; break; }
-            if (b.kind === 'ray') {
-              b.hit.push(z); damageZombie(j, b);
-              explode(b.x, b.y, b.blast, b.dmg * 0.5, z, true);
-              addFx(b.x, b.y, 12, 180, 0.38, 4.5, '255,60,90');
-              dead = true; break;
-            }
-            b.hit.push(z);
-            damageZombie(j, b);
-            var boom = b.explosive && b.kind === 'bullet';
-            if (boom) explode(b.x, b.y, 46, b.dmg * 0.6, z, true);
-            if (b.pierce > 0) b.pierce--; else dead = true;
-            if (boom || dead) break;
-          }
-        }
-        for (var rk = ebullets.length - 1; rk >= 0 && !dead; rk--) {
-          var rEb = ebullets[rk];
-          if (Math.hypot(rEb.x - b.x, rEb.y - b.y) < rEb.r + b.r + 3) {
-            breakRock(rEb);
-            if (b.kind === 'rocket') { explode(b.x, b.y, b.blast, b.dmg, null, false); dead = true; }
-            else if (b.kind === 'ray') dead = true;
-            else if (b.pierce > 0) b.pierce--; else dead = true;
-          }
-        }
-        if (!dead && (b.dist > b.max || b.x < WALL || b.x > WORLD - WALL || b.y < WALL || b.y > WORLD - WALL)) {
-          if (b.kind === 'rocket') explode(b.x, b.y, b.blast, b.dmg, null, false);
-          dead = true;
-        }
-      }
-      if (dead) bullets.splice(i, 1);
-    }
-  }
-
-  function update(dt) {
-    time += dt;
-    if (killSnd > 0) killSnd -= dt;
-    if (coinSnd > 0) coinSnd -= dt;
-    if (player.inv > 0) player.inv -= dt;
-    if (player.flash > 0) player.flash -= dt;
-    if (hurtFlash > 0) hurtFlash -= dt;
-    shake = Math.max(0, shake - dt * 22);
-    if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) banner.hidden = true; }
-    // perk timers hold while a special weapon is out
-    if (!isSpecialActive()) for (var pk in perkT) if (perkT[pk] > 0) perkT[pk] = Math.max(0, perkT[pk] - dt);
-
-    // move player
-    var mx = joy.x, my = joy.y;
-    if (keys.l) mx -= 1; if (keys.r) mx += 1; if (keys.u) my -= 1; if (keys.d) my += 1;
-    var len = Math.hypot(mx, my);
-    if (len > 1) { mx /= len; my /= len; len = 1; }
-    if (len < 0.12) { mx = 0; my = 0; len = 0; }
-    var sp = spdNow();
-    player.x += mx * sp * dt; player.y += my * sp * dt;
-    var lim = WALL + PR + 2;
-    player.x = Math.max(lim, Math.min(WORLD - lim, player.x));
-    player.y = Math.max(lim, Math.min(WORLD - lim, player.y));
-    for (var ei = 0; ei < BLD.length; ei++) {
-      var eb0 = BLD[ei];
-      if (eb0.bar.planks > 0 && inRect(player.x, player.y, eb0.pocket)) {
-        var eo = POCKET_D + WALL_T + PR + 8;
-        if (Math.abs(eb0.nx) > 0.5) player.x = eb0.ex + eb0.nx * eo; else player.y = eb0.ey + eb0.ny * eo;
-      }
-    }
-    player.r = PR - 1; collide(player);
-    player.x = Math.max(lim, Math.min(WORLD - lim, player.x));
-    player.y = Math.max(lim, Math.min(WORLD - lim, player.y));
-    if (len > 0) player.step += len * sp * dt * 0.09;
-
-    // auto aim: nearest zombie in the active weapon's range
-    var ref = curRef(), st = wstats(ref), rng = st.d.range;
-    var tgt = null, bd = rng * rng, i, z;
-    for (i = 0; i < zombies.length; i++) {
-      z = zombies[i];
-      var ddx = z.x - player.x, ddy = z.y - player.y, dd = ddx * ddx + ddy * ddy;
-      if (dd < bd) { bd = dd; tgt = z; }
-    }
-    curTgt = tgt;
-    if (tgt) player.idle = 0; else player.idle += dt;
-
-    // reload / ammo state for the active gun
-    var canFire = true;
-    if (!isSpecialActive()) {
-      var gd = st.d;
-      if (ref.reload > 0) {
-        ref.reload -= dt * (perkT.rf > 0 ? 2 : 1);
-        canFire = false;
-        if (ref.reload <= 0) {
-          ref.reload = 0;
-          var take = Math.min(gd.mag - ref.mag, ref.res);
-          ref.mag += take; ref.res -= take;
-          tone(300, 520, 0.05, 'square', 0.04);
-        }
-      } else if (ref.mag <= 0) {
-        canFire = false;
-        if (ref.res > 0) { ref.reload = gd.reload; tone(200, 110, 0.07, 'square', 0.04); }
-        else autoSwitch();
-      } else if (!tgt && player.idle > 1 && ref.mag < gd.mag && ref.res > 0) {
-        ref.reload = gd.reload; tone(200, 110, 0.07, 'square', 0.04);
-      }
-    }
-
-    if (tgt) {
-      player.ang = Math.atan2(tgt.y - player.y, tgt.x - player.x);
-      player.fireCd -= dt;
-      if (canFire) {
-        if (player.fireCd <= 0) {
-          shoot();
-          player.fireCd += 1 / st.rate;
-          if (player.fireCd < -0.05) player.fireCd = 0;
-        }
-      } else if (player.fireCd < 0) player.fireCd = 0;
-    } else {
-      player.fireCd = Math.max(0, player.fireCd - dt);
-      if (len > 0) player.ang = Math.atan2(my, mx);
-    }
-
-    // waves
-    if (phase === 'spawning') {
-      spawnTimer -= dt;
-      if (queue.length && spawnTimer <= 0 && zombies.length < TUNE.cap) {
-        if (spawnZombie(queue[0])) { queue.shift(); spawnTimer = Math.max(0.22, 0.85 - wave * 0.04); }
-        else spawnTimer = 0.5;
-      }
-      if (!queue.length && zombies.length === 0) waveCleared();
-    } else if (phase === 'grace') {
-      // short breather between waves; opening the shop pauses this countdown
-      graceT -= dt;
-      if (graceT <= 0) startWave(wave + 1);
-    }
-
-    // zombies
-    for (i = 0; i < zombies.length; i++) {
-      z = zombies[i];
-      var pdx = player.x - z.x, pdy = player.y - z.y, pdist = Math.hypot(pdx, pdy) || 1;
-      var pi = pocketOf(z), bar = null, tx = player.x, ty = player.y;
-      z.pocket = pi;
-      if (pi >= 0 && BLD[pi].bar.planks > 0) { bar = BLD[pi].bar; tx = bar.cx; ty = bar.cy; }
-      var dx = tx - z.x, dy = ty - z.y, d = Math.hypot(dx, dy) || 1;
-      z.ang = Math.atan2(pdy, pdx);
-      var mv = 1, ma = Math.atan2(dy, dx);
-      var lurch = 0.72 + 0.28 * Math.sin(time * 3 + z.seed);
-      var drift = bar ? 0 : Math.sin(time * 1.6 + z.seed * 3) * 0.35 * Math.min(1, d / 220);
-      if (z.boss && !bar) {
-        z.t += dt;
-        if (z.kind === 'run') {
-          if (z.dash > 0) {
-            // charging in the direction it locked, ignores where you are now
-            z.dash -= dt; ma = z.dashA; d = 999; mv = 420 / z.spd; lurch = 1;
-            if (z.dash <= 0) { z.rest = 1.3; z.next = z.t + 4.5; }
-          } else if (z.warn > 0) {
-            z.warn -= dt; mv = 0;
-            if (z.warn > 0.4) z.dashA = Math.atan2(pdy, pdx);
-            if (z.warn <= 0) { z.dash = 0.9; tone(160, 320, 0.25, 'sawtooth', 0.07); }
-          } else if (z.rest > 0) {
-            z.rest -= dt; mv = 0.1;
-          } else if (z.t > z.next && pdist < 480 && pdist > 140) {
-            z.warn = 0.95; z.dashA = Math.atan2(pdy, pdx); tone(300, 200, 0.3, 'square', 0.06);
-          }
-        } else if (z.kind === 'throw') {
-          if (pdist < 200) mv = -0.8; else if (pdist < 270) mv = 0;
-          if (z.t > z.next && pdist < 480) {
-            z.next = z.t + TUNE.throwGap;
-            var ta = Math.atan2(pdy, pdx), nr = wave >= 20 ? 3 : (wave >= 10 ? 2 : 1), kk;
-            for (kk = 0; kk < nr; kk++) {
-              var ra = ta + (kk - (nr - 1) / 2) * 0.22;
-              ebullets.push({ x: z.x + Math.cos(ra) * z.r, y: z.y + Math.sin(ra) * z.r, dx: Math.cos(ra), dy: Math.sin(ra), spd: 250, dmg: z.dmg * 0.8, r: 8, life: 2.4, spin: 0, rock: true, shape: rockShape() });
-            }
-            tone(200, 90, 0.18, 'square', 0.06);
-          }
-        } else if (z.kind === 'fire') {
-          if (z.breath > 0) {
-            z.breath -= dt; mv = 0.12; z.tick -= dt;
-            // flames travel exactly as far as the damage reaches (fx slow down by 0.05^dt, so work out the launch speed from that)
-            var mxp = z.x + Math.cos(z.ang) * z.r, myp = z.y + Math.sin(z.ang) * z.r, q2;
-            var fL = 0.42, fT = (1 - Math.pow(0.05, fL)) / -Math.log(0.05), fv = (TUNE.fireRange - z.r - 4) / fT;
-            for (q2 = 0; q2 < 4 && fx.length < 250; q2++) {
-              var fa = z.ang + rnd(-TUNE.fireCone, TUNE.fireCone), fs = fv * rnd(0.55, 1.1);
-              fx.push({ x: mxp, y: myp, vx: Math.cos(fa) * fs, vy: Math.sin(fa) * fs, life: fL, max: fL, r: rnd(4, 8), c: '255,' + ((110 + Math.random() * 90) | 0) + ',40' });
-            }
-            if (z.tick <= 0) {
-              z.tick = 0.25;
-              var da = Math.abs(Math.atan2(Math.sin(z.ang - Math.atan2(pdy, pdx)), Math.cos(z.ang - Math.atan2(pdy, pdx))));
-              if (pdist < TUNE.fireRange && da < TUNE.fireCone) hurtPlayer(z.dmg * 0.3);
-            }
-            if (z.breath <= 0) z.next = z.t + 3.2;
-            if (shotN % 4 === 0) noise(0.06, 1500, 0.05);
-          } else if (pdist < TUNE.fireRange + 10 && z.t > z.next) { z.breath = 1.5; z.tick = 0.05; tone(120, 70, 0.4, 'sawtooth', 0.08); }
-          else if (pdist < 150) mv = 0.4;
-        }
-      }
-      var stopD = bar ? 0 : z.r + PR - 1;
-      if (d > stopD || mv < 0) {
-        z.x += Math.cos(ma + drift) * z.spd * lurch * mv * dt;
-        z.y += Math.sin(ma + drift) * z.spd * lurch * mv * dt;
-      }
-      z.x += z.vx * dt; z.y += z.vy * dt;
-      var damp = Math.pow(0.02, dt); z.vx *= damp; z.vy *= damp;
-      var wh = collide(z);
-      if (wh && z.dash > 0) { z.dash = 0; z.rest = 1.4; z.next = z.t + 4.5; shake = Math.max(shake, 5); noise(0.12, 600, 0.1); }
-      if (wh && !bar) {
-        var tdx = -wh.ny, tdy = wh.nx, tdot = tdx * Math.cos(ma) + tdy * Math.sin(ma);
-        if (z.stick <= 0 && Math.abs(tdot) > 0.15) z.side = tdot > 0 ? 1 : -1;
-        z.stick = 0.6;
-        z.x += tdx * z.side * z.spd * 0.8 * dt; z.y += tdy * z.side * z.spd * 0.8 * dt;
-      }
-      if (bar && distRect(z.x, z.y, bar) < z.r + 4) {
-        bar.acc += z.dmg * 0.4 * dt;
-        if (bar.acc >= 10) { bar.acc -= 10; bar.planks--; noise(0.1, 900, 0.07); tone(140, 80, 0.1, 'square', 0.05); addFx(bar.cx, bar.cy, 5, 90, 0.3, 2.5, '170,120,70'); }
-      }
-      if (z.flash > 0) z.flash -= dt;
-      if (z.stick > 0) z.stick -= dt;
-      z.atk -= dt;
-      if (pdist <= z.r + PR + 3 && z.atk <= 0) { hurtPlayer(z.dmg); z.atk = z.cd; }
-      if (z.atk < -1) z.atk = -1;
-    }
-    for (i = 0; i < zombies.length; i++) {
-      var a = zombies[i];
-      for (var j = i + 1; j < zombies.length; j++) {
-        var b = zombies[j], sx = b.x - a.x, sy = b.y - a.y, min = a.r + b.r - 2;
-        if (Math.abs(sx) > min || Math.abs(sy) > min) continue;
-        var sd = Math.hypot(sx, sy);
-        if (sd < min && sd > 0.001) {
-          var push = (min - sd) * 0.5, nx = sx / sd, ny = sy / sd, wa = b.r / (a.r + b.r), wb = a.r / (a.r + b.r);
-          a.x -= nx * push * 2 * wa; a.y -= ny * push * 2 * wa;
-          b.x += nx * push * 2 * wb; b.y += ny * push * 2 * wb;
-        }
-      }
-    }
-    for (i = 0; i < zombies.length; i++) {
-      z = zombies[i];
-      collide(z);
-      z.x = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.x));
-      z.y = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.y));
-    }
-
-    // barriers: stand next to one to rebuild it
-    for (i = 0; i < BLD.length; i++) {
-      var br = BLD[i].bar;
-      if (br.planks < br.max && distRect(player.x, player.y, br) < 60 && !inRect(player.x, player.y, BLD[i].pocket)) {
-        br.rt += dt;
-        if (br.rt >= TUNE.rebuildTime) {
-          br.rt = 0; br.planks++; br.acc = 0;
-          var rf0 = 150 + 330 * (br.planks / br.max);
-          tone(rf0, rf0 * 0.78, 0.17, 'triangle', 0.14); tone(rf0 * 2, rf0 * 1.6, 0.06, 'square', 0.03); noise(0.05, 900, 0.06);
-          if (br.planks >= br.max) { tone(660, 990, 0.2, 'square', 0.06, 0.08); tone(990, 1320, 0.25, 'square', 0.05, 0.2); }
-          if (rebuildLeft > 0) {
-            var rbase = (1.5 + wave * 0.12) * barBonus(wave);
-            var rc = Math.min(rebuildLeft, rbase) * (1 + 0.1 * upg.cval) * (perkT.dp > 0 ? 2 : 1);
-            rebuildLeft -= Math.min(rebuildLeft, rbase); wallet += rc; waveCoins += rc;
-          }
-        }
-      } else br.rt = 0;
-    }
-
-    // thrown rocks
-    for (i = ebullets.length - 1; i >= 0; i--) {
-      var eb = ebullets[i];
-      eb.x += eb.dx * eb.spd * dt; eb.y += eb.dy * eb.spd * dt; eb.life -= dt; eb.spin += dt * 9;
-      if (Math.hypot(player.x - eb.x, player.y - eb.y) < PR + eb.r) { hurtPlayer(eb.dmg); addFx(eb.x, eb.y, 6, 120, 0.3, 3, '150,130,110'); ebullets.splice(i, 1); continue; }
-      if (eb.life <= 0 || wallHit(eb.x, eb.y, eb.r * 0.6) || eb.x < WALL || eb.x > WORLD - WALL || eb.y < WALL || eb.y > WORLD - WALL) { addFx(eb.x, eb.y, 5, 100, 0.25, 3, '150,130,110'); ebullets.splice(i, 1); }
-    }
-    for (i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
-
-    updateBullets(dt);
-
-    // coins: scatter, then get pulled toward you
-    var magR = TUNE.magBase * (1 + 0.25 * upg.mag);
-    for (i = coins.length - 1; i >= 0; i--) {
-      var c = coins[i], cdx = player.x - c.x, cdy = player.y - c.y, cd = Math.hypot(cdx, cdy) || 1;
-      var cdmp = Math.pow(0.03, dt); c.vx *= cdmp; c.vy *= cdmp;
-      c.x += c.vx * dt; c.y += c.vy * dt;
-      if (perkT.mg > 0) {
-        // magnet perk: every coin on the map flies to you
-        var mstep = Math.min(640 * dt, cd);
-        c.x += (cdx / cd) * mstep; c.y += (cdy / cd) * mstep;
-      } else if (cd < magR) {
-        var pull = 240 + (1 - cd / magR) * 360;
-        c.x += (cdx / cd) * pull * dt; c.y += (cdy / cd) * pull * dt;
-      }
-      evictFromPockets(c, true);
-      c.x = Math.max(WALL + 4, Math.min(WORLD - WALL - 4, c.x));
-      c.y = Math.max(WALL + 4, Math.min(WORLD - WALL - 4, c.y));
-      if (cd < 15) {
-        wallet += c.v; waveCoins += c.v; coins.splice(i, 1);
-        if (coinSnd <= 0) { tone(900, 1300, 0.05, 'square', 0.03); coinSnd = 0.04; }
-      }
-    }
-    // pickups: walk over them
-    for (i = pickups.length - 1; i >= 0; i--) {
-      var pu = pickups[i];
-      pu.t -= dt;
-      evictFromPockets(pu, false);
-      if (pu.kind === 'ammo') {
-        var adx = player.x - pu.x, ady = player.y - pu.y, ad = Math.hypot(adx, ady) || 1;
-        if (ad < magR) { var apull = 200 + (1 - ad / magR) * 300; pu.x += (adx / ad) * apull * dt; pu.y += (ady / ad) * apull * dt; }
-      }
-      if (Math.hypot(player.x - pu.x, player.y - pu.y) < 22) { var got = pu; pickups.splice(i, 1); collect(got); }
-      else if (pu.t <= 0) pickups.splice(i, 1);
-    }
-
-    for (i = parts.length - 1; i >= 0; i--) {
-      var p = parts[i];
-      p.x += p.vx * dt; p.y += p.vy * dt;
-      var pd = Math.pow(0.04, dt); p.vx *= pd; p.vy *= pd;
-      p.life -= dt;
-      if (p.life <= 0) { if (Math.random() < 0.3) { bloodL.x.fillStyle = 'rgba(95,10,10,0.5)'; bloodL.x.fillRect(p.x, p.y, p.r, p.r); } parts.splice(i, 1); }
-    }
-    for (i = fx.length - 1; i >= 0; i--) {
-      var f = fx[i];
-      f.x += f.vx * dt; f.y += f.vy * dt;
-      var fd = Math.pow(0.05, dt); f.vx *= fd; f.vy *= fd;
-      f.life -= dt;
-      if (f.life <= 0) fx.splice(i, 1);
-    }
-  }
 
   // ---------- drawing ----------
   function setCam() { ctx.setTransform(K, 0, 0, K, -cam.x * K, -cam.y * K); }
@@ -1755,40 +2109,55 @@ body {
     ctx.restore();
   }
 
-  function drawPlayer() {
-    var d = defOf(curRef());
-    ctx.save();
-    ctx.translate(player.x, player.y); ctx.rotate(player.ang);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.ellipse(1, 2, 11, 13, 0, 0, 6.283); ctx.fill();
-    var legs = Math.sin(player.step) * 3;
-    ctx.fillStyle = armor.legs > 0 ? TIERCOL[armor.legs] : '#1d2229';
-    ctx.fillRect(-5 + legs, -9, 9, 5); ctx.fillRect(-5 - legs, 4, 9, 5);
-    if (armor.legs >= 2) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(-1 + legs, -9, 2, 5); ctx.fillRect(-1 - legs, 4, 2, 5); }
-    ctx.fillStyle = player.inv > 0 ? '#9a4a4a' : '#3d4b5c';
-    ctx.beginPath(); ctx.ellipse(0, 0, 8, 13, 0, 0, 6.283); ctx.fill();
-    if (armor.body > 0) {
-      ctx.fillStyle = TIERCOL[armor.body];
-      ctx.beginPath(); ctx.ellipse(-1, -10, 4.5, 3.2, 0, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(-1, 10, 4.5, 3.2, 0, 0, 6.283); ctx.fill();
-      if (armor.body >= 2) { ctx.globalAlpha = 0.85; ctx.fillRect(-4, -6, 6, 12); ctx.globalAlpha = 1; }
-      if (armor.body >= 4) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-1, -6, 1.5, 12); }
+  // one player body. Works for the menu preview too (c is any 2d context)
+  function drawPlayerBody(c, P, d, tr) {
+    var look = P.look, col = LOOK_COLS[look.c], ar = P.armor, legs = Math.sin(P.step) * 3;
+    c.save();
+    c.translate(P.x, P.y); c.rotate(P.ang);
+    c.fillStyle = 'rgba(0,0,0,0.4)';
+    c.beginPath(); c.ellipse(1, 2, 11, 13, 0, 0, 6.283); c.fill();
+    c.fillStyle = ar.legs > 0 ? TIERCOL[ar.legs] : '#1d2229';
+    c.fillRect(-5 + legs, -9, 9, 5); c.fillRect(-5 - legs, 4, 9, 5);
+    if (ar.legs >= 2) { c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(-1 + legs, -9, 2, 5); c.fillRect(-1 - legs, 4, 2, 5); }
+    c.fillStyle = col;
+    c.beginPath(); c.ellipse(0, 0, 8, 13, 0, 0, 6.283); c.fill();
+    if (P.inv > 0) { c.fillStyle = 'rgba(190,40,40,0.55)'; c.beginPath(); c.ellipse(0, 0, 8, 13, 0, 0, 6.283); c.fill(); }
+    if (ar.body > 0) {
+      c.fillStyle = TIERCOL[ar.body];
+      c.beginPath(); c.ellipse(-1, -10, 4.5, 3.2, 0, 0, 6.283); c.fill();
+      c.beginPath(); c.ellipse(-1, 10, 4.5, 3.2, 0, 0, 6.283); c.fill();
+      if (ar.body >= 2) { c.globalAlpha = 0.85; c.fillRect(-4, -6, 6, 12); c.globalAlpha = 1; }
+      if (ar.body >= 4) { c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-1, -6, 1.5, 12); }
     }
-    ctx.fillStyle = '#c9a88a';
-    ctx.fillRect(2, -9, d.len - 2, 4); ctx.fillRect(2, 5, d.len - 2, 4);
-    ctx.fillStyle = d.kind === 'fire' ? '#4a2a1a' : (d.kind === 'rocket' ? '#2c3a2c' : '#17191c');
-    ctx.fillRect(8, -d.gw / 2, d.len + 2, d.gw);
-    var sh = Math.max(2.4, d.gw * 0.5), sl = Math.max(4, d.len * 0.38), tr = curRef().tier || 1;
-    ctx.fillStyle = rarCol(d); ctx.fillRect(9, -sh / 2, sl, sh);
-    ctx.fillStyle = tr >= 4 ? RAR[5] : RAR[tr - 1]; ctx.fillRect(9 + sl + 1.5, -sh / 2, sl, sh);
-    if (d.kind === 'fire') { ctx.fillStyle = '#d2692a'; ctx.fillRect(d.len + 6, -2, 4, 4); }
-    ctx.fillStyle = '#c9a88a';
-    ctx.beginPath(); ctx.arc(1, 0, 6.5, 0, 6.283); ctx.fill();
-    ctx.fillStyle = armor.head > 0 ? TIERCOL[armor.head] : '#2a211c';
-    ctx.beginPath(); ctx.arc(-1, 0, armor.head > 0 ? 6 : 5.2, 0, 6.283); ctx.fill();
-    if (armor.head >= 3) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-1, -6, 1.5, 12); }
-    ctx.restore();
+    c.fillStyle = '#c9a88a';
+    c.fillRect(2, -9, d.len - 2, 4); c.fillRect(2, 5, d.len - 2, 4);
+    c.fillStyle = d.kind === 'fire' ? '#4a2a1a' : (d.kind === 'rocket' ? '#2c3a2c' : '#17191c');
+    c.fillRect(8, -d.gw / 2, d.len + 2, d.gw);
+    var sh = Math.max(2.4, d.gw * 0.5), sl = Math.max(4, d.len * 0.38);
+    c.fillStyle = rarCol(d); c.fillRect(9, -sh / 2, sl, sh);
+    c.fillStyle = tr >= 4 ? RAR[5] : RAR[tr - 1]; c.fillRect(9 + sl + 1.5, -sh / 2, sl, sh);
+    if (d.kind === 'fire') { c.fillStyle = '#d2692a'; c.fillRect(d.len + 6, -2, 4, 4); }
+    c.fillStyle = '#c9a88a';
+    c.beginPath(); c.arc(1, 0, 6.5, 0, 6.283); c.fill();
+    c.fillStyle = ar.head > 0 ? TIERCOL[ar.head] : '#2a211c';
+    c.beginPath(); c.arc(-1, 0, ar.head > 0 ? 6 : 5.2, 0, 6.283); c.fill();
+    if (ar.head >= 3) { c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-1, -6, 1.5, 12); }
+    if (ar.head === 0 && look.h > 0) {
+      c.fillStyle = col; c.strokeStyle = col;
+      if (look.h === 1) {            // cap
+        c.beginPath(); c.arc(-1, 0, 5.4, 0, 6.283); c.fill();
+        c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(3.6, -4, 4.4, 8); c.fillStyle = col; c.fillRect(3, -3.6, 4, 7.2);
+      } else if (look.h === 2) {     // beanie
+        c.beginPath(); c.arc(-1, 0, 5.8, 0, 6.283); c.fill();
+        c.fillStyle = '#ffffff'; c.beginPath(); c.arc(-1, 0, 1.7, 0, 6.283); c.fill();
+      } else {                       // headband
+        c.lineWidth = 2.2; c.beginPath(); c.arc(-1, 0, 5.3, 0, 6.283); c.stroke();
+      }
+    }
+    c.restore();
   }
+  // which gun a player is holding as seen from this screen
+  function viewRef(P) { return (net.mode === 'client' && P !== me && P.cur) ? P.cur : curRef(P); }
 
   function drawPickup(pu) {
     var blink = pu.t < 4 && Math.floor(time * 6) % 2 === 0;
@@ -1847,15 +2216,16 @@ body {
     }
   }
 
-  // small radar: player in the middle, view radius 480 world units
+
+  // small radar: you in the middle, view radius 480 world units
   function drawMini() {
     var S = 96, R = 480, k = (S / 2) / R, c = S / 2, i, o, x, y, d;
     mmx.setTransform(mmDpr, 0, 0, mmDpr, 0, 0);
     mmx.clearRect(0, 0, S, S);
-    var edge = c - 3;
+    var edge = c - 3, px = me.x, py = me.y;
     mmx.fillStyle = '#c43a2a';
     for (i = 0; i < BLD.length; i++) {
-      o = BLD[i].bar; x = (o.cx - player.x) * k; y = (o.cy - player.y) * k;
+      o = BLD[i].bar; x = (o.cx - px) * k; y = (o.cy - py) * k;
       d = Math.hypot(x, y);
       mmx.globalAlpha = o.planks > 0 ? 1 : 0.4;
       if (d > edge) { x = x / d * edge; y = y / d * edge; mmx.fillRect(c + x - 2, c + y - 2, 4, 4); }
@@ -1863,7 +2233,7 @@ body {
     }
     mmx.globalAlpha = 1;
     for (i = 0; i < zombies.length; i++) {
-      o = zombies[i]; x = (o.x - player.x) * k; y = (o.y - player.y) * k;
+      o = zombies[i]; x = (o.x - px) * k; y = (o.y - py) * k;
       d = Math.hypot(x, y);
       mmx.fillStyle = o.boss ? '#ff8a2a' : '#e8402e';
       if (d > edge) { x = x / d * edge; y = y / d * edge; mmx.globalAlpha = 0.75; d = o.boss ? 2.2 : 1.2; }
@@ -1873,11 +2243,21 @@ body {
     mmx.globalAlpha = 1;
     mmx.fillStyle = '#f2c14e';
     for (i = 0; i < boxes.length; i++) {
-      x = (boxes[i].x - player.x) * k; y = (boxes[i].y - player.y) * k;
+      x = (boxes[i].x - px) * k; y = (boxes[i].y - py) * k;
       d = Math.hypot(x, y);
       if (d > edge) { x = x / d * edge; y = y / d * edge; }
       mmx.beginPath(); mmx.arc(c + x, c + y, 2.4, 0, 6.283); mmx.fill();
     }
+    for (i = 0; i < players.length; i++) {
+      o = players[i]; if (o === me) continue;
+      x = (o.x - px) * k; y = (o.y - py) * k;
+      d = Math.hypot(x, y);
+      if (d > edge) { x = x / d * edge; y = y / d * edge; }
+      mmx.globalAlpha = o.down ? 0.5 : 1;
+      mmx.fillStyle = LOOK_COLS[o.look.c];
+      mmx.beginPath(); mmx.arc(c + x, c + y, 3, 0, 6.283); mmx.fill();
+    }
+    mmx.globalAlpha = 1;
     mmx.fillStyle = '#ebe3d4';
     mmx.beginPath(); mmx.arc(c, c, 2.6, 0, 6.283); mmx.fill();
   }
@@ -1887,9 +2267,10 @@ body {
   function render() {
     var vw = W / zoom, vh = H / zoom;
     var sx = shake && !reduceMotion ? rnd(-shake, shake) : 0, sy = shake && !reduceMotion ? rnd(-shake, shake) : 0;
-    cam.x = Math.max(0, Math.min(WORLD - vw, player.x - vw / 2 + sx));
-    cam.y = Math.max(0, Math.min(WORLD - vh, player.y - vh / 2 + sy));
-    var i;
+    var focus = me || { x: WORLD / 2, y: WORLD / 2 };
+    cam.x = Math.max(0, Math.min(WORLD - vw, focus.x - vw / 2 + sx));
+    cam.y = Math.max(0, Math.min(WORLD - vh, focus.y - vh / 2 + sy));
+    var i, P, rr;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0c0a08'; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -1904,7 +2285,14 @@ body {
       var z = zombies[i];
       if (z.x > cam.x - 40 && z.x < cam.x + vw + 40 && z.y > cam.y - 40 && z.y < cam.y + vh + 40) drawZombie(z);
     }
-    drawPlayer();
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; rr = viewRef(P); if (!rr) continue;
+      if (P.down) {
+        ctx.globalAlpha = 0.45;
+        drawPlayerBody(ctx, P, defOf(rr), rr.tier || 1);
+        ctx.globalAlpha = 1;
+      } else drawPlayerBody(ctx, P, defOf(rr), rr.tier || 1);
+    }
     for (i = 0; i < parts.length; i++) {
       var p = parts[i];
       ctx.fillStyle = 'rgba(150,18,18,' + Math.min(1, p.life * 3).toFixed(2) + ')';
@@ -1918,10 +2306,15 @@ body {
     lctx.fillStyle = 'rgba(5,4,4,0.8)';
     lctx.fillRect(0, 0, lcv.width, lcv.height);
     lctx.globalCompositeOperation = 'destination-out';
-    var px = (player.x - cam.x) * K, py = (player.y - cam.y) * K, R = 320 * K * (1 + (player.flash > 0 ? 0.12 : 0));
-    var lg = lctx.createRadialGradient(px, py, R * 0.08, px, py, R);
-    lg.addColorStop(0, 'rgba(0,0,0,1)'); lg.addColorStop(0.5, 'rgba(0,0,0,0.82)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
-    lctx.fillStyle = lg; lctx.fillRect(0, 0, lcv.width, lcv.height);
+    for (i = 0; i < players.length; i++) {
+      P = players[i];
+      var mine = P === me, px = (P.x - cam.x) * K, py = (P.y - cam.y) * K;
+      if (!mine && (P.down || px < -200 * K || px > cv.width + 200 * K || py < -200 * K || py > cv.height + 200 * K)) continue;
+      var R = (mine ? 320 : 170) * K * (mine && !P.down ? (1 + (P.flash > 0 ? 0.12 : 0)) : (mine ? 0.55 : 1));
+      var lg = lctx.createRadialGradient(px, py, R * 0.08, px, py, R);
+      lg.addColorStop(0, 'rgba(0,0,0,1)'); lg.addColorStop(0.5, 'rgba(0,0,0,0.82)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
+      lctx.fillStyle = lg; lctx.fillRect(px - R, py - R, R * 2, R * 2);
+    }
     for (i = 0; i < fx.length; i += 6) {
       var lf = fx[i];
       if (lf.life > lf.max * 0.6) {
@@ -2029,18 +2422,31 @@ body {
         ctx.beginPath(); ctx.moveTo(b.x - b.dx * tl, b.y - b.dy * tl); ctx.lineTo(b.x, b.y); ctx.stroke();
       }
     }
-    if (player.flash > 0) {
-      var md = defOf(curRef()), fx0 = player.x + Math.cos(player.ang) * (md.len + 14), fy0 = player.y + Math.sin(player.ang) * (md.len + 14);
-      var fg = ctx.createRadialGradient(fx0, fy0, 0, fx0, fy0, 16);
-      fg.addColorStop(0, 'rgba(255,230,160,0.95)'); fg.addColorStop(1, 'rgba(255,140,40,0)');
-      ctx.fillStyle = fg; ctx.fillRect(fx0 - 16, fy0 - 16, 32, 32);
-    }
-    // reload bar over the player
-    var rr = curRef();
-    if (!isSpecialActive() && rr.reload > 0) {
-      var rf = 1 - rr.reload / WEAPONS[rr.id].reload;
-      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(player.x - 14, player.y - 24, 28, 5);
-      ctx.fillStyle = '#f2c14e'; ctx.fillRect(player.x - 13, player.y - 23, 26 * Math.max(0, Math.min(1, rf)), 3);
+    // muzzle flashes, reload bar, revive rings, names
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; rr = viewRef(P); if (!rr) continue;
+      if (P.flash > 0 && !P.down) {
+        var md = defOf(rr), fx0 = P.x + Math.cos(P.ang) * (md.len + 14), fy0 = P.y + Math.sin(P.ang) * (md.len + 14);
+        var fg = ctx.createRadialGradient(fx0, fy0, 0, fx0, fy0, 16);
+        fg.addColorStop(0, 'rgba(255,230,160,0.95)'); fg.addColorStop(1, 'rgba(255,140,40,0)');
+        ctx.fillStyle = fg; ctx.fillRect(fx0 - 16, fy0 - 16, 32, 32);
+      }
+      if (P === me && !P.down && !isSpecialActive(P) && rr.reload > 0 && WEAPONS[rr.id]) {
+        var rf = 1 - rr.reload / WEAPONS[rr.id].reload;
+        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(P.x - 14, P.y - 24, 28, 5);
+        ctx.fillStyle = '#f2c14e'; ctx.fillRect(P.x - 13, P.y - 23, 26 * Math.max(0, Math.min(1, rf)), 3);
+      }
+      if (P.down) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(P.x, P.y, 22, 0, 6.283); ctx.stroke();
+        ctx.strokeStyle = P.rev > 0 ? '#78e0a0' : 'rgba(255,255,255,0.4)'; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.arc(P.x, P.y, 22, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
+      }
+      if (players.length > 1 && P !== me) {
+        ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(P.name, P.x, P.y - 24);
+        ctx.fillStyle = LOOK_COLS[P.look.c]; ctx.fillText(P.name, P.x, P.y - 24);
+      }
     }
     for (i = 0; i < bolts.length; i++) {
       var bo = bolts[i], bl = Math.max(0, bo.life / 0.16), pp, qq, jx, jy;
@@ -2071,7 +2477,7 @@ body {
     var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.hypot(W, H) * 0.62);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.7)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-    var low = state === 'play' && player.hp / maxHpNow() < 0.3;
+    var low = state === 'play' && me && (me.down || me.hp / maxHpNow(me) < 0.3);
     var ha = Math.max(0, hurtFlash) * 0.9 + (low ? 0.1 + 0.07 * Math.sin(time * 6) : 0);
     if (ha > 0.01) { ctx.fillStyle = 'rgba(150,10,10,' + ha.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
     if (joy.active) {
@@ -2080,26 +2486,374 @@ body {
       ctx.fillStyle = 'rgba(235,227,212,0.4)';
       ctx.beginPath(); ctx.arc(joy.ox + joy.x * JR, joy.oy + joy.y * JR, 24, 0, 6.283); ctx.fill();
     }
-    if (state === 'play' || state === 'paused' || state === 'box') drawMini();
+    if (state === 'play' && me) drawMini();
   }
 
-  // ---------- loop ----------
-  var last = performance.now(), hudT = 0;
+
+  // ---------- online play (phone to phone, the host runs the game) ----------
+  var PEER_PREFIX = 'zsurvivor-', BK = ['bullet', 'fire', 'ray', 'rocket'], PK = ['special', 'health', 'ammo', 'perk'];
+  var peer = null, seats = [], myConn = null, evBase = 0;
+  var snaps = [], clockOff = null, lastSnapAt = 0, joinTimer = 0;
+
+  function mkCode() {
+    var a = 'ABCDEFGHJKMNPQRSTUVWXYZ', s = '', i;
+    for (i = 0; i < 4; i++) s += a.charAt(Math.floor(Math.random() * a.length));
+    return s;
+  }
+  function netErr(err) {
+    var t = err && err.type;
+    if (t === 'peer-unavailable') return 'No game with that code. Check the letters.';
+    if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') return 'Could not reach the matchmaking server. Check your signal and try again.';
+    if (t === 'browser-incompatible') return 'This browser cannot do online play.';
+    return 'Connection problem' + (t ? ' (' + t + ')' : '') + '. Try again.';
+  }
+  function netClose() {
+    try { if (myConn && myConn.open) myConn.send({ k: 'bye' }); } catch (e) {}
+    var pr = peer; peer = null; myConn = null; seats = []; hostCode = ''; snaps = []; clockOff = null; evq = []; evBase = 0;
+    clearTimeout(joinTimer);
+    try { if (pr) pr.destroy(); } catch (e) {}
+  }
+  function netSend(m) { try { if (myConn && myConn.open) myConn.send(m); } catch (e) {} }
+  function sendTo(c, m) { try { if (c && c.open) c.send(m); } catch (e) {} }
+
+  // ----- host side -----
+  function seatName(id, n) {
+    var s = cleanName(n) || ('Player ' + (id + 1)), i, dup = false;
+    for (i = 0; i < seats.length; i++) if (seats[i].id !== id && seats[i].name === s) dup = true;
+    return dup ? (s.slice(0, 9) + ' ' + (id + 1)) : s;
+  }
+  function buildRoster() {
+    roster = seats.map(function (s) { return { id: s.id, name: s.name, look: s.look }; });
+    for (var i = 0; i < seats.length; i++) if (seats[i].conn) sendTo(seats[i].conn, { k: 'roster', r: roster });
+    if (screen === 'host' || screen === 'wait') renderScreen();
+  }
+  function netHost(tries) {
+    tries = tries || 0;
+    if (!hasPeer) { netStatus = 'Online play needs signal the first time you open the app.'; showScreen('online'); return; }
+    netClose();
+    net = { mode: 'host' }; localId = 0; netStatus = 'Connecting...';
+    seats = [{ id: 0, name: cleanName(myName) || 'Player 1', look: cleanLook(myLook, 0), conn: null }];
+    roster = []; buildRoster();
+    var code = mkCode(), pr;
+    showScreen('host');
+    try { pr = new Peer(PEER_PREFIX + code); } catch (e) { netStatus = netErr(e); net = { mode: 'off' }; showScreen('online'); return; }
+    peer = pr;
+    pr.on('open', function () { if (peer !== pr) return; hostCode = code; netStatus = 'Waiting for players...'; if (screen === 'host') renderScreen(); });
+    pr.on('connection', function (c) { if (peer === pr) onHostConn(c); });
+    pr.on('disconnected', function () { try { if (peer === pr) pr.reconnect(); } catch (e) {} });
+    pr.on('error', function (err) {
+      if (peer !== pr) return;
+      if (err && err.type === 'unavailable-id' && tries < 6) { netHost(tries + 1); return; }
+      if (!hostCode) { netClose(); net = { mode: 'off' }; netStatus = netErr(err); showScreen('online'); }
+    });
+  }
+  function onHostConn(c) {
+    c.lastMsg = performance.now();
+    c.on('data', function (d) { c.lastMsg = performance.now(); hostMsg(c, d); });
+    c.on('close', function () { hostLeave(c); });
+    c.on('error', function () { hostLeave(c); });
+  }
+  function hostMsg(c, m) {
+    if (!m || typeof m !== 'object' || net.mode !== 'host') return;
+    var seat = c.seat, P, i, id;
+    if (m.k === 'hello') {
+      if (seat) return;
+      for (id = 1; id < MAXP; id++) { var taken = false; for (i = 0; i < seats.length; i++) if (seats[i].id === id) taken = true; if (!taken) break; }
+      if (id >= MAXP) { sendTo(c, { k: 'full' }); setTimeout(function () { try { c.close(); } catch (e) {} }, 400); return; }
+      seat = { id: id, name: '', look: cleanLook(m.look, id), conn: c };
+      seat.name = seatName(id, m.name);
+      c.seat = seat; c.evPos = evBase + evq.length; c.lastM = ''; c.lastMt = 0;
+      seats.push(seat);
+      buildRoster();
+      sendTo(c, { k: 'welcome', id: id, code: hostCode, r: roster, live: state === 'play' ? 1 : 0 });
+      if (state === 'play') addLatePlayer(seat);
+    } else if (m.k === 'in' && seat) {
+      P = pById(seat.id);
+      if (P) { P.inx = Math.max(-1, Math.min(1, (+m.x || 0) / 100)); P.iny = Math.max(-1, Math.min(1, (+m.y || 0) / 100)); }
+    } else if (m.k === 'cmd' && seat) {
+      P = pById(seat.id);
+      if (P && (m.c === 'swap' || m.c === 'shop' || m.c === 'box')) hostCmd(P, { c: m.c, a: String(m.a || ''), id: m.id });
+    } else if (m.k === 'bye') hostLeave(c);
+  }
+  function hostLeave(c) {
+    var seat = c.seat, i;
+    if (!seat) return;
+    c.seat = null;
+    for (i = seats.length - 1; i >= 0; i--) if (seats[i] === seat) seats.splice(i, 1);
+    for (i = players.length - 1; i >= 0; i--) if (players[i].id === seat.id) players.splice(i, 1);
+    try { c.close(); } catch (e) {}
+    if (state === 'play') { bannerAll(seat.name + ' left', '', 1.6); if (allDown()) gameOver(); }
+    buildRoster();
+  }
+  function addLatePlayer(seat) {
+    var P = newPlayer(seat.id, seat.name, seat.look);
+    P.conn = seat.conn; P.wallet = TUNE.lateCoins * wave;
+    if (me && !me.down) { P.x = me.x + 24; P.y = me.y; }
+    players.push(P);
+    sendTo(seat.conn, { k: 'start', r: roster, gen: gen });
+    bannerAll(seat.name + ' joined', '', 1.6);
+  }
+  function hostStart() {
+    if (net.mode !== 'host' || !hostCode) return;
+    var specs = seats.map(function (s) { return { id: s.id, name: s.name, look: s.look, conn: s.conn }; }), i;
+    evBase = 0;
+    newGame(specs);
+    for (i = 0; i < seats.length; i++) if (seats[i].conn) { seats[i].conn.evPos = 0; seats[i].conn.lastM = ''; sendTo(seats[i].conn, { k: 'start', r: roster, gen: gen }); }
+  }
+
+  function mFor(P) {
+    return {
+      w: r1(P.wallet), kl: P.kills, up: P.upg, ar: [P.armor.head, P.armor.body, P.armor.legs], pt: P.perkT,
+      sl: P.slots.map(function (g) { return g ? [g.id, g.tier, g.mag, g.res === Infinity ? -1 : g.res, r2(g.reload)] : 0; }),
+      un: P.unlocked, se: P.sel, sp: P.special ? [P.special.id, P.special.ammo, P.special.max] : 0,
+      ca: P.cards.map(function (c) { return [c.id, c.bought ? 1 : 0]; }), pg: P.pendingGun || 0, bx: P.boxPrize || 0
+    };
+  }
+  function buildCommon() {
+    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills };
+    var i, p, z, b, e, rr;
+    o.P = players.map(function (P) {
+      rr = curRef(P);
+      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs];
+    });
+    o.Z = zombies.map(function (z) {
+      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? 1 : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA)];
+    });
+    o.B = bullets.slice(0, 140).map(function (b) {
+      return [BK.indexOf(b.kind), r1(b.x), r1(b.y), r2(b.dx), r2(b.dy), (b.crit ? 1 : 0) | (b.long ? 2 : 0) | (b.explosive ? 4 : 0), r2(Math.min(1, b.dist / b.max)), Math.round(b.speed)];
+    });
+    o.E = ebullets.map(function (e) { return [e.id, r1(e.x), r1(e.y), r2(e.dx), r2(e.dy), e.r, r1(e.spin), e.spd]; });
+    o.C = coins.slice(0, 160).map(function (c) { return [r1(c.x), r1(c.y)]; });
+    o.K = pickups.map(function (p) { return [PK.indexOf(p.kind), p.id, r1(p.x), r1(p.y), r1(Math.min(99, p.t))]; });
+    o.X = boxes.map(function (b) { return [b.x, b.y]; });
+    o.R = BLD.map(function (b) { return [b.bar.planks, r2(b.bar.rt)]; });
+    return o;
+  }
+  function sendSnaps() {
+    var i, c, base = null, minPos = 1e12, any = false, str, ev, mstr, now = performance.now();
+    for (i = 0; i < seats.length; i++) {
+      c = seats[i].conn; if (!c || !c.open || !c.seat) continue;
+      any = true;
+      if (now - c.lastMsg > 8000) { hostLeave(c); i--; continue; }
+      if (c.dataChannel && c.dataChannel.bufferedAmount > 200000) { minPos = Math.min(minPos, c.evPos); continue; }
+      if (!base) base = JSON.stringify(buildCommon());
+      var P = pById(seats[i].id);
+      ev = evq.slice(Math.max(0, c.evPos - evBase));
+      str = base.slice(0, -1) + ',"e":' + JSON.stringify(ev);
+      if (P) {
+        if (P.pev.length) { str += ',"pe":' + JSON.stringify(P.pev); }
+        mstr = JSON.stringify(mFor(P));
+        if (mstr !== c.lastM || now - c.lastMt > 1000) { str += ',"m":' + mstr; c.lastM = mstr; c.lastMt = now; }
+        P.pev = [];
+      }
+      sendTo(c, str + "}");
+      c.evPos = evBase + evq.length;
+      minPos = Math.min(minPos, c.evPos);
+    }
+    if (!any) { evq.length = 0; evBase = 0; }
+    else if (minPos < 1e12) { var drop = minPos - evBase; if (drop > 0) { evq.splice(0, drop); evBase = minPos; } }
+    if (evq.length > 300) { evq.splice(0, evq.length - 300); evBase = evBase + 0; }
+  }
+
+  // ----- client side -----
+  function netJoin(code) {
+    if (!hasPeer) { netStatus = 'Online play needs signal the first time you open the app.'; renderScreen(); return; }
+    if (code.length !== 4) { netStatus = 'Type the 4 letters from the host.'; renderScreen(); return; }
+    netClose();
+    net = { mode: 'client' }; localId = 0; netStatus = 'Connecting...'; renderScreen();
+    var pr;
+    function fail(t) { if (peer !== pr) return; netClose(); net = { mode: 'off' }; netStatus = t; showScreen('join'); }
+    try { pr = new Peer(); } catch (e) { netClose(); net = { mode: 'off' }; netStatus = netErr(e); showScreen('join'); return; }
+    peer = pr;
+    joinTimer = setTimeout(function () { if (net.mode === 'client' && !myConn) fail('Could not reach that game. Check the code and your signal.'); else if (net.mode === 'client' && screen === 'join') fail('The host did not answer.'); }, 15000);
+    pr.on('error', function (err) { fail(netErr(err)); });
+    pr.on('open', function () {
+      if (peer !== pr) return;
+      var c = pr.connect(PEER_PREFIX + code, { reliable: true, serialization: 'json' });
+      myConn = c;
+      c.on('open', function () { sendTo(c, { k: 'hello', name: cleanName(myName), look: myLook }); });
+      c.on('data', function (m) { if (peer === pr) clientMsg(m); });
+      c.on('close', function () { if (peer === pr) clientLost('The host left the game.'); });
+      c.on('error', function () { if (peer === pr) clientLost('Connection problem.'); });
+    });
+  }
+  function clientLost(msg) {
+    if (net.mode !== 'client' || screen === 'lost') return;
+    if (screen === 'join') return;
+    netStatus = msg; state = 'ready';
+    netClose();
+    showScreen('lost');
+  }
+  function clientMsg(m) {
+    if (typeof m === 'string') { try { m = JSON.parse(m); } catch (e) { return; } }
+    if (!m || typeof m !== 'object') return;
+    if (m.k === 'snap') onSnap(m);
+    else if (m.k === 'welcome') {
+      clearTimeout(joinTimer);
+      localId = m.id; roster = m.r || []; hostCode = m.code || ''; lastSnapAt = performance.now();
+      if (!m.live) showScreen('wait');
+    } else if (m.k === 'roster') {
+      roster = m.r || [];
+      if (screen === 'wait') renderScreen();
+      if (state === 'play') syncRoster();
+    } else if (m.k === 'start') startClient(m);
+    else if (m.k === 'full') { var pr0 = peer; netClose(); net = { mode: 'off' }; netStatus = 'That game is full.'; showScreen('join'); }
+  }
+  function rosterOf(id) { for (var i = 0; i < roster.length; i++) if (roster[i].id === id) return roster[i]; return null; }
+  function syncRoster() {
+    for (var i = players.length - 1; i >= 0; i--) if (players[i] !== me && !rosterOf(players[i].id)) players.splice(i, 1);
+  }
+  function ensurePlayer(id) {
+    var P = pById(id), r;
+    if (P) return P;
+    r = rosterOf(id);
+    P = newPlayer(id, r ? r.name : 'Player ' + (id + 1), r ? cleanLook(r.look, id) : cleanLook(null, id));
+    players.push(P);
+    return P;
+  }
+  function startClient(m) {
+    roster = m.r || roster; gen = m.gen;
+    players = roster.map(function (r) { return newPlayer(r.id, r.name, cleanLook(r.look, r.id)); });
+    me = pById(localId) || ensurePlayer(localId);
+    zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = []; boxes = [];
+    snaps = []; clockOff = null; lastSnapAt = performance.now();
+    bloodL.x.clearRect(0, 0, WORLD, WORLD);
+    wave = 1; phase = 'spawning'; kills = 0; shake = 0; hurtFlash = 0;
+    state = 'play'; shopOpen = false; shop.hidden = true; boxUI.hidden = true;
+    showScreen('');
+  }
+  function angLerp(a, b, t) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; }
+  function onSnap(m) {
+    if (net.mode !== 'client' || !me) return;
+    if (m.gen !== gen && m.st === 1) startClient({ r: roster, gen: m.gen });
+    if (m.gen !== gen) return;
+    var nowS = performance.now() / 1000, off = nowS - m.ht, i, r, P, k;
+    clockOff = clockOff === null ? off : Math.min(off, clockOff + 0.0004);
+    lastSnapAt = performance.now();
+    m.Zm = {}; for (i = 0; i < m.Z.length; i++) m.Zm[m.Z[i][0]] = m.Z[i];
+    m.Pm = {}; for (i = 0; i < m.P.length; i++) m.Pm[m.P[i][0]] = m.P[i];
+    snaps.push(m); if (snaps.length > 4) snaps.shift();
+    wave = m.wv; phase = m.ph ? 'grace' : 'spawning'; graceT = m.gt; leftN = m.l; kills = m.kt;
+    if (m.e) for (i = 0; i < m.e.length; i++) applyEv(m.e[i]);
+    if (m.pe) for (i = 0; i < m.pe.length; i++) applyEv(m.pe[i]);
+    // players
+    for (i = 0; i < m.P.length; i++) {
+      r = m.P[i]; P = ensurePlayer(r[0]);
+      P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11] };
+      if (r[12]) P.flash = 0.06;
+      P.kills = r[13]; P.armor = { head: Math.floor(r[14] / 100), body: Math.floor(r[14] / 10) % 10, legs: r[14] % 10 };
+      if (P === me) {
+        P.sx = r[1]; P.sy = r[2]; P.ang = r[3];
+        if (P.px === undefined || P.down) { P.x = r[1]; P.y = r[2]; P.px = 1; }
+        else { var er = Math.hypot(P.x - r[1], P.y - r[2]); if (er > 140) { P.x = r[1]; P.y = r[2]; } }
+      } else { P.step = r[9]; }
+    }
+    for (i = players.length - 1; i >= 0; i--) if (players[i] !== me && !m.Pm[players[i].id]) players.splice(i, 1);
+    if (m.m) applyMine(m.m);
+    // slow-changing world bits
+    coins = m.C.map(function (c) { return { x: c[0], y: c[1] }; });
+    pickups = m.K.map(function (p) { return { kind: PK[p[0]], id: p[1], x: p[2], y: p[3], t: p[4] }; });
+    boxes = m.X.map(function (b) { return { x: b[0], y: b[1] }; });
+    for (i = 0; i < BLD.length && i < m.R.length; i++) { BLD[i].bar.planks = m.R[i][0]; BLD[i].bar.rt = m.R[i][1]; }
+    if (m.st === 2 && state === 'play') {
+      state = 'over'; joy.active = false; joy.x = joy.y = 0;
+      overBest = wave > bestWave;
+      if (overBest) { bestWave = wave; try { localStorage.setItem('zs-best-wave', String(wave)); } catch (e) {} }
+      showScreen('over');
+    }
+  }
+  function applyMine(a) {
+    me.wallet = a.w; me.kills = a.kl; me.upg = a.up; me.perkT = a.pt;
+    me.slots = a.sl.map(function (r) { return r ? { id: r[0], tier: r[1], mag: r[2], res: r[3] < 0 ? Infinity : r[3], reload: r[4] } : null; });
+    me.unlocked = a.un; me.sel = a.se; if (a.se !== 3) me.lastSel = a.se;
+    me.special = a.sp ? { id: a.sp[0], ammo: a.sp[1], max: a.sp[2] } : null;
+    me.cards = a.ca.map(function (r) { return { id: r[0], bought: !!r[1] }; });
+    me.pendingGun = a.pg || null; me.boxPrize = a.bx || null;
+  }
+
+  // each frame on a client: walk, smooth everything else between the last two snapshots
+  function clientTick(dt) {
+    if (!snaps.length || !me) return;
+    var nowS = performance.now() / 1000, rt = nowS - clockOff - 0.1, i, s0 = snaps[0], s1 = snaps[snaps.length - 1], a = 1, r0, r1_, z, P, t;
+    for (i = 0; i < snaps.length; i++) if (snaps[i].ht >= rt) { s1 = snaps[i]; s0 = i > 0 ? snaps[i - 1] : snaps[i]; break; }
+    if (s1.ht > s0.ht) a = Math.max(0, Math.min(1, (rt - s0.ht) / (s1.ht - s0.ht)));
+    // own movement is predicted, then eased toward what the host says
+    if (state === 'play' && !me.down) {
+      movePlayer(me, dt, me.inx, me.iny);
+      if (me.sx !== undefined) {
+        var ex = me.sx - me.x, ey = me.sy - me.y, ed = Math.hypot(ex, ey), idle = !me.inx && !me.iny;
+        var f = idle ? Math.min(1, dt * 8) : (ed > 60 ? Math.min(1, dt * 5) : Math.min(1, dt * 0.8));
+        me.x += ex * f; me.y += ey * f;
+      }
+    } else if (me.sx !== undefined) { me.x = me.sx; me.y = me.sy; }
+    for (i = 0; i < s1.P.length; i++) {
+      r1_ = s1.P[i]; P = pById(r1_[0]); if (!P || P === me) continue;
+      r0 = s0.Pm[r1_[0]] || r1_;
+      P.x = r0[1] + (r1_[1] - r0[1]) * a; P.y = r0[2] + (r1_[2] - r0[2]) * a; P.ang = angLerp(r0[3], r1_[3], a);
+    }
+    var zs = [];
+    for (i = 0; i < s1.Z.length; i++) {
+      r1_ = s1.Z[i]; r0 = s0.Zm[r1_[0]] || r1_;
+      t = TYPES[TYPE_KEYS[r1_[1]]]; if (!t) continue;
+      z = {
+        id: r1_[0], type: TYPE_KEYS[r1_[1]], r: t.r, skin: t.skin, cloth: t.cloth, boss: !!t.boss, kind: t.kind || '', seed: (r1_[0] * 7.31) % 10,
+        x: r0[2] + (r1_[2] - r0[2]) * a, y: r0[3] + (r1_[3] - r0[3]) * a, ang: angLerp(r0[4], r1_[4], a),
+        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, warn: r1_[8], breath: r1_[9], dashA: r1_[10]
+      };
+      if (z.breath > 0 && z.kind === 'fire') pyroFx(z);
+      zs.push(z);
+    }
+    zombies = zs;
+    // projectiles fly on from the newest snapshot
+    var ln = snaps[snaps.length - 1], age = Math.max(0, Math.min(0.15, nowS - clockOff - ln.ht));
+    bullets = ln.B.map(function (b) {
+      return { kind: BK[b[0]] || 'bullet', x: b[1] + b[3] * b[7] * age, y: b[2] + b[4] * b[7] * age, dx: b[3], dy: b[4], crit: !!(b[5] & 1), long: !!(b[5] & 2), explosive: !!(b[5] & 4), dist: b[6] * 100, max: 100 };
+    });
+    ebullets = ln.E.map(function (e) {
+      return { id: e[0], x: e[1] + e[3] * e[7] * age, y: e[2] + e[4] * e[7] * age, dx: e[3], dy: e[4], r: e[5], spin: e[6] + age * 9, shape: rockShape(e[0]) };
+    });
+    for (i = 0; i < players.length; i++) { P = players[i]; if (P.flash > 0) P.flash -= dt; if (P.inv > 0) P.inv -= dt; }
+    updateFx(dt);
+    if (state === 'play' && performance.now() - lastSnapAt > 5000) clientLost('Lost contact with the host.');
+  }
+
+  // ---------- main loop ----------
+  var last = performance.now(), hudT = 0, snapT = 0, inT = 0, lastIn = '', lastInAt = 0;
   function loop(now) {
     var dt = (now - last) / 1000; last = now;
     if (dt > 0.05) dt = 0.05;
-    if (state === 'play') update(dt);
+    if (me) gatherInput();
+    if (net.mode === 'client') {
+      clientTick(dt);
+      inT += dt;
+      if (state === 'play' && inT >= 0.033) {
+        inT = 0;
+        var is = Math.round(me.inx * 100) + ',' + Math.round(me.iny * 100);
+        if (is !== lastIn || now - lastInAt > 250) { lastIn = is; lastInAt = now; netSend({ k: 'in', x: Math.round(me.inx * 100), y: Math.round(me.iny * 100) }); }
+      }
+    } else {
+      if (state === 'play' && !frozen()) update(dt);
+      leftN = queue.length + zombies.length;
+      if (net.mode === 'host') {
+        snapT += dt;
+        if (snapT >= 0.05 && state !== 'ready') { snapT = 0; sendSnaps(); }
+      }
+    }
+    tickVisuals(dt);
     render();
     hudT -= dt;
     if (hudT <= 0) { hudT = 0.1; updateHud(); }
     requestAnimationFrame(loop);
   }
+
+  // ---------- start ----------
+  myLook = cleanLook(savedLook, Math.floor(Math.random() * LOOK_COLS.length));
+  players = [newPlayer(0, 'You', myLook)]; me = players[0];
+  showScreen('main');
   updateHud();
-  paintCont();
   requestAnimationFrame(loop);
 
 })();
 </script>
 
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}</script>
-</body></html>
