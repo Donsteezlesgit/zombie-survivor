@@ -1,9 +1,9 @@
 // Zombie Survivor service worker: network-first so new versions show up on the next online launch,
 // cache fallback so the game still opens offline.
-var CACHE = 'zs-v3';
+var CACHE = 'zs-v4';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './peerjs.min.js'];
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return Promise.all(CORE.map(function (u) { return fetch(u, { cache: 'reload' }).then(function (r) { if (r.ok) return c.put(u, r); }); })); }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (ks) {
@@ -15,7 +15,7 @@ function netFirst(req) {
     var done = false;
     function fromCache() { caches.match(req, { ignoreSearch: true }).then(function (r) { if (!done) { done = true; resolve(r || Response.error()); } }); }
     var timer = setTimeout(fromCache, 4000);
-    fetch(req).then(function (res) {
+    fetch(req.mode === 'navigate' ? req.url : req, { cache: 'reload' }).then(function (res) {
       clearTimeout(timer);
       if (res && res.ok) { var copy = res.clone(); caches.open(CACHE).then(function (c) { c.put(req, copy); }); }
       if (!done) { done = true; resolve(res); }

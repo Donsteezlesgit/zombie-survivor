@@ -1678,6 +1678,8 @@ body {
       h += '<button class="go alt" data-a="me" type="button">Your player</button>';
       h += '<button class="go alt" data-a="help" type="button">How to play</button>';
       h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
+      h += '<button class="chip" data-a="refresh" type="button">Update game</button>';
+      h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
       if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
     } else if (screen === 'offline') {
       d = readSave();
@@ -1745,6 +1747,20 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help') initHelp();
   }
+  var updMsg = '', VERSION = 'Version 22';
+  // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
+  function refreshApp() {
+    updMsg = 'Checking for the latest version...'; renderScreen();
+    var url = location.pathname + '?v=' + Date.now();
+    fetch(url, { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('bad');
+      updMsg = 'Updating...'; renderScreen();
+      var jobs = [];
+      try { if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (x) { return x.unregister(); })); })); } catch (e) {}
+      try { if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e) {}
+      return Promise.all(jobs);
+    }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'main') renderScreen(); });
+  }
   function showScreen(name) {
     screen = name;
     if (name) {
@@ -1793,6 +1809,7 @@ body {
     else if (a === 'dojoin') { el = $('codeIn'); joinCode = String(el ? el.value : joinCode).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); netJoin(joinCode); }
     else if (a === 'hstart') hostStart();
     else if (a === 'resume') showScreen('');
+    else if (a === 'refresh') refreshApp();
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
     else if (a === 'leave') leaveGame();
