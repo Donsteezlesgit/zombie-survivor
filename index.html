@@ -135,7 +135,7 @@ body {
 .tmbar { flex: 1; height: 5px; min-width: 40px; background: rgba(0, 0, 0, 0.6); }
 .tmbar i { display: block; height: 100%; background: currentColor; }
 
-.overlay h1 { }
+.overlay > .go, .overlay > .chip { width: min(240px, 100%); padding-inline: 0; }
 .slides { display: flex; width: min(300px, 100%); overflow-x: auto; scroll-snap-type: x mandatory; touch-action: pan-x; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .slides::-webkit-scrollbar { display: none; }
 .slide { flex: 0 0 100%; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -1677,9 +1677,7 @@ body {
       h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
       h += '<button class="go alt" data-a="me" type="button">Your player</button>';
       h += '<button class="go alt" data-a="help" type="button">How to play</button>';
-      h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
-      h += '<button class="chip" data-a="refresh" type="button">Update game</button>';
-      h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
+      h += '<button class="chip" data-a="settings" type="button">Settings</button>';
       if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
     } else if (screen === 'offline') {
       d = readSave();
@@ -1738,6 +1736,12 @@ body {
         h += '<button class="go" data-a="again" type="button">' + (net.mode === 'host' ? 'Play again' : 'Try again') + '</button>';
         h += '<button class="chip" data-a="leave" type="button">Menu</button>';
       }
+    } else if (screen === 'settings') {
+      h += '<h1>Settings</h1>';
+      h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
+      h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
+      h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
+      h += '<button class="go" data-a="back" data-to="main" type="button">Back</button>';
     } else if (screen === 'help') {
       h += helpHtml();
     } else if (screen === 'lost') {
@@ -1759,7 +1763,7 @@ body {
       try { if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (x) { return x.unregister(); })); })); } catch (e) {}
       try { if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e) {}
       return Promise.all(jobs);
-    }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'main') renderScreen(); });
+    }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'settings') renderScreen(); });
   }
   function showScreen(name) {
     screen = name;
@@ -1810,6 +1814,7 @@ body {
     else if (a === 'hstart') hostStart();
     else if (a === 'resume') showScreen('');
     else if (a === 'refresh') refreshApp();
+    else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
     else if (a === 'leave') leaveGame();
