@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15110e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Zombies"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15110e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Zombies"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Zombie Survivor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,7 @@ body {
 .game { position: fixed; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; background: var(--ground); }
 #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
-.hud { position: absolute; left: 0; right: 0; top: 0; padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.hud { position: absolute; left: 0; right: 0; top: 0; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
 .row { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .hp { position: relative; flex: 1; min-width: 0; height: 24px; background: rgba(0, 0, 0, 0.6); border: 1px solid #4a3f38; overflow: hidden; }
 .hpfill { position: absolute; inset: 0 auto 0 0; width: 100%; background: var(--blood); transition: width 0.12s linear; }
@@ -58,7 +58,7 @@ body {
 .perk { padding: 3px 8px; border: 1px solid currentColor; border-radius: 3px; background: rgba(0, 0, 0, 0.6); font: 700 14px/1.1 var(--face-ui); letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
 
 :root { --rw: 104px; }
-.rcol { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 68px; width: var(--rw); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.rcol { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 68px); width: var(--rw); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
 .mm { display: block; width: var(--rw); height: var(--rw); border-radius: 50%; border: 1px solid #5a4d44; background: rgba(0, 0, 0, 0.5); }
 .swap {
   box-sizing: border-box; width: var(--rw); padding: 7px 8px 8px;
@@ -79,7 +79,7 @@ body {
 .boxbtn { position: absolute; right: 16px; bottom: 16px; min-height: 48px; padding: 8px 14px; background: var(--gold); color: #1a0e08; border: 0; border-radius: 6px; font: 700 16px/1.1 var(--face-ui); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
 .stats, .perks, .team { max-width: calc(100% - 118px); }
 @media (max-height: 520px) {
-  .hud { padding-top: max(6px, env(safe-area-inset-top, 0px)); gap: 3px; }
+  .hud { padding-top: calc(env(safe-area-inset-top, 0px) + 6px); gap: 3px; }
   .row { gap: 8px; }
   .hp { height: 18px; }
   .hptxt { font-size: 13px; line-height: 16px; }
@@ -90,7 +90,7 @@ body {
   .stats { font-size: 12px; }
   .perk { font-size: 12px; padding: 2px 6px; }
   :root { --rw: 88px; }
-  .rcol { top: 50px; gap: 6px; }
+  .rcol { top: calc(env(safe-area-inset-top, 0px) + 50px); gap: 6px; }
   .swap { padding: 5px 6px 6px; font-size: 13px; }
   .swap small { margin-top: 3px; font-size: 14px; }
   .swapgo { width: 42px; height: 42px; top: 58%; }
@@ -259,6 +259,12 @@ body {
 }
 .overlay { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
 .shop { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+.overlay { padding-top: calc(env(safe-area-inset-top, 0px) + 24px); }
+.shop { padding-top: calc(env(safe-area-inset-top, 0px) + 14px); }
+@media (max-height: 520px) {
+  .overlay { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+  .shop { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
+}
 </style>
 
 <div class="game" id="game">
@@ -1865,7 +1871,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 38';
+  var updMsg = '', VERSION = 'Version 39';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2474,7 +2480,11 @@ body {
   }
 
   // ---------- sizing ----------
+  var insT = 0, insProbe = document.createElement('div');
+  insProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)';
+  document.body.appendChild(insProbe);
   function fit() {
+    insT = parseFloat(getComputedStyle(insProbe).paddingTop) || 0;
     var r = game.getBoundingClientRect();
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -2688,7 +2698,7 @@ body {
     var sx = shake && !reduceMotion ? rnd(-shake, shake) : 0, sy = shake && !reduceMotion ? rnd(-shake, shake) : 0;
     var focus = me || { x: WORLD / 2, y: WORLD / 2 };
     cam.x = Math.max(0, Math.min(WORLD - vw, focus.x - vw / 2 + sx));
-    cam.y = Math.max(0, Math.min(WORLD - vh, focus.y - vh / 2 + sy));
+    cam.y = Math.max(0, Math.min(WORLD - vh, focus.y - vh / 2 - insT / (2 * zoom) + sy));
     var i, P, rr;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
