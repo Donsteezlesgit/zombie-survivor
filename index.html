@@ -19,7 +19,8 @@
   --face-ui: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: dark;
 }
-html, body { height: 100%; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html { position: fixed; inset: 0; width: 100%; }
 body {
   margin: 0;
   background: var(--ground);
@@ -232,13 +233,13 @@ body {
     coinWave: 0.06, magBase: 80,
     dropTank: 0.35, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.16, runner: 0.16, tank: 0.5, boss: 1 }, ammoLife: 18,
-    dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, boss: 0.5 }, perkLife: 14, perkDur: 10,
+    dropAmmo: { walker: 0.16, runner: 0.16, tank: 0.5, armoured: 0.45, boss: 1 }, ammoLife: 18,
+    dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
     specStep: 10, specDmg: 0.6, specAmmo: 0.2,
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
-    throwGap: 3.6, grace: 20, coopCount: 0.55, coopHp: 0.2, coopCap: 30, reviveT: 3, lateCoins: 40,
+    throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 25, lateHp: 0.05, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 30, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45
   };
   var TYPES = {
@@ -248,7 +249,8 @@ body {
     boss:      { r: 27, hp: 700, spd: 50,  dmg: 26, cd: 1.2, coins: 40, skin: '#7a4a46', cloth: '#2a1f1f', boss: 1, kind: 'brute', name: 'Brute boss' },
     bossRun:   { r: 21, hp: 480, spd: 92,  dmg: 20, cd: 0.9, coins: 40, skin: '#8a5a3c', cloth: '#3a1f18', boss: 1, kind: 'run',   name: 'Sprinter boss' },
     bossThrow: { r: 26, hp: 650, spd: 55,  dmg: 24, cd: 1.2, coins: 40, skin: '#5f7080', cloth: '#222c38', boss: 1, kind: 'throw', name: 'Thrower boss' },
-    bossFire:  { r: 26, hp: 800, spd: 52,  dmg: 24, cd: 1.2, coins: 40, skin: '#8a3a2a', cloth: '#3a1210', boss: 1, kind: 'fire',  name: 'Pyro boss' }
+    bossFire:  { r: 26, hp: 800, spd: 52,  dmg: 24, cd: 1.2, coins: 40, skin: '#8a3a2a', cloth: '#3a1210', boss: 1, kind: 'fire',  name: 'Pyro boss' },
+    armoured:  { r: 14, hp: 420, spd: 52,  dmg: 24, cd: 1.0, coins: 22, skin: '#6c7c80', cloth: '#262e32' }
   };
   var BOSS_KINDS = ['boss', 'bossRun', 'bossThrow', 'bossFire'];
   var PR = 11;
@@ -286,6 +288,12 @@ body {
   G('m82',     'Barrett M82',     'sniper',  1900, 16,   0.9,  1, 0.005, 520, 1200, 4,   5,  25, 3.2);
   G('aa12',    'AA-12',           'shotgun', 2200, 0.9,  5,    8, 0.70, 250,  600, 0,  20, 100, 2.8);
   G('m60',     'M60',             'lmg',     2600, 1.9, 11,    1, 0.10, 430,  820, 1, 100, 400, 4.2);
+  G('aug',     'Steyr AUG',       'rifle',   3500, 2.4, 10,    1, 0.04, 460,  900, 1,  42, 252, 1.8);
+  G('striker', 'Striker 12',      'shotgun', 4800, 1.2,  6.5,  10, 0.60, 260,  620, 1,  12,  72, 2.6);
+  G('val',     'AS Val',          'smg',     6200, 1.1, 16,    1, 0.07, 430,  820, 1,  40, 280, 1.5);
+  G('negev',   'IWI Negev',       'lmg',     8500, 2.2, 14,    1, 0.09, 450,  860, 1, 150, 600, 4.2);
+  G('tac50',   'McMillan TAC-50', 'sniper', 11000, 30,   0.8,  1, 0.003, 560, 1300, 6,   5,  30, 3.4);
+  G('m2',      'M2 Browning',     'lmg',    15000, 6,    8,    1, 0.06, 520, 1000, 3, 120, 480, 5.0);
   var SHOP_GUNS = Object.keys(WEAPONS).filter(function (k) { return WEAPONS[k].price > 0; }).sort(function (a, b) { return WEAPONS[a].price - WEAPONS[b].price; });
 
   var SPECIALS = {
@@ -308,7 +316,8 @@ body {
       WEAPONS[w.id] = w;
     });
   })();
-  var ROMAN = ['', 'I', 'II', 'III', 'IV'];
+  var ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  function tierCol(t) { return t <= 4 ? RAR[t - 1] : (t <= 7 ? RAR[4] : RAR[5]); }
   var SLOT_COST = [0, 40, 260];
   // gun rarity colours: grey, green, blue, purple, red, and gold for specials
   var RAR = ['#9aa0a6', '#5fb878', '#4a90e2', '#a56bd8', '#e0453a', '#f2c14e'];
@@ -641,7 +650,10 @@ body {
   function maxHpNow(P) { return TUNE.hpBase * (1 + 0.1 * P.upg.hp) + armVal(P, 'body'); }
   function spdNow(P) { return TUNE.spdBase * (1 + 0.1 * P.upg.spd + armVal(P, 'legs')) * (P.perkT.spd > 0 ? 1.6 : 1); }
 
-  function specStage() { return Math.floor(wave / TUNE.specStep); }
+  function graceFor(w) { return Math.round(Math.max(TUNE.graceMin, TUNE.grace - (TUNE.grace - TUNE.graceMin) * (w - 1) / (TUNE.graceWave - 1))); }
+  function lateN(w) { return Math.max(0, w - TUNE.lateStart); }
+  function perkFactor(w) { return w <= TUNE.lateStart ? 1 : Math.max(TUNE.perkFloor, 1 - (1 - TUNE.perkFloor) * (w - TUNE.lateStart) / (TUNE.perkFadeEnd - TUNE.lateStart)); }
+  function specStage() { return Math.floor(wave / TUNE.specStep) + Math.max(0, Math.floor((wave - 20) / 5)); }
   function specMult() { return 1 + TUNE.specDmg * specStage(); }
   function specAmmoMult() { return 1 + TUNE.specAmmo * specStage(); }
   function gunMag(d) { return d.special ? Math.round(d.mag * specAmmoMult()) : d.mag; }
@@ -658,7 +670,7 @@ body {
     return {
       d: d,
       dmg: TUNE.baseDmg * d.dmg * (1 + 0.3 * (t - 1)) * (1 + 0.1 * P.upg.dmg) * (d.special ? specMult() : 1),
-      rate: d.rate * (1 + 0.1 * (t - 1)) * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1)
+      rate: d.rate * (1 + 0.1 * (Math.min(t, 4) - 1) + 0.05 * Math.max(0, t - 4)) * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1)
     };
   }
   function setSel(P, n) {
@@ -743,10 +755,11 @@ body {
     var np = Math.max(1, players.length);
     var q = [], n = Math.round((6 + 4 * (w - 1)) * (1 + TUNE.coopCount * (np - 1))), i;
     var tankP = w >= 5 ? Math.min(0.2, 0.04 * (w - 4)) : 0;
+    var armP = w >= TUNE.lateStart ? Math.min(0.22, 0.03 * (w - TUNE.lateStart + 1)) : 0;
     var runnerP = w >= 3 ? Math.min(0.35, 0.08 * (w - 2)) : 0;
     for (i = 0; i < n; i++) {
       var r = Math.random();
-      q.push(r < tankP ? 'tank' : (r < tankP + runnerP ? 'runner' : 'walker'));
+      q.push(r < armP ? 'armoured' : (r < armP + tankP ? 'tank' : (r < armP + tankP + runnerP ? 'runner' : 'walker')));
     }
     if (w % 5 === 0) {
       var nb = 1 + Math.floor(w / 15), b0 = (Math.floor(w / 5) - 1) % BOSS_KINDS.length;
@@ -788,6 +801,7 @@ body {
     var x = b.sx + b.tx * jit, y = b.sy + b.ty * jit;
     var hpS = 1 + TUNE.zHpScale * (wave - 1), dS = 1 + TUNE.zDmgScale * (wave - 1);
     if (wave >= TUNE.l25.wave) { hpS *= TUNE.l25.hp; dS *= TUNE.l25.dmg; }
+    hpS *= 1 + TUNE.lateHp * lateN(wave); dS *= 1 + TUNE.lateDmg * lateN(wave);
     hpS *= 1 + TUNE.coopHp * (Math.max(1, players.length) - 1);
     zombies.push({
       id: zid++, x: x, y: y, type: type, r: t.r, hp: t.hp * hpS, maxhp: t.hp * hpS, boss: !!t.boss, kind: t.kind || '',
@@ -878,8 +892,8 @@ body {
       rollCards(players[i]);
       if (players[i].down) revivePlayer(players[i], 0.5);
     }
-    phase = 'grace'; graceT = TUNE.grace;
-    bannerAll('Wave ' + wave + ' cleared', 'Next wave in ' + TUNE.grace + 's · shop is open any time', 2.6);
+    phase = 'grace'; graceT = graceFor(wave);
+    bannerAll('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's · shop is open any time', 2.6);
     stone(330, 330, 0.12, 'square', 0.06); stone(494, 494, 0.12, 'square', 0.06, 0.12); stone(659, 659, 0.2, 'square', 0.06, 0.24);
     saveGame();
   }
@@ -937,7 +951,7 @@ body {
     P.slots = [null, null, null];
     for (i = 0; i < 3; i++) {
       g = d.slots[i];
-      if (g && WEAPONS[g.id] && i < P.unlocked) { P.slots[i] = makeGun(g.id); P.slots[i].tier = Math.max(1, Math.min(4, +g.tier || 1)); }
+      if (g && WEAPONS[g.id] && i < P.unlocked) { P.slots[i] = makeGun(g.id); P.slots[i].tier = Math.max(1, Math.min(TUNE.maxTier, +g.tier || 1)); }
     }
     if (!P.slots[0]) P.slots[0] = makeGun('glock');
     P.special = null; P.sel = 0; P.lastSel = 0;
@@ -948,8 +962,8 @@ body {
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; queue = []; ebullets = []; bolts = [];
     P.hp = Math.max(1, Math.min(maxHpNow(P), +d.hp || maxHpNow(P)));
     rollCards(P);
-    phase = 'grace'; graceT = TUNE.grace; state = 'play';
-    showBanner('Wave ' + wave + ' cleared', 'Next wave in ' + TUNE.grace + 's · shop is open any time', 2.6);
+    phase = 'grace'; graceT = graceFor(wave); state = 'play';
+    showBanner('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's · shop is open any time', 2.6);
     return true;
   }
 
@@ -976,7 +990,7 @@ body {
 
   // ---------- shop rules (run on the host for every player) ----------
   function upgCost(P, id) { return Math.round(UPG[id].base * (1 + 0.4 * P.upg[id])); }
-  function gunUpCost(s) { var w = WEAPONS[s.id]; return Math.max(50, Math.round((w.price || w.upv || 0) * 0.3)) * s.tier; }
+  function gunUpCost(s) { var w = WEAPONS[s.id], t = s.tier; return Math.max(50, Math.round((w.price || w.upv || 0) * 0.3)) * (t <= 3 ? t : Math.round(t * (1 + 0.9 * (t - 3)))); }
   function ownsGun(P, id) { for (var i = 0; i < 3; i++) if (P.slots[i] && P.slots[i].id === id) return true; return false; }
   function fmt(n) { return n < 10 ? n.toFixed(1) : String(Math.round(n)); }
   function ammoTxt(d) { return d.noRes ? gunMag(d) + ' shots' : d.mag + ' | ' + (d.res === Infinity ? '∞' : d.res); }
@@ -998,7 +1012,7 @@ body {
       P.wallet -= cost; c.bought = true; P.upg[id]++;
       if (id === 'hp' && !P.down) P.hp += TUNE.hpBase * 0.1;
     } else if (a === 'gunup') {
-      s = P.slots[+id]; if (!s || s.tier >= 4) return false;
+      s = P.slots[+id]; if (!s || s.tier >= TUNE.maxTier) return false;
       cost = gunUpCost(s); if (P.wallet < cost) return false;
       P.wallet -= cost; s.tier++;
     } else if (a === 'slot') {
@@ -1120,14 +1134,15 @@ body {
     zombies.splice(i, 1);
     kills++; if (O) O.kills++;
     // coins carry the killer's coin upgrades; anyone can pick them up
-    var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1);
+    var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1) * (1 + TUNE.lateCoin * lateN(wave));
     var n = z.boss ? 8 : (z.type === 'tank' ? 4 : 1);
-    for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n }; evictFromPockets(nc, true); coins.push(nc); }
+    for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n }; evictFromPockets(nc, true);
+      if (coins.length >= 400) { var nn = coins[Math.floor(Math.random() * coins.length)]; nn.v += nc.v; } else coins.push(nc); }
     // drops
     if (z.boss || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)], TUNE.crateLife);
     if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', TUNE.healLife);
     if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife);
-    if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
+    if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
     if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
     if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
   }
@@ -1758,7 +1773,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 25';
+  var updMsg = '', VERSION = 'Version 26';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2053,9 +2068,9 @@ body {
         s = P.slots[i];
         if (!s) { h += card('Empty slot', '', 'Buy a gun below to fill it.', ''); continue; }
         st = wstats(P, s, true);
-        h += card(WEAPONS[s.id].name, lvTag('Mk ' + ROMAN[s.tier]).replace('class="lv"', 'class="lv tier' + s.tier + '"' + (s.tier >= 4 ? ' style="color:' + RAR[5] + '"' : '')),
+        h += card(WEAPONS[s.id].name, lvTag('Mk ' + ROMAN[s.tier]).replace('class="lv"', 'class="lv tier' + Math.min(4, s.tier) + '"' + (s.tier >= 4 ? ' style="color:' + tierCol(s.tier) + '"' : '')),
           fmt(st.dmg) + (st.d.pellets > 1 ? '×' + st.d.pellets : '') + ' dmg · ' + st.rate.toFixed(1) + '/s · ' + ammoTxt(st.d),
-          s.tier >= 4 ? doneBtn('Max') : '<button class="buy" type="button" data-act="gunup" data-id="' + i + '"' + (wallet >= gunUpCost(s) ? '' : ' disabled') + '>Mk ' + ROMAN[s.tier + 1] + ' · ' + gunUpCost(s) + '</button>', rarCol(WEAPONS[s.id]));
+          s.tier >= TUNE.maxTier ? doneBtn('Max') : '<button class="buy" type="button" data-act="gunup" data-id="' + i + '"' + (wallet >= gunUpCost(s) ? '' : ' disabled') + '>Mk ' + ROMAN[s.tier + 1] + ' · ' + gunUpCost(s) + '</button>', rarCol(WEAPONS[s.id]));
       }
       if (P.unlocked < 3) {
         h += '<div class="sec">Gun slots</div>';
@@ -2291,6 +2306,9 @@ body {
     lcv.width = cv.width; lcv.height = cv.height;
   }
   window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', function () { setTimeout(fit, 200); });
+  try { if (window.visualViewport) window.visualViewport.addEventListener('resize', fit); } catch (e) {}
+  window.addEventListener('scroll', function () { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });
   fit();
 
   // ---------- drawing ----------
@@ -2317,6 +2335,11 @@ body {
         var sa = s * 1.047 + 0.3;
         c.beginPath(); c.arc(Math.cos(sa) * r * 0.82, Math.sin(sa) * r * 0.9, r * 0.14, 0, 6.283); c.fill();
       }
+    }
+    if (z.type === 'armoured') {
+      c.fillStyle = '#9aa7ab'; c.fillRect(-r * 0.2, -r * 0.95, r * 0.5, r * 0.32); c.fillRect(-r * 0.2, r * 0.63, r * 0.5, r * 0.32);
+      c.strokeStyle = '#2a3236'; c.lineWidth = 1.5; c.beginPath(); c.arc(r * 0.12, 0, r * 0.6, -1.9, 1.9); c.stroke();
+      c.fillStyle = 'rgba(160,175,180,0.85)'; c.beginPath(); c.arc(r * 0.12, 0, r * 0.5, -1.5, 1.5); c.fill();
     }
     if (z.type === 'tank') { c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-r * 0.3, -r * 0.9, r * 0.22, r * 1.8); }
     c.restore();
@@ -2348,7 +2371,7 @@ body {
     c.fillRect(8, -d.gw / 2, d.len + 2, d.gw);
     var sh = Math.max(2.4, d.gw * 0.5), sl = Math.max(4, d.len * 0.38);
     c.fillStyle = rarCol(d); c.fillRect(9, -sh / 2, sl, sh);
-    c.fillStyle = tr >= 4 ? RAR[5] : RAR[tr - 1]; c.fillRect(9 + sl + 1.5, -sh / 2, sl, sh);
+    c.fillStyle = tierCol(tr); c.fillRect(9 + sl + 1.5, -sh / 2, sl, sh);
     if (d.kind === 'fire') { c.fillStyle = '#d2692a'; c.fillRect(d.len + 6, -2, 4, 4); }
     c.fillStyle = '#c9a88a';
     c.beginPath(); c.arc(1, 0, 6.5, 0, 6.283); c.fill();
@@ -2603,7 +2626,7 @@ body {
       ctx.fillStyle = q.boss ? '#ff6a2a' : '#e8402e';
       ctx.beginPath(); ctx.arc(ex - sa * off, ey + ca * off, er, 0, 6.283); ctx.fill();
       ctx.beginPath(); ctx.arc(ex + sa * off, ey - ca * off, er, 0, 6.283); ctx.fill();
-      if (q.hp < q.maxhp || q.type === 'tank' || q.boss) {
+      if (q.hp < q.maxhp || q.type === 'tank' || q.type === 'armoured' || q.boss) {
         var bw = q.boss ? 56 : q.r * 2 + 6, bh = q.boss ? 5 : 3.5, bx = q.x - bw / 2, by = q.y - q.r - 11;
         ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
         var fr = Math.max(0, q.hp / q.maxhp);
@@ -2852,7 +2875,7 @@ body {
       return [BK.indexOf(b.kind), r1(b.x), r1(b.y), r2(b.dx), r2(b.dy), (b.crit ? 1 : 0) | (b.long ? 2 : 0) | (b.explosive ? 4 : 0), r2(Math.min(1, b.dist / b.max)), Math.round(b.speed)];
     });
     o.E = ebullets.map(function (e) { return [e.id, r1(e.x), r1(e.y), r2(e.dx), r2(e.dy), e.r, r1(e.spin), e.spd]; });
-    o.C = coins.slice(0, 160).map(function (c) { return [r1(c.x), r1(c.y)]; });
+    o.C = coins.slice(0, 450).map(function (c) { return [r1(c.x), r1(c.y)]; });
     o.K = pickups.map(function (p) { return [PK.indexOf(p.kind), p.id, r1(p.x), r1(p.y), r1(Math.min(99, p.t))]; });
     o.X = boxes.map(function (b) { return [b.x, b.y]; });
     o.R = BLD.map(function (b) { return [b.bar.planks, r2(b.bar.rt)]; });
