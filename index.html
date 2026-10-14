@@ -1746,6 +1746,8 @@ body {
       h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
       h += '<div class="swipe">' + (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic') + '</div>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
+      h += '<button class="go alt" data-a="safari" type="button">Open in Safari</button>';
+      h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
       h += '<button class="go" data-a="back" data-to="main" type="button">Back</button>';
     } else if (screen === 'help') {
@@ -1757,7 +1759,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 23';
+  var updMsg = '', VERSION = 'Version 24';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1820,7 +1822,16 @@ body {
     else if (a === 'hstart') hostStart();
     else if (a === 'resume') showScreen('');
     else if (a === 'refresh') refreshApp();
-    else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
+    else if (a === 'safari') {
+      // a link just outside the app's own address tells iOS to hand it to the browser
+      updMsg = 'If nothing opened, use Copy game link and paste it into Safari.'; renderScreen();
+      try { window.open('https://donsteezlesgit.github.io/zombie-survivor?s=' + Date.now(), '_blank'); } catch (e) {}
+    } else if (a === 'copylink') {
+      var lk = 'https://donsteezlesgit.github.io/zombie-survivor/';
+      var ok = function () { updMsg = 'Link copied. Paste it into Safari.'; if (screen === 'settings') renderScreen(); };
+      var bad = function () { updMsg = 'Could not copy. The link is donsteezlesgit.github.io/zombie-survivor'; if (screen === 'settings') renderScreen(); };
+      try { navigator.clipboard.writeText(lk).then(ok, bad); } catch (e) { bad(); }
+    } else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
     else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
