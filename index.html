@@ -230,10 +230,39 @@ body {
   .card { padding: 6px 10px; }
   .card .n { font-size: 18px; }
   .card .d { font-size: 14px; }
+}
+/* main menu */
+.inmenu .hud, .inmenu .rcol, .inmenu .swapgo { visibility: hidden; }
+.overlay:has(.mhome)::before { flex: 0 0 7vh; margin: 0; }
+.overlay:has(.mhome)::after { flex: 1 1 0; margin: 0; }
+.mhome { width: min(300px, 100%); display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.mtitle h1 { font-size: 58px; line-height: 1.02; }
+.mbest { padding: 10px 14px 12px; border: 1px solid #3a322d; border-radius: 6px; background: rgba(0, 0, 0, 0.35); margin: 6px 0 10px; }
+.mrow { display: flex; justify-content: space-around; gap: 12px; margin-top: 8px; }
+.mrow b { display: block; font: 700 30px/1 var(--face-ui); letter-spacing: 0.04em; color: var(--bone); font-variant-numeric: tabular-nums; }
+.mrow small { display: block; margin-top: 4px; font: 600 12px/1 var(--face-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.mplay, .mmore { display: flex; flex-direction: column; gap: 10px; }
+.mme { margin-top: 8px; }
+.mmore { margin-top: 8px; }
+.mhome .go { width: 100%; padding-inline: 0; }
+.mhome .msg { text-align: center; }
+@media (max-height: 520px) {
+  .overlay:has(.mhome)::before { flex: 1 1 0; margin: 0; }
+  .mhome { width: min(780px, 100%); display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "title best" "play more" "me more"; column-gap: 36px; row-gap: 8px; align-items: start; }
+  .mtitle { grid-area: title; align-self: center; text-align: left; }
+  .mtitle h1 { font-size: 60px; text-align: left; line-height: 1; }
+  .mbest { grid-area: best; align-self: center; margin: 0; }
+  .mplay { grid-area: play; gap: 8px; }
+  .mme { grid-area: me; margin-top: 0; }
+  .mmore { grid-area: more; margin-top: 0; gap: 8px; }
+  .mrow b { font-size: 34px; }
+}
+.overlay { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+.shop { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
 </style>
 
 <div class="game" id="game">
-  <canvas id="c" aria-label="Top-down zombie survival arena. Drag with one thumb to move; your character shoots automatically."></canvas>
+  <canvas id="c" aria-label="Top-down zombie survival arena. Left thumb walks, right thumb aims; your character shoots zombies inside the aiming cone."></canvas>
   <div class="hud">
     <div class="row">
       <div class="hp"><div class="hpfill" id="hpfill"></div><span class="hptxt" id="hptxt">100 / 100</span></div>
@@ -418,6 +447,14 @@ body {
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // ---------- storage (optional) ----------
+  var offWave = 0, offKills = 0;
+  try { offWave = parseInt(localStorage.getItem('zs-off-wave') || localStorage.getItem('zs-best-wave') || '0', 10) || 0; offKills = parseInt(localStorage.getItem('zs-off-kills') || '0', 10) || 0; } catch (e) {}
+  function recordOffline() {
+    if (net.mode !== 'off' || !me) return;
+    if (wave > offWave) offWave = wave;
+    if (me.kills > offKills) offKills = me.kills;
+    try { localStorage.setItem('zs-off-wave', String(offWave)); localStorage.setItem('zs-off-kills', String(offKills)); } catch (e) {}
+  }
   var bestWave = 0, muted = false, myName = '', myLook = { c: 0, h: 0 }, savedLook = null;
   try { bestWave = parseInt(localStorage.getItem('zs-best-wave') || '0', 10) || 0; } catch (e) {}
   try { muted = localStorage.getItem('zs-muted') === '1'; } catch (e) {}
@@ -1156,6 +1193,7 @@ body {
   function gameOver() {
     if (state !== 'play') return;
     state = 'over'; joy.active = false; joy.x = joy.y = 0;
+    recordOffline();
     if (net.mode === 'off') clearSave();
     overBest = wave > bestWave;
     if (overBest) { bestWave = wave; try { localStorage.setItem('zs-best-wave', String(wave)); } catch (e) {} }
@@ -1739,13 +1777,15 @@ body {
   function renderScreen() {
     var h = '', i, d;
     if (screen === 'main') {
-      h += '<h1>Zombie Survivor</h1>';
-      h += '<p>Drag anywhere with one thumb to move. You shoot on your own. Kill zombies for <b>coins</b>, watch your <b>ammo</b>, and spend between waves.</p>';
-      h += '<button class="go" data-a="offline" type="button">Play offline</button>';
-      h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
-      h += '<button class="go alt" data-a="me" type="button">Your player</button>';
-      h += '<button class="go alt" data-a="help" type="button">How to play</button>';
-      h += '<button class="chip" data-a="settings" type="button">Settings</button>';
+      h += '<div class="mhome">';
+      h += '<div class="mtitle"><h1>Zombie<br>Survivor</h1></div>';
+      h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (offWave || '–') + '</b><small>Highest wave</small></div><div><b>' + (offKills || '–') + '</b><small>Most kills</small></div></div></div>';
+      h += '<div class="mplay"><button class="go" data-a="offline" type="button">Play offline</button>';
+      h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button></div>';
+      h += '<div class="mme"><button class="go alt" data-a="me" type="button">Your player</button></div>';
+      h += '<div class="mmore"><button class="go alt" data-a="help" type="button">How to play</button>';
+      h += '<button class="go alt" data-a="settings" type="button">Settings</button></div>';
+      h += '</div>';
       if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
     } else if (screen === 'offline') {
       d = readSave();
@@ -1825,7 +1865,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 37';
+  var updMsg = '', VERSION = 'Version 38';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1841,6 +1881,7 @@ body {
   }
   function showScreen(name) {
     screen = name;
+    game.classList.toggle('inmenu', name === 'main');
     if (name) {
       joy.active = false; joy.x = joy.y = 0; aim.active = false;
       renderScreen(); ov.hidden = false;
@@ -1864,6 +1905,7 @@ body {
     newGame([{ id: 0, name: myName || 'You', look: myLook }]);
   }
   function leaveGame() {
+    if (state === 'play') recordOffline();
     netClose();
     net = { mode: 'off' }; state = 'ready'; localId = 0; roster = []; netStatus = '';
     myLook = cleanLook(savedLook, Math.floor(Math.random() * LOOK_COLS.length));
@@ -1924,13 +1966,13 @@ body {
   // ---------- how to play (swipe slides, pictures drawn with the game's own sprites) ----------
   var helpFrom = 'main', helpIdx = 0;
   var HELP = [
-    { t: 'Move', x: 'Put your thumb anywhere on the screen and drag. Drag further to go faster.', art: 'move' },
-    { t: 'Shooting is automatic', x: 'Your character aims and fires at the closest zombie by itself. Your job is to stay alive.', art: 'shoot' },
-    { t: 'Two-thumb aiming', x: 'Optional, in Settings. Left thumb walks. Right thumb aims the yellow cone. Your gun only fires at zombies inside the cone.', art: 'aim' },
+    { t: 'Move', x: 'Left thumb walks. Put it on the left half of the screen and drag. Drag further to go faster.', art: 'move' },
+    { t: 'Shooting is automatic', x: 'Your gun fires by itself, but only at zombies inside the faint yellow cone. Point the cone and stay alive.', art: 'shoot' },
+    { t: 'Aiming', x: 'Right thumb aims the yellow cone. Put it on the right half and drag. Lift it and the cone stays where you left it. Prefer one finger with auto-aim? Switch in Settings.', art: 'aim' },
     { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
     { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
-    { t: 'Guns and ammo', x: 'The bottom-right button shows your gun and ammo. Tap it to swap guns. Empty guns reload by themselves.', art: 'gun' },
+    { t: 'Guns and ammo', x: 'The box under the minimap shows your gun and ammo. Tap the round button on the right edge to swap guns. Empty guns reload by themselves.', art: 'gun' },
     { t: 'Gun slots', x: 'You start with one gun slot. Buy more in the Shop, on the Guns tab, before you can carry a second or third gun. No free slot? A new gun replaces one you own.', art: 'slots' },
     { t: 'Drops', x: 'Zombies sometimes drop health, ammo and 10-second power-ups. Walk over them to grab them.', art: 'drops' },
     { t: 'Mystery box', x: 'Stand next to a glowing ? box and tap the button to pay 120 coins for a random gun.', art: 'box' },
@@ -1940,7 +1982,7 @@ body {
 
   var GUIDE = [
     { t: 'The goal', art: 'shoot', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
-    { t: 'Controls', art: 'aim', b: ['One finger (default): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'Two thumbs (turn on in Settings): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Bottom-right button: your gun and ammo. Tap it to swap guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
+    { t: 'Controls', art: 'aim', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
     { t: 'Waves and breaks', art: 'shop', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. Guns refill fully at the end of every wave.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: from wave 25. 420 health and hits hard.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a special weapon crate, lots of coins, and often a power-up.', 'Later waves bring more than one boss.'] },
@@ -2166,7 +2208,7 @@ body {
       }
       if (P.unlocked < 3) {
         h += '<div class="sec">Gun slots</div>';
-        h += card('Gun slot ' + (P.unlocked + 1), '', 'Carry one more gun. Swap with the button bottom-right.', buyBtn('slot', P.unlocked, SLOT_COST[P.unlocked], wallet >= SLOT_COST[P.unlocked]));
+        h += card('Gun slot ' + (P.unlocked + 1), '', 'Carry one more gun. Swap with the round button on the right.', buyBtn('slot', P.unlocked, SLOT_COST[P.unlocked], wallet >= SLOT_COST[P.unlocked]));
       }
       h += '<div class="sec">Guns for sale</div>';
       if (P.pendingGun) {
@@ -2315,8 +2357,8 @@ body {
 
   // ---------- input ----------
   var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
-  var ctrlMode = 'one';   // 'one' = one finger, auto aim. 'two' = left thumb walks, right thumb aims a cone
-  try { if (localStorage.getItem('zs-ctrl') === 'two') ctrlMode = 'two'; } catch (e) {}
+  var ctrlMode = 'two';   // 'one' = one finger, auto aim. 'two' = left thumb walks, right thumb aims a cone
+  try { if (localStorage.getItem('zs-ctrl') === 'one') ctrlMode = 'one'; } catch (e) {}
   function setCtrl(m) { ctrlMode = m; try { localStorage.setItem('zs-ctrl', m); } catch (e) {} joy.active = false; joy.x = joy.y = 0; aim.active = false; }
   game.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'touch') return;
