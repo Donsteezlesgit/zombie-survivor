@@ -235,6 +235,8 @@ body {
 .inmenu .hud, .inmenu .rcol, .inmenu .swapgo { visibility: hidden; }
 textarea.bk { width: min(340px, 100%); box-sizing: border-box; padding: 10px 12px; font: 600 12px/1.4 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #5a4d44; border-radius: 6px; word-break: break-all; resize: none; -webkit-user-select: text; user-select: text; }
 pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: border-box; text-align: left; font: 600 14px/1.5 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #3a322d; border-radius: 6px; white-space: pre-wrap; }
+.game.diagon::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: #f0f; pointer-events: none; z-index: 98; }
+.exps { display: flex; gap: 8px; }
 .game.diagon::after { content: ''; position: absolute; left: 0; right: 0; top: 0; bottom: 0; border: 3px solid #3f3; pointer-events: none; z-index: 98; }
 .overlay:has(.mhome)::before { flex: 0 0 7vh; margin: 0; }
 .overlay:has(.mhome)::after { flex: 1 1 0; margin: 0; }
@@ -1874,6 +1876,7 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
       h += '<button class="chip" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'diag') {
       h += '<h1>Screen info</h1><pre class="diag" id="diagOut"></pre><div class="swipe">Green line = bottom of the game. Yellow line = where the page thinks the screen ends.</div>';
+      h += '<div class="lab">Try a layout, then look at the bottom</div><div class="exps"><button class="chip" data-a="exp" data-n="1" type="button">Try 1</button><button class="chip" data-a="exp" data-n="2" type="button">Try 2</button><button class="chip" data-a="exp" data-n="3" type="button">Try 3</button><button class="chip" data-a="exp" data-n="0" type="button">Reset</button></div>';
       h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'help') {
       h += helpHtml();
@@ -1886,7 +1889,7 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 43';
+  var updMsg = '', VERSION = 'Version 44';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1997,6 +2000,18 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
       if (bt) { bt.value = code; bt.focus(); bt.select(); }
       try { navigator.clipboard.writeText(code).then(function () { bkMsg('Copied. Paste it into Notes or a message to yourself.'); }, function () { bkMsg('Press and hold the code, tap Select all, then Copy.'); }); } catch (e) { bkMsg('Press and hold the code, tap Select all, then Copy.'); }
     } else if (a === 'bkrestore') { var bx = document.getElementById('bkText'); bkMsg(restoreCode(bx ? bx.value : '')); }
+    else if (a === 'exp') {
+      var EXP = [
+        '',
+        'html,body{position:static!important;height:auto!important;min-height:100lvh!important;overflow:visible!important}.game{top:0!important;bottom:auto!important;height:100lvh!important}',
+        'html{position:static!important;height:auto!important}body{position:absolute!important;top:0;left:0;width:100%;height:100lvh!important;overflow:visible!important}.game{position:absolute!important;top:0!important;bottom:auto!important;height:100lvh!important}',
+        'html,body{position:static!important;overflow:visible!important;height:calc(100lvh + 200px)!important}.game{position:fixed!important;top:0!important;bottom:auto!important;height:100lvh!important}'
+      ];
+      var ex = document.getElementById('expStyle');
+      if (!ex) { ex = document.createElement('style'); ex.id = 'expStyle'; document.head.appendChild(ex); }
+      ex.textContent = EXP[+b.dataset.n] || '';
+      game.style.height = ''; game.style.bottom = ''; setTimeout(fit, 50); setTimeout(fillDiag, 200);
+    }
     else if (a === 'diag') { showScreen('diag'); fillDiag(); }
     else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
