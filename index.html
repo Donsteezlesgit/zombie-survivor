@@ -242,7 +242,7 @@ body {
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
     specStep: 10, specDmg: 0.6, specAmmo: 0.2,
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
-    throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 25, lateHp: 0.05, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 30, reviveT: 3, lateCoins: 40,
+    throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 25, lateHp: 0.05, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45
   };
   var TYPES = {
@@ -783,7 +783,7 @@ body {
   function allDown() { for (var i = 0; i < players.length; i++) if (!players[i].down) return false; return players.length > 0; }
 
   function pickSpawn() {
-    var idx = [0, 1, 2, 3], i, j, t, cnt = [0, 0, 0, 0], z, best = -1, cap = 8 + 3 * (players.length - 1);
+    var idx = [0, 1, 2, 3], i, j, t, cnt = [0, 0, 0, 0], z, best = -1, cap = 8 + TUNE.coopPocket * (players.length - 1);
     for (i = idx.length - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
     for (i = 0; i < zombies.length; i++) { z = zombies[i]; if (z.pocket >= 0) cnt[z.pocket]++; }
     for (i = 0; i < 4; i++) {
@@ -803,6 +803,7 @@ body {
     var t = TYPES[type], b = BLD[bi], jit = rnd(-POCKET_HW * 0.5, POCKET_HW * 0.5);
     var x = b.sx + b.tx * jit, y = b.sy + b.ty * jit;
     var hpS = 1 + TUNE.zHpScale * (wave - 1), dS = 1 + TUNE.zDmgScale * (wave - 1);
+    var es = 1 + TUNE.earlyStep * (Math.min(wave, TUNE.lateStart - 1) - 1); hpS *= es; dS *= es;
     if (wave >= TUNE.l25.wave) { hpS *= TUNE.l25.hp; dS *= TUNE.l25.dmg; }
     hpS *= 1 + TUNE.lateHp * lateN(wave); dS *= 1 + TUNE.lateDmg * lateN(wave);
     hpS *= 1 + TUNE.coopHp * (Math.max(1, players.length) - 1);
@@ -1779,7 +1780,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 28';
+  var updMsg = '', VERSION = 'Version 29';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
