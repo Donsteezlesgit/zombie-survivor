@@ -323,7 +323,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.35, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.16, runner: 0.16, tank: 0.5, armoured: 0.45, boss: 1 }, ammoLife: 18,
+    dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, boss: 1 }, ammoFrac: 0.4, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -962,6 +962,31 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 
   function refillAllGuns(P) {
     for (var i = 0; i < 3; i++) if (P.slots[i]) refillGun(P.slots[i]);
+    if (P.stash) refillGun(P.stash);
+  }
+  // Out of ammo everywhere and no Glock of your own: a starter Glock comes back until a real gun has ammo again
+  function hasAmmo(g) { return g.mag > 0 || g.res > 0; }
+  function tempIdx(P) { for (var i = 0; i < 3; i++) if (P.slots[i] && P.slots[i].temp) return i; return -1; }
+  function tempGlockTick(P) {
+    if (P.down || state !== 'play') return;
+    var i, g, ti = tempIdx(P), any = false, owned = false;
+    if (ti < 0) {
+      for (i = 0; i < 3; i++) { g = P.slots[i]; if (!g) continue; if (g.id === 'glock') owned = true; if (hasAmmo(g)) any = true; }
+      if (owned || any || isSpecialActive(P)) return;
+      var slot = -1;
+      for (i = 0; i < P.unlocked && i < 3; i++) if (!P.slots[i]) { slot = i; break; }
+      P.stash = null;
+      if (slot < 0) { slot = P.sel < 3 ? P.sel : P.lastSel; P.stash = P.slots[slot]; }
+      g = makeGun('glock'); g.temp = true; P.slots[slot] = g;
+      P.sel = slot; P.lastSel = slot;
+      bannerTo(P, 'Out of ammo', 'Your starter Glock is back until you find ammo.', 2.2);
+    } else {
+      for (i = 0; i < 3; i++) { g = P.slots[i]; if (g && !g.temp && hasAmmo(g)) any = true; }
+      if (P.stash && hasAmmo(P.stash)) any = true;
+      if (!any) return;
+      P.slots[ti] = P.stash || null; P.stash = null;
+      for (i = 0; i < 3; i++) if (P.slots[i] && hasAmmo(P.slots[i])) { P.sel = i; P.lastSel = i; break; }
+    }
   }
 
   function maxAmmo(P) {
@@ -1025,7 +1050,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
         wave: cw, wallet: P.wallet, kills: P.kills, hp: P.hp, unlocked: P.unlocked,
         upg: P.upg, armor: P.armor,
         bar: BLD.map(function (b) { return b.bar.planks; }),
-        slots: P.slots.map(function (g) { return g ? { id: g.id, tier: g.tier } : null; })
+        slots: P.slots.map(function (g) { if (g && g.temp) g = P.stash; return g ? { id: g.id, tier: g.tier } : null; })
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     } catch (e) {}
@@ -1252,10 +1277,10 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (p.kind === 'special') { equipSpecial(P, p.id, false); }
     else if (p.kind === 'health') { healPlayer(P, TUNE.healAmount); }
     else if (p.kind === 'ammo') {
-      for (i = 0; i < 3; i++) {
-        g = P.slots[i]; if (!g) continue;
+      for (i = 0; i < 4; i++) {
+        g = i < 3 ? P.slots[i] : P.stash; if (!g || g.temp) continue;
         d = WEAPONS[g.id];
-        g.res = Math.min(d.res, g.res + Math.max(1, Math.round(d.mag * 0.5)));
+        g.res = Math.min(d.res, g.res + Math.max(1, Math.round(d.mag * TUNE.ammoFrac)));
       }
       ptone(P, 240, 360, 0.08, 'square', 0.05); ptone(P, 360, 480, 0.06, 'square', 0.05, 0.07);
     } else if (p.kind === 'perk') {
@@ -1460,6 +1485,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 
   function updatePlayer(P, dt) {
     var i, z;
+    tempGlockTick(P);
     if (P.csnd > 0) P.csnd -= dt;
     if (P.inv > 0) P.inv -= dt;
     if (P.flash > 0) P.flash -= dt;
@@ -1891,7 +1917,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 45';
+  var updMsg = '', VERSION = 'Version 46';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2051,7 +2077,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
     { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
-    { t: 'Guns and ammo', x: 'The box under the minimap shows your gun and ammo. Tap the round button on the right edge to swap guns. Empty guns reload by themselves.', art: 'gun' },
+    { t: 'Guns and ammo', x: 'The box under the minimap shows your gun and ammo. Tap the round button on the right edge to swap guns. Empty guns reload by themselves. If every gun is out of ammo and you have no Glock, a starter Glock comes back until you find ammo.', art: 'gun' },
     { t: 'Gun slots', x: 'You start with one gun slot. Buy more in the Shop, on the Guns tab, before you can carry a second or third gun. No free slot? A new gun replaces one you own.', art: 'slots' },
     { t: 'Drops', x: 'Zombies sometimes drop health, ammo and 10-second power-ups. Walk over them to grab them.', art: 'drops' },
     { t: 'Mystery box', x: 'Stand next to a glowing ? box and tap the button to pay 120 coins for a random gun.', art: 'box' },
@@ -2073,7 +2099,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     { t: 'Armour and healing', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Healing, Gear tab: Bandage (+25), Medkit (+60), Full restore. Health drops also appear from zombies, but rarely.'] },
     { t: 'Special weapons', art: 'box', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Bosses and tanks drop special crates. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
-    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills part of every gun and is pulled toward you.', 'Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
+    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'Saving and settings', art: 'move', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
