@@ -1780,7 +1780,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 31';
+  var updMsg = '', VERSION = 'Version 32';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2289,6 +2289,7 @@ body {
   game.addEventListener('lostpointercapture', function (e) { endJoy(e); });
 
   // touch: the live list of fingers (e.touches) is the truth, so a thumb that iOS never reported lifting is dropped the instant any other touch event arrives
+  var DEAD = 26;   // px along the bottom edge where a new touch is ignored (stray palm / finger slips)
   function reconcile(list) {
     var ids = {}, i;
     for (i = 0; i < list.length; i++) ids[list[i].identifier] = 1;
@@ -2303,6 +2304,7 @@ body {
       t = e.changedTouches[i];
       if (t.target && t.target.closest && t.target.closest('button')) continue;
       x = t.clientX - r.left; y = t.clientY - r.top;
+      if (y > r.height - DEAD) continue;
       st = (ctrlMode === 'two' && x > r.width / 2) ? aim : joy;
       if (st.active) continue;
       st.active = true; st.tid = t.identifier; st.ox = x; st.oy = y; st.x = st.y = 0;
