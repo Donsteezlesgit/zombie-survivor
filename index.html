@@ -233,6 +233,8 @@ body {
 }
 /* main menu */
 .inmenu .hud, .inmenu .rcol, .inmenu .swapgo { visibility: hidden; }
+pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: border-box; text-align: left; font: 600 14px/1.5 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #3a322d; border-radius: 6px; white-space: pre-wrap; }
+.game.diagon::after { content: ''; position: absolute; left: 0; right: 0; top: 0; bottom: 0; border: 3px solid #3f3; pointer-events: none; z-index: 98; }
 .overlay:has(.mhome)::before { flex: 0 0 7vh; margin: 0; }
 .overlay:has(.mhome)::after { flex: 1 1 0; margin: 0; }
 .mhome { width: min(300px, 100%); display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
@@ -1858,8 +1860,12 @@ body {
       h += '<div class="swipe">' + (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic') + '</div>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
       h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
+      h += '<button class="chip" data-a="diag" type="button">Screen info</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
       h += '<button class="go" data-a="back" data-to="main" type="button">Back</button>';
+    } else if (screen === 'diag') {
+      h += '<h1>Screen info</h1><pre class="diag" id="diagOut"></pre><div class="swipe">Green line = bottom of the game. Yellow line = where the page thinks the screen ends.</div>';
+      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'help') {
       h += helpHtml();
     } else if (screen === 'guide') {
@@ -1871,7 +1877,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 40';
+  var updMsg = '', VERSION = 'Version 41';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1885,9 +1891,25 @@ body {
       return Promise.all(jobs);
     }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'settings') renderScreen(); });
   }
+  function fillDiag() {
+    var o = document.getElementById('diagOut'); if (!o) return;
+    var vv = window.visualViewport, g = game.getBoundingClientRect(), L = [];
+    function p(k, v) { L.push(k + ': ' + v); }
+    p('version', VERSION); p('standalone', navigator.standalone); p('inner', window.innerWidth + ' x ' + window.innerHeight);
+    p('screen', window.screen.width + ' x ' + window.screen.height); p('visual', vv ? Math.round(vv.width) + ' x ' + Math.round(vv.height) + ' top ' + Math.round(vv.offsetTop) + ' page ' + Math.round(vv.pageTop) : 'none');
+    p('docEl', document.documentElement.clientWidth + ' x ' + document.documentElement.clientHeight); p('scroll', window.scrollX + ', ' + window.scrollY);
+    p('vh / lvh / dvh / svh', [hProbe('100vh'), hProbe('100lvh'), hProbe('100dvh'), hProbe('100svh')].join(' / '));
+    p('inset top', insT); p('game', Math.round(g.left) + ',' + Math.round(g.top) + '  ' + Math.round(g.width) + ' x ' + Math.round(g.height));
+    p('canvas', cv.width + ' x ' + cv.height + ' @' + dpr); p('orientation', window.innerWidth > window.innerHeight ? 'landscape' : 'portrait');
+    o.textContent = L.join('\n');
+    var f = document.getElementById('diagIH');
+    if (!f) { f = document.createElement('div'); f.id = 'diagIH'; document.body.appendChild(f); }
+    f.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:' + window.innerHeight + 'px;border:2px dashed #ff0;box-sizing:border-box;pointer-events:none;z-index:99';
+  }
+  setInterval(function () { if (screen === 'diag') fillDiag(); else { var f = document.getElementById('diagIH'); if (f) f.remove(); } }, 400);
   function showScreen(name) {
     screen = name;
-    game.classList.toggle('inmenu', name === 'main');
+    game.classList.toggle('inmenu', name === 'main'); game.classList.toggle('diagon', name === 'diag');
     if (name) {
       joy.active = false; joy.x = joy.y = 0; aim.active = false;
       renderScreen(); ov.hidden = false;
@@ -1942,6 +1964,7 @@ body {
       var bad = function () { updMsg = 'Could not copy. The link is donsteezlesgit.github.io/zombie-survivor'; if (screen === 'settings') renderScreen(); };
       try { navigator.clipboard.writeText(lk).then(ok, bad); } catch (e) { bad(); }
     } else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
+    else if (a === 'diag') { showScreen('diag'); fillDiag(); }
     else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
@@ -2480,16 +2503,21 @@ body {
   }
 
   // ---------- sizing ----------
+  function hProbe(u) { var d = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;width:0;visibility:hidden;height:' + u; document.body.appendChild(d); var h = d.offsetHeight; document.body.removeChild(d); return h; }
   var insT = 0, insProbe = document.createElement('div');
   insProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)';
   document.body.appendChild(insProbe);
   function fit() {
     insT = parseFloat(getComputedStyle(insProbe).paddingTop) || 0;
-    // iOS home-screen app: the page can report a viewport shorter than the screen (by the status bar), which leaves a gap. Size to the real screen instead.
+    // iOS home-screen app drawing under the status bar: the page can report a viewport shorter than the screen, leaving a gap. Take the tallest believable height.
     try {
-      var sMax = Math.max(window.screen.width, window.screen.height), sMin = Math.min(window.screen.width, window.screen.height);
-      var want = window.innerWidth > window.innerHeight ? sMin : sMax, extra = want - window.innerHeight;
-      if (navigator.standalone && extra > 0 && extra <= 150) { game.style.height = want + 'px'; game.style.bottom = 'auto'; }
+      var vv = window.visualViewport, ih = window.innerHeight, best = ih;
+      if (insT > 0 && navigator.standalone) {
+        best = Math.max(ih, vv ? Math.round(vv.height + vv.offsetTop) : 0, hProbe('100lvh'), hProbe('100vh'));
+        var want = window.innerWidth > window.innerHeight ? Math.min(window.screen.width, window.screen.height) : Math.max(window.screen.width, window.screen.height);
+        if (want - best > 0 && want - best <= 150) best = want;
+      }
+      if (best > ih + 1) { game.style.height = best + 'px'; game.style.bottom = 'auto'; }
       else { game.style.height = ''; game.style.bottom = ''; }
     } catch (e) {}
     var r = game.getBoundingClientRect();
