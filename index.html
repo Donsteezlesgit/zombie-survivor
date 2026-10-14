@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15110e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Zombies"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15110e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Zombies"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Zombie Survivor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -233,6 +233,7 @@ body {
 }
 /* main menu */
 .inmenu .hud, .inmenu .rcol, .inmenu .swapgo { visibility: hidden; }
+textarea.bk { width: min(340px, 100%); box-sizing: border-box; padding: 10px 12px; font: 600 12px/1.4 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #5a4d44; border-radius: 6px; word-break: break-all; resize: none; -webkit-user-select: text; user-select: text; }
 pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: border-box; text-align: left; font: 600 14px/1.5 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #3a322d; border-radius: 6px; white-space: pre-wrap; }
 .game.diagon::after { content: ''; position: absolute; left: 0; right: 0; top: 0; bottom: 0; border: 3px solid #3f3; pointer-events: none; z-index: 98; }
 .overlay:has(.mhome)::before { flex: 0 0 7vh; margin: 0; }
@@ -1860,9 +1861,17 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
       h += '<div class="swipe">' + (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic') + '</div>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
       h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
+      h += '<button class="chip" data-a="backup" type="button">Backup progress</button>';
       h += '<button class="chip" data-a="diag" type="button">Screen info</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
       h += '<button class="go" data-a="back" data-to="main" type="button">Back</button>';
+    } else if (screen === 'backup') {
+      h += '<h1>Backup</h1><p>Copy this code and keep it safe. After re-adding the app, paste it here and tap Restore.</p>';
+      h += '<textarea class="bk" id="bkText" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off">' + backupCode() + '</textarea>';
+      h += '<div class="msg" id="bkMsg"></div>';
+      h += '<button class="go" data-a="bkcopy" type="button">Copy code</button>';
+      h += '<button class="go alt" data-a="bkrestore" type="button">Restore from code</button>';
+      h += '<button class="chip" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'diag') {
       h += '<h1>Screen info</h1><pre class="diag" id="diagOut"></pre><div class="swipe">Green line = bottom of the game. Yellow line = where the page thinks the screen ends.</div>';
       h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
@@ -1877,7 +1886,7 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 42';
+  var updMsg = '', VERSION = 'Version 43';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1891,6 +1900,24 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
       return Promise.all(jobs);
     }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'settings') renderScreen(); });
   }
+  function backupCode() {
+    var o = {}, i, k;
+    try { for (i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k && k.indexOf('zs-') === 0) o[k] = localStorage.getItem(k); } } catch (e) {}
+    return 'ZS1:' + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  }
+  function restoreCode(txt) {
+    txt = String(txt || '').replace(/\s+/g, '');
+    if (txt.indexOf('ZS1:') !== 0) return 'That is not a backup code.';
+    var o, k, n = 0;
+    try { o = JSON.parse(decodeURIComponent(escape(atob(txt.slice(4))))); } catch (e) { return 'The code looks damaged. Copy it again.'; }
+    try {
+      for (k in o) if (/^zs-[a-z0-9-]+$/.test(k) && typeof o[k] === 'string' && o[k].length < 300000) { localStorage.setItem(k, o[k]); n++; }
+    } catch (e) { return 'Could not save on this phone.'; }
+    if (!n) return 'Nothing in that code.';
+    setTimeout(function () { location.reload(); }, 700);
+    return 'Restored. Restarting the game...';
+  }
+  function bkMsg(t) { var m = document.getElementById('bkMsg'); if (m) m.textContent = t; }
   function fillDiag() {
     var o = document.getElementById('diagOut'); if (!o) return;
     var vv = window.visualViewport, g = game.getBoundingClientRect(), L = [];
@@ -1964,6 +1991,12 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
       var bad = function () { updMsg = 'Could not copy. The link is donsteezlesgit.github.io/zombie-survivor'; if (screen === 'settings') renderScreen(); };
       try { navigator.clipboard.writeText(lk).then(ok, bad); } catch (e) { bad(); }
     } else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
+    else if (a === 'backup') showScreen('backup');
+    else if (a === 'bkcopy') {
+      var bt = document.getElementById('bkText'), code = backupCode();
+      if (bt) { bt.value = code; bt.focus(); bt.select(); }
+      try { navigator.clipboard.writeText(code).then(function () { bkMsg('Copied. Paste it into Notes or a message to yourself.'); }, function () { bkMsg('Press and hold the code, tap Select all, then Copy.'); }); } catch (e) { bkMsg('Press and hold the code, tap Select all, then Copy.'); }
+    } else if (a === 'bkrestore') { var bx = document.getElementById('bkText'); bkMsg(restoreCode(bx ? bx.value : '')); }
     else if (a === 'diag') { showScreen('diag'); fillDiag(); }
     else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
