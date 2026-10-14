@@ -1780,7 +1780,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 29';
+  var updMsg = '', VERSION = 'Version 30';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2272,15 +2272,23 @@ body {
     if (e.target.closest && e.target.closest('button')) return;
     var r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     if (ctrlMode === 'two' && x > r.width / 2) {
-      if (aim.active) return;
-      aim.active = true; aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0;
+      if (aim.active && now() - aim.t < 400) return;
+      aim.active = true; aim.t = now(); aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0;
     } else {
-      if (joy.active) return;
-      joy.active = true; joy.id = e.pointerId; joy.ox = x; joy.oy = y; joy.x = joy.y = 0;
+      if (joy.active && now() - joy.t < 400) return;
+      joy.active = true; joy.t = now(); joy.id = e.pointerId; joy.ox = x; joy.oy = y; joy.x = joy.y = 0;
     }
     try { game.setPointerCapture(e.pointerId); } catch (err) {}
   });
+  function now() { return performance.now(); }
+  function clearSticks() { joy.active = false; joy.x = joy.y = 0; aim.active = false; aim.x = aim.y = 0; }
+  document.addEventListener('visibilitychange', clearSticks);
+  window.addEventListener('blur', clearSticks);
+  window.addEventListener('pagehide', clearSticks);
+  game.addEventListener('lostpointercapture', function (e) { endJoy(e); });
+  game.addEventListener('touchcancel', clearSticks);
   function dragStick(s, e) {
+    s.t = now();
     var r = cv.getBoundingClientRect();
     var dx = e.clientX - r.left - s.ox, dy = e.clientY - r.top - s.oy;
     var d = Math.hypot(dx, dy);
@@ -2325,6 +2333,7 @@ body {
   // the stick and keys become this player's walking input
   function gatherInput() {
     var mx = 0, my = 0;
+    if ((joy.active || aim.active) && (blocked() || state !== 'play')) clearSticks();
     if (!blocked() && state === 'play') {
       mx = joy.x; my = joy.y;
       if (keys.l) mx -= 1; if (keys.r) mx += 1; if (keys.u) my -= 1; if (keys.d) my += 1;
