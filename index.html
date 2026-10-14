@@ -1825,7 +1825,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 36';
+  var updMsg = '', VERSION = 'Version 37';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2099,7 +2099,13 @@ body {
     if (net.mode === 'client') { netSend({ k: 'cmd', c: c, a: a, id: id }); return; }
     hostCmd(me, { c: c, a: a, id: id });
   }
-  swapGo.addEventListener('click', function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('swap'); });
+  // iOS does not send a click while another finger is down, so fire these on the touch itself
+  function fastTap(el, fn) {
+    var last = -1e9;
+    el.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse' && e.button !== 0) return; e.preventDefault(); last = performance.now(); fn(); });
+    el.addEventListener('click', function () { if (performance.now() - last < 600) return; fn(); });
+  }
+  fastTap(swapGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('swap'); });
 
   // ---------- shop ----------
   var shopBtn = $('shopBtn'), lastShopKey = '';
@@ -2239,7 +2245,7 @@ body {
     if (!b) return;
     ensureAudio(); cmd('box', b.dataset.box, b.dataset.id);
   });
-  boxBtn.addEventListener('click', function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('box', 'open'); });
+  fastTap(boxBtn, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('box', 'open'); });
 
   // ---------- hud ----------
   var hudCache = {};
