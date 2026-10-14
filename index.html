@@ -135,6 +135,18 @@ body {
 .tmbar { flex: 1; height: 5px; min-width: 40px; background: rgba(0, 0, 0, 0.6); }
 .tmbar i { display: block; height: 100%; background: currentColor; }
 
+.overlay h1 { }
+.slides { display: flex; width: min(300px, 100%); overflow-x: auto; scroll-snap-type: x mandatory; touch-action: pan-x; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.slides::-webkit-scrollbar { display: none; }
+.slide { flex: 0 0 100%; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.slide canvas { width: 280px; height: 150px; max-width: 100%; border: 1px solid #3a322d; border-radius: 4px; }
+.slide h2 { margin: 0; font: 400 30px/1 var(--face-display); }
+.slide p { min-height: 5.4em; }
+.dots { display: flex; gap: 7px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: #4a3f38; }
+.dots i.on { background: var(--rust); }
+.swipe { font: 600 13px/1 var(--face-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+
 /* shop */
 .shop { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 14px; background: rgba(10, 8, 7, 0.95); min-height: 0; }
 .shead { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-width: 0; }
@@ -1664,6 +1676,7 @@ body {
       h += '<button class="go" data-a="offline" type="button">Play offline</button>';
       h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
       h += '<button class="go alt" data-a="me" type="button">Your player</button>';
+      h += '<button class="go alt" data-a="help" type="button">How to play</button>';
       h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
       if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
     } else if (screen === 'offline') {
@@ -1706,6 +1719,7 @@ body {
       h += '<h1>' + (net.mode === 'off' ? 'Paused' : 'Menu') + '</h1>';
       h += '<p>Wave <b>' + wave + '</b> · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : 'The game keeps running while this is open.') + '</p>';
       h += '<button class="go" data-a="resume" type="button">Resume</button>';
+      h += '<button class="go alt" data-a="help" type="button">How to play</button>';
       h += '<button class="go alt" data-a="leave" type="button">' + (net.mode === 'off' ? 'Quit to menu' : 'Leave game') + '</button>';
       h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
     } else if (screen === 'over') {
@@ -1722,11 +1736,14 @@ body {
         h += '<button class="go" data-a="again" type="button">' + (net.mode === 'host' ? 'Play again' : 'Try again') + '</button>';
         h += '<button class="chip" data-a="leave" type="button">Menu</button>';
       }
+    } else if (screen === 'help') {
+      h += helpHtml();
     } else if (screen === 'lost') {
       h += '<h1>Connection lost</h1><p>' + esc(netStatus || 'The host went away.') + '</p><button class="go" data-a="leave" type="button">Menu</button>';
     }
     ov.innerHTML = h;
     if (screen === 'me') drawPreview();
+    if (screen === 'help') initHelp();
   }
   function showScreen(name) {
     screen = name;
@@ -1776,6 +1793,8 @@ body {
     else if (a === 'dojoin') { el = $('codeIn'); joinCode = String(el ? el.value : joinCode).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); netJoin(joinCode); }
     else if (a === 'hstart') hostStart();
     else if (a === 'resume') showScreen('');
+    else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
+    else if (a === 'helpdone') showScreen(helpFrom);
     else if (a === 'leave') leaveGame();
     else if (a === 'again') { if (net.mode === 'host') hostStart(); else startOffline(); }
     else if (a === 'back') showScreen(b.dataset.to);
@@ -1798,6 +1817,123 @@ body {
   }
   pauseBtn.addEventListener('click', function () { ensureAudio(); pauseGame(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden && net.mode === 'off') pauseGame(); });
+
+  // ---------- how to play (swipe slides, pictures drawn with the game's own sprites) ----------
+  var helpFrom = 'main', helpIdx = 0;
+  var HELP = [
+    { t: 'Move', x: 'Put your thumb anywhere on the screen and drag. Drag further to go faster.', art: 'move' },
+    { t: 'Shooting is automatic', x: 'Your character aims and fires at the closest zombie by itself. Your job is to stay alive.', art: 'shoot' },
+    { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
+    { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
+    { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
+    { t: 'Guns and ammo', x: 'The bottom-right button shows your gun and ammo. Tap it to swap guns. Empty guns reload by themselves.', art: 'gun' },
+    { t: 'Drops', x: 'Zombies sometimes drop health, ammo and 10-second power-ups. Walk over them to grab them.', art: 'drops' },
+    { t: 'Mystery box', x: 'Stand next to a glowing ? box and tap the button to pay 120 coins for a random gun.', art: 'box' },
+    { t: 'Bosses', x: 'Every 5th wave a boss turns up. Each kind fights differently, so watch what it does.', art: 'boss' },
+    { t: 'Playing together', x: 'Everyone has their own coins and guns. If a friend goes down, stand next to them for 3 seconds to get them up. Online, the game does not pause when you shop.', art: 'team' }
+  ];
+  function helpHtml() {
+    var h = '<h1>How to play</h1><div class="slides" id="slides">', i;
+    for (i = 0; i < HELP.length; i++) h += '<div class="slide"><canvas width="560" height="300" data-art="' + HELP[i].art + '" aria-hidden="true"></canvas><h2>' + HELP[i].t + '</h2><p>' + HELP[i].x + '</p></div>';
+    h += '</div><div class="dots" id="dots">';
+    for (i = 0; i < HELP.length; i++) h += '<i></i>';
+    h += '</div><div class="swipe">Swipe left and right</div><button class="go" data-a="helpdone" type="button">Done</button>';
+    return h;
+  }
+  function helpDots() {
+    var s = $('slides'), d = $('dots'); if (!s || !d) return;
+    var n = Math.max(0, Math.min(HELP.length - 1, Math.round(s.scrollLeft / Math.max(1, s.clientWidth))));
+    helpIdx = n;
+    for (var i = 0; i < d.children.length; i++) d.children[i].className = i === n ? 'on' : '';
+  }
+  function helpArt(c, k) {
+    var i, P0 = function (x, y, a, col) { return { x: x, y: y, ang: a, look: { c: col, h: 0 }, armor: { head: 0, body: 0, legs: 0 }, inv: 0, step: 0.8, down: false }; };
+    var gl = WEAPONS.glock;
+    c.fillStyle = '#1a1512'; c.fillRect(0, 0, 280, 150);
+    c.strokeStyle = 'rgba(255,255,255,0.05)'; c.lineWidth = 1;
+    for (i = 0; i < 280; i += 28) { c.beginPath(); c.moveTo(i, 0); c.lineTo(i, 150); c.stroke(); }
+    for (i = 0; i < 150; i += 28) { c.beginPath(); c.moveTo(0, i); c.lineTo(280, i); c.stroke(); }
+    function pl(x, y, a, col, sc) { c.save(); c.translate(x, y); c.scale(sc || 2.2, sc || 2.2); drawPlayerBody(c, P0(0, 0, a, col), gl, 1); c.restore(); }
+    function zb(x, y, a, type, sc) { var t = TYPES[type]; c.save(); c.translate(x, y); c.scale(sc || 1.8, sc || 1.8); drawZombie({ x: 0, y: 0, ang: a, r: t.r, skin: t.skin, cloth: t.cloth, boss: !!t.boss, type: type, flash: 0, warn: 0, seed: 1 }, c); c.restore(); }
+    function coin(x, y) { c.fillStyle = 'rgba(242,193,78,0.3)'; c.beginPath(); c.arc(x, y, 9, 0, 6.283); c.fill(); c.fillStyle = '#f2c14e'; c.beginPath(); c.arc(x, y, 5, 0, 6.283); c.fill(); c.fillStyle = '#fff3c4'; c.beginPath(); c.arc(x - 1.5, y - 1.5, 1.6, 0, 6.283); c.fill(); }
+    function txt(s, x, y, size, col, al) { c.font = '700 ' + size + 'px "Barlow Condensed", Arial, sans-serif'; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillStyle = col || '#ebe3d4'; c.fillText(s, x, y); }
+    function btn(x, y, w, h, col, s) { c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(x, y, w, h); c.strokeStyle = col; c.lineWidth = 2; c.strokeRect(x, y, w, h); txt(s, x + w / 2, y + h / 2, 17, col); }
+    if (k === 'move') {
+      c.strokeStyle = 'rgba(235,227,212,0.4)'; c.lineWidth = 2; c.fillStyle = 'rgba(235,227,212,0.07)';
+      c.beginPath(); c.arc(75, 75, 42, 0, 6.283); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(235,227,212,0.45)'; c.beginPath(); c.arc(98, 62, 20, 0, 6.283); c.fill();
+      c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(150, 92); c.lineTo(212, 58); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#d2692a'; c.beginPath(); c.moveTo(222, 53); c.lineTo(205, 52); c.lineTo(212, 66); c.fill();
+      pl(150, 98, -0.5, 0);
+    } else if (k === 'shoot') {
+      pl(55, 75, 0, 0); zb(215, 75, 3.14, 'walker');
+      c.strokeStyle = '#ffd089'; c.lineWidth = 2.5;
+      for (i = 0; i < 3; i++) { c.beginPath(); c.moveTo(105 + i * 32, 75); c.lineTo(120 + i * 32, 75); c.stroke(); }
+      var g = c.createRadialGradient(98, 75, 0, 98, 75, 16); g.addColorStop(0, 'rgba(255,230,160,0.95)'); g.addColorStop(1, 'rgba(255,140,40,0)'); c.fillStyle = g; c.fillRect(80, 58, 36, 34);
+    } else if (k === 'coins') {
+      c.fillStyle = 'rgba(150,18,18,0.55)'; c.beginPath(); c.ellipse(80, 78, 26, 20, 0.3, 0, 6.283); c.fill();
+      coin(70, 72); coin(88, 82); coin(78, 90);
+      c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(112, 78); c.lineTo(168, 78); c.stroke(); c.setLineDash([]);
+      pl(205, 78, 3.14, 0);
+      txt('COINS 24', 140, 18, 18, '#f2c14e');
+    } else if (k === 'shop') {
+      btn(190, 14, 74, 36, '#f2c14e', 'SHOP');
+      c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(24, 62, 232, 28); c.fillRect(24, 96, 232, 28);
+      txt('Damage +10%', 40, 76, 16, '#ebe3d4', 'left'); txt('Glock Mk II', 40, 110, 16, '#ebe3d4', 'left');
+      c.fillStyle = '#f2c14e'; c.fillRect(190, 66, 60, 20); c.fillRect(190, 100, 60, 20); txt('25', 220, 76, 15, '#1a0e08'); txt('60', 220, 110, 15, '#1a0e08');
+      txt('Next wave in 20s', 100, 30, 17, '#9c8f7e');
+    } else if (k === 'bar') {
+      c.fillStyle = '#2b2520'; c.fillRect(30, 20, 14, 110); c.fillRect(30, 20, 220, 14);
+      for (i = 0; i < 5; i++) {
+        if (i < 2) { c.fillStyle = '#6b4a2c'; c.fillRect(58 + i * 44, 22, 40, 10); c.strokeStyle = '#2a1c10'; c.strokeRect(58 + i * 44, 22, 40, 10); }
+        else { c.strokeStyle = 'rgba(120,90,60,0.5)'; c.strokeRect(58 + i * 44, 22, 40, 10); }
+      }
+      c.fillStyle = 'rgba(210,105,42,0.35)'; c.fillRect(146, 20, 110, 14);
+      pl(190, 70, -1.57, 0);
+      c.strokeStyle = '#f2c14e'; c.lineWidth = 3; c.beginPath(); c.arc(190, 70, 24, -1.57, 2.2); c.stroke();
+    } else if (k === 'gun') {
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(120, 82, 140, 52); c.strokeStyle = '#8aa0b8'; c.lineWidth = 2; c.strokeRect(120, 82, 140, 52);
+      txt('GLOCK 17', 190, 99, 19, '#ebe3d4'); txt('11 | ∞', 190, 122, 17, '#9c8f7e');
+      pl(60, 50, 0, 0);
+      c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(46, 18, 28, 5); c.fillStyle = '#f2c14e'; c.fillRect(47, 19, 16, 3);
+      txt('reloading', 60, 8, 13, '#9c8f7e');
+      c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.beginPath(); c.arc(190, 108, 78, 0.2, 0.2); c.stroke();
+      txt('tap to swap ↓', 190, 68, 15, '#d2692a');
+    } else if (k === 'drops') {
+      c.fillStyle = 'rgba(120,224,160,0.3)'; c.beginPath(); c.arc(55, 70, 28, 0, 6.283); c.fill();
+      c.fillStyle = '#e9f2ea'; c.fillRect(39, 54, 32, 32); c.fillStyle = '#c43a2a'; c.fillRect(43, 66, 24, 8); c.fillRect(51, 58, 8, 24);
+      c.fillStyle = 'rgba(214,170,70,0.3)'; c.beginPath(); c.arc(140, 70, 28, 0, 6.283); c.fill();
+      c.fillStyle = '#4a4a2c'; c.fillRect(124, 58, 32, 24); c.fillStyle = '#d6aa46'; c.fillRect(129, 63, 4, 14); c.fillRect(138, 63, 4, 14); c.fillRect(147, 63, 4, 14);
+      c.globalAlpha = 0.3; c.fillStyle = '#f2c14e'; c.beginPath(); c.arc(225, 70, 28, 0, 6.283); c.fill(); c.globalAlpha = 1;
+      c.fillStyle = '#f2c14e'; c.beginPath(); c.arc(225, 70, 16, 0, 6.283); c.fill(); txt('2X', 225, 71, 17, '#14100d');
+      txt('Health', 55, 120, 15, '#9c8f7e'); txt('Ammo', 140, 120, 15, '#9c8f7e'); txt('Power-up', 225, 120, 15, '#9c8f7e');
+    } else if (k === 'box') {
+      var bp = c.createRadialGradient(190, 62, 0, 190, 62, 50); bp.addColorStop(0, 'rgba(242,193,78,0.35)'); bp.addColorStop(1, 'rgba(242,193,78,0)'); c.fillStyle = bp; c.fillRect(130, 12, 120, 100);
+      c.fillStyle = '#4a3320'; c.fillRect(170, 48, 40, 30); c.strokeStyle = '#f2c14e'; c.lineWidth = 2.5; c.strokeRect(170, 48, 40, 30); c.fillStyle = '#f2c14e'; c.fillRect(188, 48, 5, 30);
+      txt('?', 190, 30, 26, '#f2c14e');
+      pl(95, 66, 0, 0);
+      btn(120, 100, 150, 34, '#f2c14e', 'Mystery box · 120');
+    } else if (k === 'boss') {
+      zb(140, 68, 0, 'boss', 2);
+      c.fillStyle = 'rgba(0,0,0,0.75)'; c.fillRect(80, 12, 120, 8); c.fillStyle = '#ff6a2a'; c.fillRect(81, 13, 84, 6);
+      txt('every 5th wave', 140, 132, 16, '#d2692a');
+    } else if (k === 'team') {
+      pl(70, 78, 0, 0); pl(120, 70, 0.3, 2);
+      c.font = '700 13px "Barlow Condensed", Arial, sans-serif';
+      txt('You', 70, 52, 14, LOOK_COLS[0]); txt('Lars', 120, 44, 14, LOOK_COLS[2]);
+      c.globalAlpha = 0.45; c.save(); c.translate(215, 88); c.scale(2.2, 2.2); drawPlayerBody(c, P0(0, 0, 0, 1), gl, 1); c.restore(); c.globalAlpha = 1;
+      c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = 6; c.beginPath(); c.arc(215, 88, 34, 0, 6.283); c.stroke();
+      c.strokeStyle = '#78e0a0'; c.lineWidth = 4; c.beginPath(); c.arc(215, 88, 34, -1.57, 2.4); c.stroke();
+      txt('revive', 215, 134, 15, '#78e0a0');
+    }
+  }
+  function initHelp() {
+    var s = $('slides'), cs = ov.querySelectorAll('canvas[data-art]'), i;
+    for (i = 0; i < cs.length; i++) { var x = cs[i].getContext('2d'); x.setTransform(2, 0, 0, 2, 0, 0); helpArt(x, cs[i].dataset.art); }
+    s.addEventListener('scroll', helpDots);
+    s.scrollLeft = helpIdx * s.clientWidth;
+    helpDots();
+  }
 
   // ---------- commands (the host runs them for every player) ----------
   function cmd(c, a, id) {
@@ -2084,29 +2220,30 @@ body {
   // ---------- drawing ----------
   function setCam() { ctx.setTransform(K, 0, 0, K, -cam.x * K, -cam.y * K); }
 
-  function drawZombie(z) {
+  function drawZombie(z, c) {
+    c = c || ctx;
     var r = z.r, sway = Math.sin(time * 5 + z.seed) * r * 0.14, fl = z.flash > 0;
-    ctx.save();
-    ctx.translate(z.x, z.y); ctx.rotate(z.ang);
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath(); ctx.ellipse(1, 2, r * 0.95, r * 1.1, 0, 0, 6.283); ctx.fill();
-    ctx.fillStyle = fl ? '#efe3d2' : z.skin;
-    ctx.fillRect(r * 0.15 + sway, -r * 0.78, r * 1.05, r * 0.3);
-    ctx.fillRect(r * 0.15 - sway, r * 0.48, r * 1.05, r * 0.3);
-    ctx.fillStyle = fl ? '#efe3d2' : z.cloth;
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.68, r * 0.98, 0, 0, 6.283); ctx.fill();
-    ctx.fillStyle = fl ? '#fff4e4' : z.skin;
-    ctx.beginPath(); ctx.arc(r * 0.12, 0, r * 0.56, 0, 6.283); ctx.fill();
-    if (z.warn > 0) { ctx.strokeStyle = 'rgba(255,60,40,0.8)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r * 1.35, 0, 6.283); ctx.stroke(); }
+    c.save();
+    c.translate(z.x, z.y); c.rotate(z.ang);
+    c.fillStyle = 'rgba(0,0,0,0.35)';
+    c.beginPath(); c.ellipse(1, 2, r * 0.95, r * 1.1, 0, 0, 6.283); c.fill();
+    c.fillStyle = fl ? '#efe3d2' : z.skin;
+    c.fillRect(r * 0.15 + sway, -r * 0.78, r * 1.05, r * 0.3);
+    c.fillRect(r * 0.15 - sway, r * 0.48, r * 1.05, r * 0.3);
+    c.fillStyle = fl ? '#efe3d2' : z.cloth;
+    c.beginPath(); c.ellipse(0, 0, r * 0.68, r * 0.98, 0, 0, 6.283); c.fill();
+    c.fillStyle = fl ? '#fff4e4' : z.skin;
+    c.beginPath(); c.arc(r * 0.12, 0, r * 0.56, 0, 6.283); c.fill();
+    if (z.warn > 0) { c.strokeStyle = 'rgba(255,60,40,0.8)'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, r * 1.35, 0, 6.283); c.stroke(); }
     if (z.boss) {
-      ctx.fillStyle = '#1b1212';
+      c.fillStyle = '#1b1212';
       for (var s = 0; s < 6; s++) {
         var sa = s * 1.047 + 0.3;
-        ctx.beginPath(); ctx.arc(Math.cos(sa) * r * 0.82, Math.sin(sa) * r * 0.9, r * 0.14, 0, 6.283); ctx.fill();
+        c.beginPath(); c.arc(Math.cos(sa) * r * 0.82, Math.sin(sa) * r * 0.9, r * 0.14, 0, 6.283); c.fill();
       }
     }
-    if (z.type === 'tank') { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(-r * 0.3, -r * 0.9, r * 0.22, r * 1.8); }
-    ctx.restore();
+    if (z.type === 'tank') { c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-r * 0.3, -r * 0.9, r * 0.22, r * 1.8); }
+    c.restore();
   }
 
   // one player body. Works for the menu preview too (c is any 2d context)
