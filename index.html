@@ -1871,7 +1871,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 39';
+  var updMsg = '', VERSION = 'Version 40';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2485,6 +2485,13 @@ body {
   document.body.appendChild(insProbe);
   function fit() {
     insT = parseFloat(getComputedStyle(insProbe).paddingTop) || 0;
+    // iOS home-screen app: the page can report a viewport shorter than the screen (by the status bar), which leaves a gap. Size to the real screen instead.
+    try {
+      var sMax = Math.max(window.screen.width, window.screen.height), sMin = Math.min(window.screen.width, window.screen.height);
+      var want = window.innerWidth > window.innerHeight ? sMin : sMax, extra = want - window.innerHeight;
+      if (navigator.standalone && extra > 0 && extra <= 150) { game.style.height = want + 'px'; game.style.bottom = 'auto'; }
+      else { game.style.height = ''; game.style.bottom = ''; }
+    } catch (e) {}
     var r = game.getBoundingClientRect();
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
     dpr = Math.min(window.devicePixelRatio || 1, 2);
