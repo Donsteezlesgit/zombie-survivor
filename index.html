@@ -1827,6 +1827,7 @@ body {
     { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
     { t: 'Guns and ammo', x: 'The bottom-right button shows your gun and ammo. Tap it to swap guns. Empty guns reload by themselves.', art: 'gun' },
+    { t: 'Gun slots', x: 'You start with one gun slot. Buy more in the Shop, on the Guns tab, before you can carry a second or third gun. No free slot? A new gun replaces one you own.', art: 'slots' },
     { t: 'Drops', x: 'Zombies sometimes drop health, ammo and 10-second power-ups. Walk over them to grab them.', art: 'drops' },
     { t: 'Mystery box', x: 'Stand next to a glowing ? box and tap the button to pay 120 coins for a random gun.', art: 'box' },
     { t: 'Bosses', x: 'Every 5th wave a boss turns up. Each kind fights differently, so watch what it does.', art: 'boss' },
@@ -1899,6 +1900,16 @@ body {
       txt('reloading', 60, 8, 13, '#9c8f7e');
       c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.beginPath(); c.arc(190, 108, 78, 0.2, 0.2); c.stroke();
       txt('tap to swap ↓', 190, 68, 15, '#d2692a');
+    } else if (k === 'slots') {
+      var sx = [30, 108, 186], lab = ['Glock', 'Slot 2', 'Slot 3'], pr = ['', '40', '260'];
+      for (i = 0; i < 3; i++) {
+        c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(sx[i], 34, 64, 64);
+        c.strokeStyle = i ? '#5a4d44' : '#8aa0b8'; c.lineWidth = 2; c.strokeRect(sx[i], 34, 64, 64);
+        if (!i) { c.save(); c.translate(sx[i] + 20, 66); c.scale(1.6, 1.6); drawPlayerBody(c, P0(0, 0, 0, 0), gl, 1); c.restore(); }
+        else { txt('LOCKED', sx[i] + 32, 60, 14, '#9c8f7e'); c.fillStyle = '#f2c14e'; c.fillRect(sx[i] + 10, 72, 44, 20); txt(pr[i], sx[i] + 32, 82, 15, '#1a0e08'); }
+        txt(lab[i], sx[i] + 32, 114, 15, '#9c8f7e');
+      }
+      txt('Shop \u203a Guns', 140, 14, 16, '#f2c14e');
     } else if (k === 'drops') {
       c.fillStyle = 'rgba(120,224,160,0.3)'; c.beginPath(); c.arc(55, 70, 28, 0, 6.283); c.fill();
       c.fillStyle = '#e9f2ea'; c.fillRect(39, 54, 32, 32); c.fillStyle = '#c43a2a'; c.fillRect(43, 66, 24, 8); c.fillRect(51, 58, 8, 24);
