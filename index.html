@@ -270,6 +270,8 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
   .overlay { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
   .shop { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
 }
+html.fullbleed, html.fullbleed body { position: static !important; height: auto !important; min-height: 100lvh !important; overflow: visible !important; }
+html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lvh !important; }
 </style>
 
 <div class="game" id="game">
@@ -1889,7 +1891,7 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 44';
+  var updMsg = '', VERSION = 'Version 45';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2557,6 +2559,8 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
   document.body.appendChild(insProbe);
   function fit() {
     insT = parseFloat(getComputedStyle(insProbe).paddingTop) || 0;
+    var fb = !!(navigator.standalone && insT > 0);
+    if (document.documentElement.classList.contains('fullbleed') !== fb) document.documentElement.classList.toggle('fullbleed', fb);
     // iOS home-screen app drawing under the status bar: the page can report a viewport shorter than the screen, leaving a gap. Take the tallest believable height.
     try {
       var vv = window.visualViewport, ih = window.innerHeight, best = ih;
@@ -2565,8 +2569,8 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
         var want = window.innerWidth > window.innerHeight ? Math.min(window.screen.width, window.screen.height) : Math.max(window.screen.width, window.screen.height);
         if (want - best > 0 && want - best <= 150) best = want;
       }
-      if (best > ih + 1) { game.style.height = best + 'px'; game.style.bottom = 'auto'; }
-      else { game.style.height = ''; game.style.bottom = ''; }
+      if (best > ih + 1) { game.style.setProperty('height', best + 'px', 'important'); game.style.setProperty('bottom', 'auto', 'important'); }
+      else { game.style.removeProperty('height'); game.style.removeProperty('bottom'); }
     } catch (e) {}
     var r = game.getBoundingClientRect();
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
@@ -2579,6 +2583,17 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
     lcv.width = cv.width; lcv.height = cv.height;
   }
   window.addEventListener('resize', fit);
+  // iOS settles its window size a moment after load, so re-apply the full-screen layout a few times
+  function pulse() {
+    var de = document.documentElement;
+    if (!de.classList.contains('fullbleed')) { fit(); return; }
+    de.classList.remove('fullbleed');
+    requestAnimationFrame(function () { fit(); });
+  }
+  [60, 250, 600, 1200, 2500].forEach(function (t) { setTimeout(pulse, t); });
+  window.addEventListener('load', function () { setTimeout(pulse, 30); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { pulse(); setTimeout(pulse, 400); } });
+  window.addEventListener('orientationchange', function () { setTimeout(pulse, 250); setTimeout(pulse, 800); });
   window.addEventListener('pageshow', function () { fit(); setTimeout(fit, 300); });
   setTimeout(fit, 400);
   setInterval(function () { var r = game.getBoundingClientRect(); if (Math.round(r.width) !== W || Math.round(r.height) !== H) fit(); }, 500);
