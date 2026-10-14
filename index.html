@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15110e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Zombies"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15110e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="Zombies"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="icon-192.png"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Zombie Survivor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,10 +33,10 @@ body {
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.game { position: relative; height: 100%; overflow: hidden; background: var(--ground); }
+.game { position: fixed; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; background: var(--ground); }
 #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
-.hud { position: absolute; left: 0; right: 0; top: 0; padding: 10px 16px 0; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.hud { position: absolute; left: 0; right: 0; top: 0; padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
 .row { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .hp { position: relative; flex: 1; min-width: 0; height: 24px; background: rgba(0, 0, 0, 0.6); border: 1px solid #4a3f38; overflow: hidden; }
 .hpfill { position: absolute; inset: 0 auto 0 0; width: 100%; background: var(--blood); transition: width 0.12s linear; }
@@ -1779,7 +1779,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 27';
+  var updMsg = '', VERSION = 'Version 28';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2346,6 +2346,9 @@ body {
     lcv.width = cv.width; lcv.height = cv.height;
   }
   window.addEventListener('resize', fit);
+  window.addEventListener('pageshow', function () { fit(); setTimeout(fit, 300); });
+  setTimeout(fit, 400);
+  setInterval(function () { var r = game.getBoundingClientRect(); if (Math.round(r.width) !== W || Math.round(r.height) !== H) fit(); }, 500);
   window.addEventListener('orientationchange', function () { setTimeout(fit, 200); });
   try { if (window.visualViewport) window.visualViewport.addEventListener('resize', fit); } catch (e) {}
   window.addEventListener('scroll', function () { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });
