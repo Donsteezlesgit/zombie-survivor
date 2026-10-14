@@ -1780,7 +1780,7 @@ body {
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 30';
+  var updMsg = '', VERSION = 'Version 31';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2268,6 +2268,7 @@ body {
   try { if (localStorage.getItem('zs-ctrl') === 'two') ctrlMode = 'two'; } catch (e) {}
   function setCtrl(m) { ctrlMode = m; try { localStorage.setItem('zs-ctrl', m); } catch (e) {} joy.active = false; joy.x = joy.y = 0; aim.active = false; }
   game.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'touch') return;
     if (state !== 'play' || blocked()) return;
     if (e.target.closest && e.target.closest('button')) return;
     var r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
@@ -2286,7 +2287,39 @@ body {
   window.addEventListener('blur', clearSticks);
   window.addEventListener('pagehide', clearSticks);
   game.addEventListener('lostpointercapture', function (e) { endJoy(e); });
-  game.addEventListener('touchcancel', clearSticks);
+
+  // touch: the live list of fingers (e.touches) is the truth, so a thumb that iOS never reported lifting is dropped the instant any other touch event arrives
+  function reconcile(list) {
+    var ids = {}, i;
+    for (i = 0; i < list.length; i++) ids[list[i].identifier] = 1;
+    if (joy.active && joy.tid != null && !ids[joy.tid]) { joy.active = false; joy.x = joy.y = 0; joy.tid = null; }
+    if (aim.active && aim.tid != null && !ids[aim.tid]) { aim.active = false; aim.x = aim.y = 0; aim.tid = null; }
+  }
+  game.addEventListener('touchstart', function (e) {
+    reconcile(e.touches);
+    if (state !== 'play' || blocked()) return;
+    var r = cv.getBoundingClientRect(), i, t, x, y, st;
+    for (i = 0; i < e.changedTouches.length; i++) {
+      t = e.changedTouches[i];
+      if (t.target && t.target.closest && t.target.closest('button')) continue;
+      x = t.clientX - r.left; y = t.clientY - r.top;
+      st = (ctrlMode === 'two' && x > r.width / 2) ? aim : joy;
+      if (st.active) continue;
+      st.active = true; st.tid = t.identifier; st.ox = x; st.oy = y; st.x = st.y = 0;
+      e.preventDefault();
+    }
+  }, { passive: false });
+  game.addEventListener('touchmove', function (e) {
+    reconcile(e.touches);
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      var t = e.changedTouches[i];
+      if (joy.active && t.identifier === joy.tid) dragStick(joy, t);
+      else if (aim.active && t.identifier === aim.tid) { dragStick(aim, t); if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x); }
+    }
+  }, { passive: true });
+  function touchEnd(e) { reconcile(e.touches); }
+  game.addEventListener('touchend', touchEnd);
+  game.addEventListener('touchcancel', touchEnd);
   function dragStick(s, e) {
     s.t = now();
     var r = cv.getBoundingClientRect();
@@ -2300,6 +2333,7 @@ body {
     s.x = dx / JR; s.y = dy / JR;
   }
   game.addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'touch') return;
     if (joy.active && e.pointerId === joy.id) dragStick(joy, e);
     else if (aim.active && e.pointerId === aim.id) {
       dragStick(aim, e);
@@ -2307,6 +2341,7 @@ body {
     }
   });
   function endJoy(e) {
+    if (e.pointerType === 'touch') return;
     if (joy.active && e.pointerId === joy.id) { joy.active = false; joy.x = joy.y = 0; }
     if (aim.active && e.pointerId === aim.id) { aim.active = false; aim.x = aim.y = 0; }
   }
