@@ -323,7 +323,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.35, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, boss: 1 }, ammoFrac: 0.4, ammoLife: 18,
+    dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, boss: 1 }, ammoFrac: 0.4, waveRefill: 0.33, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -422,7 +422,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     crit:  { name: 'Crit chance',   desc: '+10% chance to deal double damage',    base: 30 },
     cval:  { name: 'Coin value',    desc: '+10% coins from every kill',           base: 25 },
     mag:   { name: 'Pick-up magnet', desc: '+25% pick-up range for coins and ammo', base: 15 },
-    sammo: { name: 'Special ammo',  desc: '+25% ammo on special weapons',         base: 20 }
+    sammo: { name: 'Special ammo',  desc: '+25% ammo on special weapons',         base: 20 },
+    rest:  { name: 'Ammo restock',  desc: '+7% more reserve ammo refilled after each wave', base: 30 }
   };
   var TIERCOL = ['', '#8a949c', '#5f8a6a', '#78b0ff', '#d2692a'];
   var ARM = {
@@ -788,7 +789,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       hp: 0, fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0,
       wallet: 0, waveCoins: 0, kills: 0,
       armor: { head: 0, body: 0, legs: 0 },
-      upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0 },
+      upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0, rest: 0 },
       perkT: { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 },
       slots: [makeGun('glock'), null, null], unlocked: 1, special: null, sel: 0, lastSel: 0,
       cards: [], pendingGun: null, boxPrize: null, rebuildLeft: 0,
@@ -960,6 +961,17 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     P.fireCd = 0.12;
   }
 
+  // end of wave: mags topped up, reserve gets a third of its max (+7% per Ammo restock level)
+  function waveRefillGun(g, P) {
+    var d = WEAPONS[g.id]; if (!d || d.res === Infinity) { refillGun(g); return; }
+    var f = Math.min(1, TUNE.waveRefill + TUNE.restockStep * ((P.upg && P.upg.rest) || 0));
+    g.mag = gunMag(d); g.reload = 0;
+    g.res = Math.min(d.res, g.res + Math.round(d.res * f));
+  }
+  function waveRefillAll(P) {
+    for (var i = 0; i < 3; i++) if (P.slots[i]) waveRefillGun(P.slots[i], P);
+    if (P.stash) waveRefillGun(P.stash, P);
+  }
   function refillAllGuns(P) {
     for (var i = 0; i < 3; i++) if (P.slots[i]) refillGun(P.slots[i]);
     if (P.stash) refillGun(P.stash);
@@ -1012,7 +1024,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     }
     pickups = keep;
     for (i = 0; i < players.length; i++) {
-      refillAllGuns(players[i]);
+      waveRefillAll(players[i]);
       rollCards(players[i]);
       if (players[i].down) revivePlayer(players[i], 0.5);
     }
@@ -1113,7 +1125,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   }
 
   // ---------- shop rules (run on the host for every player) ----------
-  function upgCost(P, id) { return Math.round(UPG[id].base * (1 + 0.4 * P.upg[id])); }
+  function upgCost(P, id) { return Math.round(UPG[id].base * (1 + 0.4 * (P.upg[id] || 0))); }
   function gunUpCost(s) { var w = WEAPONS[s.id], t = s.tier; return Math.max(50, Math.round((w.price || w.upv || 0) * 0.3)) * (t <= 3 ? t : Math.round(t * (1 + 0.9 * (t - 3)))); }
   function ownsGun(P, id) { for (var i = 0; i < 3; i++) if (P.slots[i] && P.slots[i].id === id) return true; return false; }
   function fmt(n) { return n < 10 ? n.toFixed(1) : String(Math.round(n)); }
@@ -1133,7 +1145,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       for (i = 0; i < P.cards.length; i++) if (P.cards[i].id === id) c = P.cards[i];
       if (!c || c.bought) return false;
       cost = upgCost(P, id); if (P.wallet < cost) return false;
-      P.wallet -= cost; c.bought = true; P.upg[id]++;
+      P.wallet -= cost; c.bought = true; P.upg[id] = (P.upg[id] || 0) + 1;
       if (id === 'hp' && !P.down) P.hp += TUNE.hpBase * 0.1;
     } else if (a === 'gunup') {
       s = P.slots[+id]; if (!s || s.tier >= TUNE.maxTier) return false;
@@ -1917,7 +1929,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 46';
+  var updMsg = '', VERSION = 'Version 47';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2088,11 +2100,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var GUIDE = [
     { t: 'The goal', art: 'shoot', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
     { t: 'Controls', art: 'aim', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
-    { t: 'Waves and breaks', art: 'shop', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. Guns refill fully at the end of every wave.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
+    { t: 'Waves and breaks', art: 'shop', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: from wave 25. 420 health and hits hard.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a special weapon crate, lots of coins, and often a power-up.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
-    { t: 'Upgrades', art: 'shop', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo.', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
+    { t: 'Upgrades', art: 'shop', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock.', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
     { t: 'Guns', art: 'gun', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. Empty magazines reload on their own, and guns top up after each wave.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with one slot.', 'Slot 2 costs 40 coins, slot 3 costs 260.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: you choose which gun to replace. The old gun and its upgrades are lost.', 'Tap the bottom-right button to cycle through your guns.'] },
     { t: 'Gun upgrades', art: 'slots', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
