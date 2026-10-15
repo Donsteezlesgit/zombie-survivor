@@ -2793,7 +2793,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 77';
+  var updMsg = '', VERSION = 'Version 78';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3791,6 +3791,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     flame:   { m: 2, p: [[-6, -4, 10, 8, '#4a2a1a'], [-4, -12, 10, 8, '#b85a20'], [4, -3, 14, 6, GM], [18, -3, 8, 6, '#d2692a'], [26, -2, 3, 4, '#ffd25a']] },
     rocket:  { m: 0, p: [[-10, -6, 40, 12, '#2c3a2c'], [-12, -7, 4, 14, GK], [30, -7, 4, 14, GK], [6, -9, 10, 3, GD], [4, 6, 5, 8, GD]] },
     mini:    { m: 1, p: [[-8, -5, 10, 10, GD], [2, -6, 22, 12, GM], [24, -6, 4, 12, GK], [2, -1, 22, 2, GK], [10, 5, 6, 8, GD], [-2, -10, 14, 4, GY]] },
+    ray:     { m: 1, p: [[-1, -1, 5, 9, GD], [0, -4, 12, 6, '#2a3a4a'], [12, -3, 4, 6, '#5ad8ff'], [2, -7, 6, 2.5, '#5ad8ff'], [-4, -3, 5, 4, GK]] },
+    zap:     { m: 1, p: [[-6, -4, 10, 8, GD], [4, -3, 10, 6, GM], [14, -6, 6, 12, '#4a4a60'], [20, -6, 4, 3, '#9fd8ff'], [20, 3, 4, 3, '#9fd8ff'], [14, -1, 8, 2, '#bfe0ff']] },
     ghost:   { m: 1, p: [[-8, -4, 10, 8, '#2a2d30'], [-4, -12, 12, 8, '#3a3f45'], [2, -3, 18, 6, '#1d4a2c'], [20, -4, 6, 8, '#78ff9a'], [0, -10, 8, 2, '#78ff9a']] }
   };
   (function () { for (var k in GART) { var a = GART[k], t = 0; a.p.forEach(function (q) { t = Math.max(t, q[0] + q[2]); }); a.tip = t; } })();
@@ -3801,7 +3803,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     function part(fn, col) { c.lineWidth = 2; c.strokeStyle = OUT; c.fillStyle = col; fn(); c.fill(); c.stroke(); }
     function rr(x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
     function gun() {
-      var art = GART[d.cls || d.id] || GART.rifle, kx = (d.len + 11 - 6) / art.tip;
+      var art = GART[(d.cls && d.cls !== 'special') ? d.cls : (d.sid || d.id)] || GART.rifle, kx = (d.len + 11 - 6) / art.tip;
       c.save(); c.translate(0, -15); c.rotate(ang); if (fx < 0) c.scale(1, -1);
       c.translate(6, 0); c.save(); c.scale(kx, 1); c.lineJoin = 'round';
       art.p.forEach(function (q, qi) {
