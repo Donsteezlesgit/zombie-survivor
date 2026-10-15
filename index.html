@@ -321,17 +321,17 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 /* landscape layout (v110): tips/help side by side, maps side by side, shop with left rail */
 @media (orientation: landscape) and (max-height: 520px) {
   /* How to play + start-of-game tips: picture left, words right, buttons pinned on the right */
-  .overlay:has(.slides) { display: grid; grid-template-columns: minmax(0, 1fr) 170px; grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 18px; row-gap: 4px; align-content: stretch; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); text-align: left; }
-  .overlay:has(.slides) h1 { grid-column: 1 / -1; font-size: 26px; text-align: left; margin: 0; }
+  .overlay:has(.slides) { display: grid; grid-template-columns: minmax(0, 1fr) clamp(170px, 22vw, 260px); grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 18px; row-gap: 4px; align-content: stretch; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); text-align: left; }
+  .overlay:has(.slides) h1 { grid-column: 1 / -1; font-size: clamp(26px, 7vh, 42px); text-align: left; margin: 0; }
   .overlay:has(.slides) .slides { grid-column: 1; grid-row: 2; width: 100%; align-self: center; }
-  .overlay:has(.slides) .slide { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 16px; row-gap: 4px; align-content: center; justify-items: start; text-align: left; }
-  .overlay:has(.slides) .slide canvas { grid-row: 1 / 3; width: 210px; height: 112px; align-self: center; }
-  .overlay:has(.slides) .slide h2 { align-self: end; font-size: 24px; }
-  .overlay:has(.slides) .slide p { min-height: 0; align-self: start; font-size: 16px; max-width: none; text-align: left; }
+  .overlay:has(.slides) .slide { display: grid; grid-template-columns: clamp(210px, 40vw, 520px) minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 20px; row-gap: 4px; align-content: center; justify-items: start; text-align: left; }
+  .overlay:has(.slides) .slide canvas { grid-row: 1 / 3; width: 100%; height: auto; aspect-ratio: 560 / 300; align-self: center; }
+  .overlay:has(.slides) .slide h2 { align-self: end; font-size: clamp(24px, 6.5vh, 40px); }
+  .overlay:has(.slides) .slide p { min-height: 0; align-self: start; font-size: clamp(16px, 4.6vh, 26px); max-width: none; text-align: left; }
   .overlay:has(.slides) .bul { width: 100%; gap: 4px; align-self: start; }
-  .overlay:has(.slides) .bul li { font-size: 15px; }
+  .overlay:has(.slides) .bul li { font-size: clamp(15px, 4.2vh, 24px); }
   .overlay:has(.slides) .dots { grid-column: 1; grid-row: 3; align-self: center; justify-self: start; }
-  .overlay:has(.slides) .swipe { grid-column: 1; grid-row: 3; align-self: center; justify-self: end; font-size: 12px; }
+  .overlay:has(.slides) .swipe { grid-column: 1; grid-row: 3; align-self: center; justify-self: end; font-size: clamp(12px, 3.2vh, 16px); }
   .overlay:has(.slides) > .go { grid-column: 2; grid-row: 2 / 4; align-self: end; width: 100%; min-height: 48px; }
 
   /* Map pick: cards side by side, Back stays on screen */
@@ -3102,7 +3102,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 110';
+  var updMsg = '', VERSION = 'Version 111';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3714,12 +3714,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       } else if (P.unlocked === 1) {
         h += '<div class="note">Tip: buy a gun slot first or a new gun will replace your Glock.</div>';
       }
-      var any = false;
-      for (i = 0; i < SHOP_GUNS.length; i++) {
-        id = SHOP_GUNS[i]; d = WEAPONS[id];
-        if (ownsGun(P, id)) continue;
-        any = true;
-        h += card(d.name, '<span class="cls">' + CLS[d.cls].label + '</span>', gunLine(id), buyBtn('buygun', id, d.price, wallet >= d.price), rarCol(d));
+      var any = false, ck, ch;
+      for (ck in CLS) {
+        ch = '';
+        for (i = 0; i < SHOP_GUNS.length; i++) {
+          id = SHOP_GUNS[i]; d = WEAPONS[id];
+          if (d.cls !== ck || ownsGun(P, id)) continue;
+          ch += card(d.name, '', gunLine(id), buyBtn('buygun', id, d.price, wallet >= d.price), rarCol(d));
+        }
+        if (ch) { any = true; h += '<div class="sec">' + CLS[ck].label + 's</div>' + ch; }
       }
       if (!any) h += '<div class="note">You own every gun.</div>';
     } else {
