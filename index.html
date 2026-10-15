@@ -1504,7 +1504,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
 
   // ---------- unlocks ----------
-  var STATS = { bw: 0, k: 0, rl: 0, gh: 0, rv: 0, cg: 0 };
+  var STATS = { bw: 0, k: 0, rl: 0, gh: 0, rv: 0, cg: 0, bwb: 0, bwh: 0, kb: 0, kh: 0, kg: 0, bk: 0, gm: 0, gp: 0, gs: 0, gsh: 0, gr: 0, gsn: 0, gl: 0 };
   try { var sj = JSON.parse(localStorage.getItem('zs-stats') || 'null'); if (sj) for (var sk0 in STATS) if (+sj[sk0] > 0) STATS[sk0] = Math.floor(+sj[sk0]); } catch (e) {}
   function saveStats() { try { localStorage.setItem('zs-stats', JSON.stringify(STATS)); } catch (e) {} }
   var UNLOCKS = {
@@ -1516,11 +1516,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     'h:8': { s: 'gh', n: 1, t: 'Survive a ghost round in the Haunted House', u: 'ghost rounds' }, 'a:1': { s: 'gh', n: 3, t: 'Survive 3 ghost rounds in the Haunted House', u: 'ghost rounds' },
     'h:7': { s: 'rv', n: 10, t: 'Revive 10 teammates', u: 'revives' }, 'n:1': { s: 'cg', n: 5, t: 'Finish 5 co-op games', u: 'games' }
   };
-  // rare colours work on hat colour, pack colour and pants
-  [['bw', 25, 'Reach wave 25', 'wave'], ['k', 1000, 'Get 1,000 kills in total', 'kills'], ['gh', 2, 'Survive 2 ghost rounds in the Haunted House', 'ghost rounds'], ['bw', 40, 'Reach wave 40', 'wave']].forEach(function (u, i) {
-    var o = { s: u[0], n: u[1], t: u[2], u: u[3] };
-    UNLOCKS['hk:' + (ACOL_FREE + 1 + i)] = o; UNLOCKS['kc:' + (ACOL_FREE + 1 + i)] = o; UNLOCKS['pn:' + (4 + ACOL_FREE + i)] = o;
+  // every accessory colour is earned (Black is free); they work on hat colour, pack colour and pants
+  var COLU = [null, ['gm', 3, 'Play 3 games', 'games'], ['gr', 40, 'Get 40 rifle kills in one game', 'rifle kills'], ['k', 50, 'Get 50 kills in total', 'kills'],
+    ['gsn', 10, 'Get 10 sniper kills in one game', 'sniper kills'], ['bw', 6, 'Reach wave 6', 'wave'], ['bwb', 6, 'Reach wave 6 on Beginners Ground', 'wave'],
+    ['gs', 50, 'Get 50 SMG kills in one game', 'SMG kills'], ['bwh', 5, 'Reach wave 5 in the Haunted House', 'wave'], ['kb', 300, 'Get 300 kills on Beginners Ground in total', 'kills'],
+    ['kh', 300, 'Get 300 kills in the Haunted House in total', 'kills'], ['kg', 80, 'Get 80 kills in a single game', 'kills'], ['bk', 5, 'Defeat 5 bosses in total', 'bosses'],
+    ['gsh', 25, 'Get 25 shotgun kills in one game', 'shotgun kills'], ['bw', 25, 'Reach wave 25', 'wave'], ['k', 1000, 'Get 1,000 kills in total', 'kills'],
+    ['gh', 2, 'Survive 2 ghost rounds in the Haunted House', 'ghost rounds'], ['bw', 40, 'Reach wave 40', 'wave']];
+  COLU.forEach(function (u, i) {
+    if (!u) return;
+    var o = { s: u[0], n: u[1], t: u[2], u: u[3] }, ci = i + 1;
+    UNLOCKS['hk:' + ci] = o; UNLOCKS['kc:' + ci] = o; UNLOCKS['pn:' + (3 + ci)] = o;
   });
+  // body colours, early hats and the small pack
+  [['c:4', 'bw', 5, 'Reach wave 5', 'wave'], ['c:5', 'k', 250, 'Get 250 kills in total', 'kills'], ['c:6', 'kg', 60, 'Get 60 kills in a single game', 'kills'], ['c:7', 'bwb', 10, 'Reach wave 10 on Beginners Ground', 'wave'],
+    ['h:1', 'k', 100, 'Get 100 kills in total', 'kills'], ['h:2', 'bwb', 8, 'Reach wave 8 on Beginners Ground', 'wave'], ['h:3', 'gp', 30, 'Get 30 pistol kills in one game', 'pistol kills'],
+    ['k:1', 'gm', 10, 'Play 10 games', 'games']].forEach(function (u) { UNLOCKS[u[0]] = { s: u[1], n: u[2], t: u[3], u: u[4] }; });
   function isUnlocked(slot, v) { var u = UNLOCKS[slot + ':' + v]; return !u || DEV.on || STATS[u.s] >= u.n; }
   function lockCheck() { var ch = false, k; for (k in myLook) if (myLook[k] && !isUnlocked(k, myLook[k])) { myLook[k] = 0; ch = true; } return ch; }
   var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Colour', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
@@ -2114,6 +2125,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     addBlood(z.x, z.y, rnd(-1, 1), rnd(-1, 1), z.boss ? 26 : 9, 150);
     zombies.splice(i, 1);
     kills++; if (O) O.kills++;
+    if (O && O.id === localId && !DEV.on) { var kr = curRef(O), kd = kr && defOf(kr), kq = kd && GKEY[kd.cls]; if (kq) { gk[kq]++; statMax(kq, gk[kq]); } if (z.boss) statAdd('bk', 1); }
     // coins carry the killer's coin upgrades; anyone can pick them up
     var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (inBonus(O) ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1) * (1 + TUNE.lateCoin * lateN(wave));
     var n = z.boss ? 8 : (z.type === 'tank' ? 4 : (z.type === 'ghost' ? 3 : 1)), autoTo = inBonus(O) ? ownerId : -1;
@@ -2917,7 +2929,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 93';
+  var updMsg = '', VERSION = 'Version 94';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4982,18 +4994,20 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var last = performance.now(), hudT = 0, snapT = 0, inT = 0, lastIn = '', lastInAt = 0;
 
   // lifetime progress for the unlocks (this device only; dev mode never counts)
-  var stK = 0, stW = 0, stSaveT = 0, stDirty = false;
+  var stK = 0, stW = 0, stSaveT = 0, stDirty = false, stIn = false, gk = { gp: 0, gs: 0, gsh: 0, gr: 0, gsn: 0, gl: 0 }, GKEY = { pistol: 'gp', smg: 'gs', shotgun: 'gsh', rifle: 'gr', sniper: 'gsn', lmg: 'gl' };
   function statAdd(k, n) { if (DEV.on || !(k in STATS)) return; STATS[k] += n; stDirty = true; }
   function statMax(k, v) { if (DEV.on || !(k in STATS) || v <= STATS[k]) return; STATS[k] = v; stDirty = true; }
   function statTick(dt) {
-    if (state !== 'play' || !me) { stK = 0; stW = 0; return; }
+    if (state !== 'play' || !me) { stK = 0; stW = 0; stIn = false; return; }
+    if (!stIn) { stIn = true; statAdd('gm', 1); for (var gq in gk) gk[gq] = 0; }
     var kk = me.kills | 0;
     if (kk < stK) stK = 0;
-    if (kk > stK) { statAdd('k', kk - stK); stK = kk; }
+    if (kk > stK) { statAdd('k', kk - stK); statAdd(mapId === 'haunted' ? 'kh' : 'kb', kk - stK); stK = kk; }
+    statMax('kg', kk);
     if (wave < stW) stW = 0;
     if (stW && wave > stW && mapId === 'haunted' && isGhostWave(stW)) statAdd('gh', 1);
     stW = wave;
-    statMax('bw', wave);
+    statMax('bw', wave); statMax(mapId === 'haunted' ? 'bwh' : 'bwb', wave);
     if (mapId === 'haunted') statMax('rl', gbDone);
     stSaveT -= dt;
     if (stSaveT <= 0) { stSaveT = 4; if (stDirty) { stDirty = false; saveStats(); } }
