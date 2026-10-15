@@ -330,7 +330,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.35, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, boss: 1 }, ammoFrac: 0.4, waveRefill: 0.33, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, boss: 1 }, ammoFrac: 0.4, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.33, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -1027,6 +1027,15 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     }
   }
   // lightning and bats (looks only)
+  var bonusRoom = -1;
+  function bonusRect() { var c = HH.cols, i = bonusRoom % 3, j = Math.floor(bonusRoom / 3); return { x: c[i], y: c[j], w: HH.Rm, h: HH.Rm }; }
+  function bonusName() { return bonusRoom >= 0 ? HH_NAMES[bonusRoom][0].replace('GREAT HALL', 'Great Hall') : ''; }
+  function inBonus(P) { return !!P && bonusRoom >= 0 && !P.down && inRect(P.x, P.y, bonusRect()); }
+  // Haunted House: some waves one room is a bonus room
+  function rollBonusRoom() {
+    bonusRoom = -1;
+    if (mapId === 'haunted' && Math.random() < TUNE.bonusChance) bonusRoom = Math.floor(Math.random() * 9);
+  }
   var lightF = 0, lightT = 6, bats = [];
   function tickAtmos(dt) {
     if (MAPCFG.nav !== true) { lightF = 0; return; }
@@ -1043,6 +1052,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       b.x += Math.cos(b.a) * b.sp * dt; b.y += Math.sin(b.a) * b.sp * dt;
       if (b.life <= 0) bats.splice(i, 1);
     }
+  }
+  function drawBonus() {
+    if (bonusRoom < 0) return;
+    var q = bonusRect(), pu = 0.5 + 0.5 * Math.sin(time * 3);
+    ctx.fillStyle = 'rgba(255,210,90,' + (0.08 + 0.07 * pu).toFixed(3) + ')'; ctx.fillRect(q.x, q.y, q.w, q.h);
+    ctx.strokeStyle = 'rgba(255,210,90,' + (0.4 + 0.3 * pu).toFixed(3) + ')'; ctx.lineWidth = 4; ctx.strokeRect(q.x + 3, q.y + 3, q.w - 6, q.h - 6);
   }
   function drawBats() {
     for (var i = 0; i < bats.length; i++) {
@@ -1065,6 +1080,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function setMap(id) {
     var d = mapDef(id);
     if (mapId === d.id) return;
+    bonusRoom = -1;
     mapId = d.id; WORLD = d.world; GS = d.gs;
     sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
     RECTS.length = 0; BLD.length = 0; ROOFS.length = 0; DOORS.length = 0; LIGHTS.length = 0; bats = [];
@@ -1454,7 +1470,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     for (i = 0; i < players.length; i++) { players[i].waveCoins = 0; players[i].rebuildLeft = (30 + 8 * n) * barBonus(n); }
     ebullets = []; bolts = [];
     placeBoxes();
-    bannerAll('Wave ' + n, (n === 1 ? 'Stand at a broken barrier to rebuild it.' : (boss ? 'Something big is coming.' : queue.length + ' zombies incoming.')), 2.6);
+    rollBonusRoom();
+    bannerAll('Wave ' + n, bonusRoom >= 0 ? 'Bonus room: ' + bonusName() + '. Double coins and more ammo drops inside.' : (n === 1 ? 'Stand at a broken barrier to rebuild it.' : (boss ? 'Something big is coming.' : queue.length + ' zombies incoming.')), bonusRoom >= 0 ? 3.6 : 2.6);
   }
 
   function equipSpecial(P, id, quiet) {
@@ -1794,14 +1811,14 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     zombies.splice(i, 1);
     kills++; if (O) O.kills++;
     // coins carry the killer's coin upgrades; anyone can pick them up
-    var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1) * (1 + TUNE.lateCoin * lateN(wave));
+    var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (inBonus(O) ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1) * (1 + TUNE.lateCoin * lateN(wave));
     var n = z.boss ? 8 : (z.type === 'tank' ? 4 : 1);
     for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n }; evictFromPockets(nc, true);
       if (coins.length >= 400) { var nn = coins[Math.floor(Math.random() * coins.length)]; nn.v += nc.v; } else coins.push(nc); }
     // drops
     if (z.boss || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)], TUNE.crateLife);
     if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', TUNE.healLife);
-    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type]) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife);
+    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife);
     if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
     if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
     if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
@@ -2489,7 +2506,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 53';
+  var updMsg = '', VERSION = 'Version 54';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2682,7 +2699,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
-    { t: 'Haunted House', art: 'shop', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.'] },
+    { t: 'Haunted House', art: 'shop', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'Saving and settings', art: 'move', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
@@ -3010,6 +3027,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     // perk timers
     var ph = '', k;
     for (k in me.perkT) if (me.perkT[k] > 0) ph += '<span class="perk" style="color:' + PERKS[k].col + '">' + PERKS[k].name + ' ' + Math.ceil(me.perkT[k]) + 's' + (isSpecialActive(me) ? ' (held)' : '') + '</span>';
+    if (bonusRoom >= 0) ph += '<span class="perk" style="color:#ffd25a">Bonus room: ' + bonusName() + (inBonus(me) ? ' (inside)' : '') + '</span>';
     if (hudCache.perks !== ph) { hudCache.perks = ph; perksEl.innerHTML = ph; }
 
     // teammates
@@ -3391,6 +3409,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       else { mmx.globalAlpha = 1; d = o.boss ? 2.2 : 1.3; }
       mmx.fillRect(c + x - d, c + y - d, d * 2, d * 2);
     }
+    if (bonusRoom >= 0) {
+      var bq2 = bonusRect(), bx2 = (bq2.x + bq2.w / 2 - px) * k, by2 = (bq2.y + bq2.h / 2 - py) * k, bd2 = Math.hypot(bx2, by2);
+      if (bd2 > edge) { bx2 = bx2 / bd2 * edge; by2 = by2 / bd2 * edge; }
+      mmx.globalAlpha = 1; mmx.strokeStyle = '#ffd25a'; mmx.lineWidth = 2; mmx.beginPath(); mmx.arc(c + bx2, c + by2, 5, 0, 6.283); mmx.stroke();
+    }
     mmx.globalAlpha = 1;
     mmx.fillStyle = '#f2c14e';
     for (i = 0; i < boxes.length; i++) {
@@ -3431,6 +3454,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     ctx.drawImage(bldL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
     drawBarriers();
     drawDoors();
+    drawBonus();
     drawBoxes();
 
     for (i = 0; i < zombies.length; i++) {
@@ -3467,6 +3491,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       var lg = lctx.createRadialGradient(px, py, R * 0.08, px, py, R);
       lg.addColorStop(0, 'rgba(0,0,0,1)'); lg.addColorStop(0.5, 'rgba(0,0,0,0.82)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
       lctx.fillStyle = lg; lctx.fillRect(px - R, py - R, R * 2, R * 2);
+    }
+    if (bonusRoom >= 0) {
+      var bq = bonusRect(), bxc = (bq.x + bq.w / 2 - cam.x) * K, byc = (bq.y + bq.h / 2 - cam.y) * K, br0 = 230 * K;
+      var bg = lctx.createRadialGradient(bxc, byc, 0, bxc, byc, br0);
+      bg.addColorStop(0, 'rgba(0,0,0,0.5)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
+      lctx.fillStyle = bg; lctx.fillRect(bxc - br0, byc - br0, br0 * 2, br0 * 2);
     }
     for (i = 0; i < LIGHTS.length; i++) {
       var Lt = LIGHTS[i];
@@ -3800,7 +3830,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     };
   }
   function buildCommon() {
-    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, mp: mapId, in: introOn ? 1 : 0, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills };
+    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, mp: mapId, in: introOn ? 1 : 0, br: bonusRoom, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills };
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
@@ -3925,7 +3955,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     m.Zm = {}; for (i = 0; i < m.Z.length; i++) m.Zm[m.Z[i][0]] = m.Z[i];
     m.Pm = {}; for (i = 0; i < m.P.length; i++) m.Pm[m.P[i][0]] = m.P[i];
     snaps.push(m); if (snaps.length > 4) snaps.shift();
-    introOn = !!m.in;
+    introOn = !!m.in; bonusRoom = m.br === undefined ? -1 : m.br;
     wave = m.wv; phase = m.ph ? 'grace' : 'spawning'; graceT = m.gt; leftN = m.l; kills = m.kt;
     if (m.e) for (i = 0; i < m.e.length; i++) applyEv(m.e[i]);
     if (m.pe) for (i = 0; i < m.pe.length; i++) applyEv(m.pe[i]);
