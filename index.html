@@ -318,6 +318,46 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
 }
 html.fullbleed, html.fullbleed body { position: static !important; height: auto !important; min-height: 100lvh !important; overflow: visible !important; }
 html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lvh !important; }
+/* landscape layout (v110): tips/help side by side, maps side by side, shop with left rail */
+@media (orientation: landscape) and (max-height: 520px) {
+  /* How to play + start-of-game tips: picture left, words right, buttons pinned on the right */
+  .overlay:has(.slides) { display: grid; grid-template-columns: minmax(0, 1fr) 170px; grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 18px; row-gap: 4px; align-content: stretch; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); text-align: left; }
+  .overlay:has(.slides) h1 { grid-column: 1 / -1; font-size: 26px; text-align: left; margin: 0; }
+  .overlay:has(.slides) .slides { grid-column: 1; grid-row: 2; width: 100%; align-self: center; }
+  .overlay:has(.slides) .slide { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 16px; row-gap: 4px; align-content: center; justify-items: start; text-align: left; }
+  .overlay:has(.slides) .slide canvas { grid-row: 1 / 3; width: 210px; height: 112px; align-self: center; }
+  .overlay:has(.slides) .slide h2 { align-self: end; font-size: 24px; }
+  .overlay:has(.slides) .slide p { min-height: 0; align-self: start; font-size: 16px; max-width: none; text-align: left; }
+  .overlay:has(.slides) .bul { width: 100%; gap: 4px; align-self: start; }
+  .overlay:has(.slides) .bul li { font-size: 15px; }
+  .overlay:has(.slides) .dots { grid-column: 1; grid-row: 3; align-self: center; justify-self: start; }
+  .overlay:has(.slides) .swipe { grid-column: 1; grid-row: 3; align-self: center; justify-self: end; font-size: 12px; }
+  .overlay:has(.slides) > .go { grid-column: 2; grid-row: 2 / 4; align-self: end; width: 100%; min-height: 48px; }
+
+  /* Map pick: cards side by side, Back stays on screen */
+  .overlay:has(.maps) .maps { flex-direction: row; margin: 2px 0 4px; }
+  .overlay:has(.maps) .mapcard { flex: 1; min-width: 0; }
+
+  /* Shop: left rail (coins, tabs, Back to game), right side scrolls the list in two columns */
+  .shop { display: grid; grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; column-gap: 16px; row-gap: 8px; }
+  .shop .shead { grid-column: 1; grid-row: 1; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .shop .shead h2 { font-size: 22px; }
+  .shop .purse { text-align: left; font-size: 26px; display: flex; align-items: baseline; gap: 8px; }
+  .shop .purse small { display: inline; margin: 0; }
+  .shop .sstats { grid-column: 1; grid-row: 2; font-size: 11px; letter-spacing: 0.06em; }
+  .shop .tabs { grid-column: 1; grid-row: 3; flex-direction: column; align-self: start; gap: 6px; }
+  .shop .tab { min-height: 40px; }
+  .shop #nextBtn { grid-column: 1; grid-row: 4; min-height: 44px; font-size: 16px; padding-inline: 8px; }
+  .shop .panel { grid-column: 2; grid-row: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; align-content: start; gap: 8px; }
+  .shop .panel > .sec, .shop .panel > .warn, .shop .panel > .note { grid-column: 1 / -1; margin-top: 2px; }
+  .shop .card { padding: 6px 8px; gap: 8px; }
+  .shop .card .n { font-size: 16px; }
+  .shop .card .d { font-size: 13px; }
+  .shop .card .buy { min-width: 64px; min-height: 40px; font-size: 15px; padding-inline: 8px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .overlay:has(.slides)::before, .overlay:has(.slides)::after { display: none; }
+}
 </style>
 
 <div class="game" id="game">
@@ -3062,7 +3102,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 109';
+  var updMsg = '', VERSION = 'Version 110';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
