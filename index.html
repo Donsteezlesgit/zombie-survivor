@@ -2,7 +2,7 @@
 <title>Zombie Survivor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Big+Shoulders+Stencil+Display:wght@900&family=Special+Elite&display=swap">
 <style>
 /* Layout: full-screen top-down night scene. HUD pinned top (health, wave, pause, stats, perk timers), ammo/swap button bottom-right, floating thumb stick. Between waves a full-screen shop with three tabs. Single dark look by choice. */
 :root {
@@ -357,6 +357,79 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 }
 @media (orientation: landscape) and (max-height: 520px) {
   .overlay:has(.slides)::before, .overlay:has(.slides)::after { display: none; }
+}
+/* ===== v114 Quarantine look: stencil titles, hazard tape, amber buttons, square corners. Sizes and placement unchanged. ===== */
+:root { --face-stencil: "Big Shoulders Stencil Display", "Barlow Condensed", Impact, sans-serif; --hz: repeating-linear-gradient(45deg, #f2c14e 0 14px, #15110e 14px 28px); --hzr: repeating-linear-gradient(45deg, #c42b2b 0 14px, #15110e 14px 28px); --hp: #c42b2b; }
+.overlay h1, .shead h2, .slide h2, .banner h2, .boxcard h2 { font-family: var(--face-stencil); font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; }
+.overlay h1 { font-size: 60px; }
+.slide h2 { font-size: 34px; }
+.shead h2 { font-size: 36px; }
+.go { background: var(--gold); border-radius: 0; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+.go.alt { background: transparent; border: 1px solid #6a5a4c; clip-path: none; }
+.go:disabled { opacity: 0.4; }
+.chip { border-radius: 0; border-color: #6a5a4c; }
+.warn, .card, .buy, .mapcard, .mbest, .boxcard, .perk, textarea.bk, input.bk, pre.diag { border-radius: 0; }
+.tab { border-radius: 0; border-color: #3a322d; background: #1c1612; text-align: left; padding-left: 14px; letter-spacing: 0.16em; }
+.tab[aria-selected="true"] { background: var(--gold); border-color: var(--gold); }
+.shop { background: rgba(17, 13, 11, 0.97); }
+.purse { color: var(--gold); }
+.card { background: #1c1612; border-color: #3a322d; }
+.sec { display: flex; align-items: center; gap: 10px; }
+.sec::after { content: ''; flex: 1; height: 1px; background: #3a322d; }
+.buy { background: var(--gold); }
+.buy.alt { background: transparent; }
+.mbest { position: relative; background: rgba(10, 8, 7, 0.72); border-color: #4a3f38; }
+.mbest::before { content: ''; position: absolute; left: -1px; top: -1px; width: 18px; height: 18px; border-left: 3px solid var(--gold); border-top: 3px solid var(--gold); }
+.mrow b { font-family: var(--face-stencil); font-weight: 900; }
+.mrow > div:first-child b { color: var(--gold); }
+.mapcard { background: rgba(10, 8, 7, 0.6); }
+.mapcard b { font-family: var(--face-stencil); font-weight: 900; }
+.overlay:has(.mhome) { background: repeating-linear-gradient(45deg, #f2c14e 0 14px, #15110e 14px 28px) bottom / 100% 12px no-repeat, rgba(10, 8, 7, 0.74); }
+.mtitle { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mtitle .mmark { width: 64px; height: 64px; flex-shrink: 0; }
+.mtitle .mz { font: 700 17px/1 var(--face-ui); letter-spacing: 0.5em; color: var(--gold); padding-left: 0.5em; }
+.mtitle h1 { font-size: 66px; line-height: 0.92; }
+@media (max-height: 520px) {
+  .mtitle { flex-direction: row; align-items: center; gap: 16px; }
+  .mtitle .mmark { width: 78px; height: 78px; }
+  .mtitle .mz { text-align: left; padding-left: 3px; }
+  .mtitle h1 { font-size: 66px; text-align: left; }
+}
+/* HUD */
+.hp { border-radius: 0; border-color: #6a5a4c; }
+.hpfill { background: var(--hp); }
+.hp::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 3px), #0b0908 calc(10% - 3px) 10%); }
+.hptxt { z-index: 2; }
+.wave { font-family: var(--face-stencil); font-weight: 900; }
+.wave > span { display: inline-block; background: var(--gold); color: #15110e; padding: 2px 12px 1px; text-shadow: none; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 8px 100%); }
+.pause { border-radius: 0; border: 2px solid #6a5a4c; }
+.shopbtn { border-color: #8a7020; }
+.mm { border: 2px solid #6a5a4c; }
+.swap { border-radius: 0; border: 2px solid #6a5a4c; border-left: 5px solid var(--gold); }
+.swapgo { border: 2px solid #6a5a4c; }
+.boxbtn { border-radius: 0; }
+/* banners: hazard tape */
+.banner { left: 0; right: 0; padding: 8px 16px; background: var(--gold); color: #15110e; border-top: 4px solid #15110e; border-bottom: 4px solid #15110e; box-shadow: 0 0 0 3px var(--gold); }
+.banner h2 { font-size: 44px; letter-spacing: 0.1em; color: #15110e; text-shadow: none; }
+.banner p { margin-top: 2px; color: #15110e; text-shadow: none; max-width: none; letter-spacing: 0.18em; }
+.banner.danger { background: var(--hp); color: #ebe3d4; box-shadow: 0 0 0 3px var(--hp); }
+.banner.danger h2, .banner.danger p { color: #ebe3d4; }
+/* game over */
+.overlay[data-scr="over"] { background: var(--hzr) top / 100% 12px no-repeat, var(--hzr) bottom / 100% 12px no-repeat, radial-gradient(ellipse at center, rgba(60, 10, 10, 0.55) 0%, rgba(8, 4, 4, 0.92) 75%); }
+.overlay[data-scr="over"] h1 { color: var(--bone); }
+/* pause */
+.overlay[data-scr="pause"] h1::before { content: ''; display: block; height: 10px; margin-bottom: 10px; background: var(--hz); }
+/* help / tips */
+.dots i { width: 22px; height: 6px; border-radius: 0; }
+.slide canvas { border-color: #3a322d; }
+.overlay:has(.slides) h1::before { content: 'FIELD MANUAL'; display: inline-block; vertical-align: middle; margin-right: 12px; padding: 3px 12px 2px; background: var(--gold); color: #15110e; font: 700 15px/1.2 var(--face-ui); letter-spacing: 0.22em; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+@media (orientation: landscape) and (max-height: 520px) {
+  .overlay[data-scr="pause"] { display: grid; grid-template-columns: minmax(0, 1fr) 250px; grid-template-rows: auto; column-gap: 24px; row-gap: 8px; align-content: center; justify-content: center; text-align: left; width: auto; }
+  .overlay[data-scr="pause"]::before, .overlay[data-scr="pause"]::after { display: none; }
+  .overlay[data-scr="pause"] h1 { grid-column: 1; grid-row: 1; text-align: left; align-self: end; }
+  .overlay[data-scr="pause"] p { grid-column: 1; grid-row: 2; text-align: left; max-width: 24ch; align-self: start; }
+  .overlay[data-scr="pause"] > .go, .overlay[data-scr="pause"] > .chip { grid-column: 2; width: 100%; min-height: 40px; }
+  .overlay[data-scr="pause"] > .go:first-of-type { min-height: 48px; }
 }
 </style>
 
@@ -1810,6 +1883,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function showBanner(title, text, secs) {
     bnTitle.textContent = title; bnText.textContent = text; bannerTimer = secs;
+    banner.classList.toggle('danger', text === 'Watch yourself.' || /^Ghost round/.test(title));
     banner.classList.remove('out'); banner.hidden = true; void banner.offsetWidth; banner.hidden = false;
   }
 
@@ -2950,7 +3024,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var h = '', i, d;
     if (screen === 'main') {
       h += '<div class="mhome">';
-      h += '<div class="mtitle"><h1>Zombie<br>Survivor</h1></div>';
+      h += '<div class="mtitle">' + '<svg class="mmark" viewBox="0 0 100 100" role="img" aria-label="Zombie Survivor"><circle cx="50" cy="50" r="38" fill="none" stroke="#ebe3d4" stroke-width="4"/><path d="M50 4 V17 M50 83 V96 M4 50 H17 M83 50 H96" stroke="#ebe3d4" stroke-width="4" stroke-linecap="round"/><path d="M50 50 L74 26 A34 34 0 0 1 83.9 47 Z" fill="#f2c14e" fill-opacity="0.9"/><circle cx="75" cy="40" r="4" fill="#7f9669"/><circle cx="50" cy="50" r="5.5" fill="#ebe3d4"/></svg>' + '<div><div class="mz">Zombie</div><h1>Survivor</h1></div></div>';
       var bo = bestOverall();
       h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (bo.w || '–') + '</b><small>Highest wave</small>' + (bo.w ? '<small class="mapn">' + esc(bo.wm) + '</small>' : '') + '</div><div><b>' + (bo.k || '–') + '</b><small>Most kills</small>' + (bo.k ? '<small class="mapn">' + esc(bo.km) + '</small>' : '') + '</div></div></div>';
       h += '<div class="mplay"><button class="go" data-a="offline" type="button">Play offline</button>';
@@ -3036,7 +3110,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
     } else if (screen === 'over') {
       var team = players.length > 1, tot = 0;
-      h += '<h1>' + (team ? 'Game over' : 'You died') + '</h1>';
+      h += '<h1>' + (team ? 'Game over' : 'You\'re infected') + '</h1>';
       h += '<p>Reached wave <b>' + wave + '</b>.<br>' + (overBest ? 'New best wave.' : 'Best wave: <b>' + bestWave + '</b>.') + '</p>';
       if (team) {
         h += '<div class="roster">';
@@ -3093,6 +3167,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var sn = null, ks = ['.mtabs', '.mgrid'], ke, kj;
     if (ov._scr === screen) { sn = { o: [ov.scrollLeft, ov.scrollTop] }; for (kj = 0; kj < ks.length; kj++) { ke = ov.querySelector(ks[kj]); sn[ks[kj]] = ke ? [ke.scrollLeft, ke.scrollTop] : null; } }
     ov.innerHTML = h;
+    ov.setAttribute('data-scr', screen);
     ov._scr = screen;
     if (sn) {
       ov.scrollLeft = sn.o[0]; ov.scrollTop = sn.o[1];
@@ -3102,7 +3177,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 113';
+  var updMsg = '', VERSION = 'Version 114';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
