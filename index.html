@@ -3183,7 +3183,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 118';
+  var updMsg = '', VERSION = 'Version 119';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5368,6 +5368,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'nextwave') { zombies = []; queue = []; if (phase === 'grace') graceT = 0.01; else startWave(wave + 1); }
     else if (a === 'suwave') { DEV.su.wave = +v; }
     else if (a === 'setup') { devSetup(); return; }
+    else if (a === 'addbot') devAddBot();
+    else if (a === 'rmbots') { players = players.filter(function (q) { return !q.bot; }); DEV.msg = 'Fake players removed.'; }
     else if (a === 'gotowave') { var n = Math.max(1, Math.min(999, parseInt(($('devWave') || {}).value, 10) || 1)); zombies = []; coins = []; pickups = []; startWave(n); showScreenSafe(); }
     else if (a === 'spawn') devSpawn(v, 1);
     else if (a === 'spawn10') devSpawn(v, 10);
@@ -5514,7 +5516,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     [5, 10, 15, 20, 25, 30, 40, 50].forEach(function (x) { h += '<button data-d="suwave" data-v="' + x + '" class="' + (DEV.su.wave === x ? 'on' : '') + '" type="button">' + x + '</button>'; });
     h += '</div><div class="r" style="margin-top:6px"><select id="devSuLvl">';
     Object.keys(DEV_LEVELS).forEach(function (k) { h += '<option value="' + k + '"' + (DEV.su.lvl === k ? ' selected' : '') + '>' + DEV_LEVELS[k].name + '</option>'; });
-    h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + '</div><div class="m" style="color:#9c8f7e">Fresh game (solo, or your whole room when hosting) on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
+    h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + b('Add fake player', 'addbot') + b('Remove fake players', 'rmbots') + '</div><div class="m" style="color:#9c8f7e">Fresh game (solo, or your whole room when hosting) on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
     h += '<h3>Switches</h3><div class="r">' + t('God mode', 'god', DEV.god) + t('Instakill', 'kill1', DEV.kill1) + t('Freeze zombies', 'zfreeze', DEV.zfreeze) + t('Infinite ammo', 'inf', DEV.inf) + t('Pause while open', 'pause', DEV.pause) + '</div>';
     h += '<h3>Game speed</h3><div class="r">';
     [0.25, 0.5, 1, 2].forEach(function (x) { h += '<button data-d="ts" data-v="' + x + '" class="' + (DEV.ts === x ? 'on' : '') + '" type="button">' + x + 'x</button>'; });
@@ -5552,9 +5554,41 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   devBtn.addEventListener('click', function () {
     ensureAudio(); DEV.open = !DEV.open; devPanel.hidden = !DEV.open; if (DEV.open) devRender();
   });
+  function devAddBot() {
+    var i, nb = 0, id = 0, P, np, share, y;
+    if (players.length >= 4) { DEV.msg = 'The room is full (4 players).'; return; }
+    if (state !== 'play') { DEV.msg = 'Start a game first.'; return; }
+    for (i = 0; i < players.length; i++) if (players[i].bot) nb++;
+    while (pById(id)) id++;
+    P = newPlayer(id, 'Bot ' + (nb + 1), cleanLook(null, id)); P.bot = true; players.push(P);
+    np = players.length; share = (1 + TUNE.coopCount * (np - 1)) * (1 + TUNE.coopCoin * (np - 1)) / np;
+    y = devCoinsBefore(Math.max(1, wave));
+    devLoadout(P, y.coins * DEV_LEVELS.typical.f * share); rollCards(P);
+    P.kills = Math.round(y.zombies / np); P.x = me.x + 30; P.y = me.y + 30; P.hp = maxHpNow(P); P.inv = 2;
+    DEV.test = true;
+    DEV.msg = P.name + ' joined (' + np + ' players). Zombie counts and coin value change from the next wave.';
+  }
+  function devBotsTick() {
+    var i, j, P, T, d, dd, bd;
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; if (!P.bot) continue;
+      P.cone = false; P.aimAng = null; P.inx = P.iny = 0;
+      if (P.down) continue;
+      T = me; bd = 1e12;
+      for (j = 0; j < players.length; j++) {
+        if (players[j] === P || !players[j].down) continue;
+        dd = Math.hypot(players[j].x - P.x, players[j].y - P.y);
+        if (dd < bd) { bd = dd; T = players[j]; }
+      }
+      if (!T || T === P) continue;
+      d = Math.hypot(T.x - P.x, T.y - P.y);
+      if (d > (T.down ? 18 : 110)) { P.inx = (T.x - P.x) / d; P.iny = (T.y - P.y) / d; }
+    }
+  }
   function devTick() {
     if (!DEV.on || net.mode === 'client') return;
     var i, P, j, g;
+    devBotsTick();
     for (i = 0; i < players.length; i++) {
       P = players[i];
       if (DEV.god && !P.down) P.hp = maxHpNow(P);
