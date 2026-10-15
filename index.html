@@ -2709,7 +2709,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 71';
+  var updMsg = '', VERSION = 'Version 72';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3464,7 +3464,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   game.addEventListener('pointerdown', function (e) {
     if (e.pointerType === 'touch') return;
     if (state !== 'play' || blocked()) return;
-    if (e.target.closest && e.target.closest('button')) return;
+    if (e.target.closest && e.target.closest('button,#mm,#bigMap')) return;
     var r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     if (ctrlMode === 'two' && x > r.width / 2) {
       if (aim.active && now() - aim.t < 400) return;
@@ -3496,7 +3496,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var r = cv.getBoundingClientRect(), i, t, x, y, st;
     for (i = 0; i < e.changedTouches.length; i++) {
       t = e.changedTouches[i];
-      if (t.target && t.target.closest && t.target.closest('button')) continue;
+      if (t.target && t.target.closest && t.target.closest('button,#mm,#bigMap')) continue;
       x = t.clientX - r.left; y = t.clientY - r.top;
       if (y > r.height - DEAD) continue;
       st = (ctrlMode === 'two' && x > r.width / 2) ? aim : joy;
@@ -3923,6 +3923,78 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   }
   var mmDpr = Math.min(window.devicePixelRatio || 1, 2);
   mm.width = mm.height = Math.round(96 * mmDpr);
+  // ---------- big map: tap the minimap ----------
+  var bigOpen = false, bigAt = 0, bigEl = document.createElement('div'), bigCv = document.createElement('canvas'), bigX = bigCv.getContext('2d'), bigS = 400, bigDpr = Math.min(window.devicePixelRatio || 1, 2);
+  bigEl.id = 'bigMap'; bigEl.hidden = true;
+  bigEl.innerHTML = '<div class="bmcard"><div class="bmhead"><b id="bmTitle">Map</b><button type="button" id="bmClose">Close</button></div></div>';
+  bigEl.firstChild.insertBefore(bigCv, null);
+  bigEl.firstChild.insertAdjacentHTML('beforeend', '<div class="bmleg"><span style="color:#e8402e">&#9632; Zombie</span><span style="color:#ff8a2a">&#9632; Boss</span><span style="color:#9fd8ff">&#9632; Ghost</span><span style="color:#ff5a4a">&#9650; Spawn</span><span style="color:#f2c14e">&#9632; Box</span><span style="color:#78e0a0">&#9679; Item</span><span style="color:#ebe3d4">&#9679; You</span></div>');
+  game.appendChild(bigEl);
+  var bmCss = document.createElement('style');
+  bmCss.textContent = '#bigMap{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(8,6,5,.82);padding:12px}#bigMap[hidden]{display:none}' +
+    '.bmcard{display:flex;flex-direction:column;align-items:center;gap:8px}.bmhead{display:flex;justify-content:space-between;align-items:center;width:100%;color:#ebe3d4;font:700 16px var(--face-ui)}' +
+    '#bmClose{font:700 16px var(--face-ui);color:#ebe3d4;background:#2a221d;border:1px solid #5a4d44;border-radius:6px;min-height:40px;padding:0 16px}' +
+    '#bigMap canvas{border:1px solid #5a4d44;border-radius:4px;background:#0c0a08}.bmleg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font:600 12px var(--face-ui)}' +
+    '.rcol .mm{pointer-events:auto}';
+  document.head.appendChild(bmCss);
+  function bigDir(b) { return b.ny > 0.5 ? 'North' : b.ny < -0.5 ? 'South' : b.nx > 0.5 ? 'West' : 'East'; }
+  function openBig() {
+    if (state !== 'play' || !me) return;
+    bigS = Math.floor(Math.max(200, Math.min(window.innerWidth - 24, window.innerHeight - 130, 640)));
+    bigCv.style.width = bigCv.style.height = bigS + 'px';
+    bigCv.width = bigCv.height = Math.round(bigS * bigDpr);
+    document.getElementById('bmTitle').textContent = mapId === 'haunted' ? 'Haunted House' : 'Beginners Ground';
+    bigOpen = true; bigAt = performance.now(); bigEl.hidden = false; drawBig();
+  }
+  function closeBig() { bigOpen = false; bigEl.hidden = true; }
+  fastTap(mm, openBig);
+  bigEl.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  bigEl.addEventListener('click', function () { if (performance.now() - bigAt > 500) closeBig(); });
+  function drawBig() {
+    var c = bigX, S = bigS, k = S / WORLD, i, o, x, y, d, fs = Math.max(9, S / 44);
+    c.setTransform(bigDpr, 0, 0, bigDpr, 0, 0);
+    c.clearRect(0, 0, S, S);
+    c.drawImage(groundL.c, 0, 0, S, S);
+    c.drawImage(bldL.c, 0, 0, S, S);
+    c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, S, S);
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    function lab(t, tx, ty, col, sz) { c.font = '700 ' + (sz || fs) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.85)'; var hw = c.measureText(t).width / 2 + 2; tx = Math.max(hw, Math.min(S - hw, tx)); c.strokeText(t, tx, ty); c.fillStyle = col || '#ebe3d4'; c.fillText(t, tx, ty); }
+    if (mapId === 'haunted') {
+      for (i = 0; i < HH_NAMES.length; i++) {
+        x = (HH.cols[i % 3] + HH.Rm / 2) * k;
+        lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), x, (HH.cols[Math.floor(i / 3)] + 30) * k, '#cdbfa8');
+      }
+      if (bonusRoom >= 0) { var br = bonusRect(); c.strokeStyle = '#ffd25a'; c.lineWidth = 2; c.strokeRect(br.x * k, br.y * k, br.w * k, br.h * k); lab('BONUS', (br.x + br.w / 2) * k, (br.y + br.h / 2 + 40) * k, '#ffd25a'); }
+    }
+    for (i = 0; i < DOORS.length; i++) { o = DOORS[i]; c.fillStyle = o.open ? '#78e0a0' : '#c9a24a'; c.fillRect(o.x * k, o.y * k, Math.max(2, o.w * k), Math.max(2, o.h * k)); }
+    for (i = 0; i < BLD.length; i++) {
+      o = BLD[i]; x = o.sx * k; y = o.sy * k;
+      c.fillStyle = '#ff5a4a'; c.beginPath(); c.moveTo(x, y - 7); c.lineTo(x + 6, y + 5); c.lineTo(x - 6, y + 5); c.closePath(); c.fill();
+      lab(bigDir(o)[0] + (o.win ? ' win ' : ' spawn ') + o.bar.planks + '/' + o.bar.max, x, y + (o.ny > 0.5 ? 16 : o.ny < -0.5 ? -16 : 16), '#ff9a8a');
+    }
+    for (i = 0; i < boxes.length; i++) {
+      x = boxes[i].x * k; y = boxes[i].y * k; c.fillStyle = '#f2c14e'; c.fillRect(x - 5, y - 5, 10, 10); lab('Box', x, y - 11, '#f2c14e');
+    }
+    for (i = 0; i < pickups.length; i++) {
+      o = pickups[i]; x = o.x * k; y = o.y * k;
+      if (o.kind === 'item') { c.fillStyle = GB_COLS[o.id]; c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x + 5, y); c.lineTo(x, y + 6); c.lineTo(x - 5, y); c.closePath(); c.fill(); lab(GB_NAMES[o.id], x, y + 12, GB_COLS[o.id]); }
+      else { c.fillStyle = o.kind === 'special' ? '#b46bff' : o.kind === 'health' ? '#ff5a6a' : o.kind === 'ammo' ? '#78e0a0' : '#5ac8ff'; c.beginPath(); c.arc(x, y, 3.2, 0, 6.283); c.fill(); }
+    }
+    if (mapId === 'haunted' && !gbOn) {
+      x = GB_CAULDRON.x * k; y = GB_CAULDRON.y * k; c.strokeStyle = '#3ad870'; c.lineWidth = 2.4; c.beginPath(); c.arc(x, y, 8, 0, 6.283); c.stroke(); lab('Cauldron', x, y + 15, '#3ad870');
+    }
+    for (i = 0; i < zombies.length; i++) {
+      o = zombies[i]; x = o.x * k; y = o.y * k; d = o.boss ? 3.6 : 2.2;
+      c.fillStyle = o.boss ? '#ff8a2a' : (o.type === 'ghost' ? '#9fd8ff' : '#e8402e'); c.fillRect(x - d, y - d, d * 2, d * 2);
+    }
+    for (i = 0; i < players.length; i++) {
+      o = players[i]; x = o.x * k; y = o.y * k; c.globalAlpha = o.down ? 0.5 : 1;
+      c.fillStyle = o === me ? '#ebe3d4' : LOOK_COLS[o.look.c]; c.beginPath(); c.arc(x, y, o === me ? 5 : 4, 0, 6.283); c.fill();
+      if (o === me) { c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke(); lab('You', x, y - 12, '#ebe3d4'); }
+      else lab(o.name || 'Player', x, y - 11, LOOK_COLS[o.look.c]);
+      c.globalAlpha = 1;
+    }
+  }
 
   function render() {
     var vw = W / zoom, vh = H / zoom;
@@ -4211,7 +4283,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       ctx.fillStyle = 'rgba(242,193,78,0.45)';
       ctx.beginPath(); ctx.arc(aim.ox + aim.x * JR, aim.oy + aim.y * JR, 24, 0, 6.283); ctx.fill();
     }
-    if (state === 'play' && me) drawMini();
+    if (state === 'play' && me) { drawMini(); if (bigOpen) drawBig(); } else if (bigOpen) closeBig();
   }
 
 
