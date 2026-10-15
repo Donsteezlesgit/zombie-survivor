@@ -1480,7 +1480,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var SKINS = ['#f6d7bd', '#e8b98f', '#c9a88a', '#a87450', '#7a4e30', '#4e3020'], SKIN_NAMES = ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'];
   var HAIRS = ['Short', 'Long', 'Mohawk', 'Bald', 'Ponytail', 'Afro'];
   var HAIRC = ['#14100d', '#2a211c', '#6a3b1e', '#8a5a2a', '#d9b45a', '#c9482e', '#9a9a9a', '#e8e1d2'], HAIRC_NAMES = ['Black', 'Dark brown', 'Brown', 'Light brown', 'Blonde', 'Ginger', 'Grey', 'White'];
-  var PANTS = ['#2b3340', '#4a3a2a', '#3a4a3a', '#5a5a60'], PANTS_NAMES = ['Navy', 'Brown', 'Green', 'Grey'];
+  // accessory colours: 14 free, then 4 rare ones that are earned (see UNLOCKS)
+  var ACOLS = [['Black', '#1d1d20'], ['Charcoal', '#4a4d52'], ['Silver', '#a8aab0'], ['White', '#ececec'], ['Maroon', '#7a1f26'], ['Red', '#c9382e'], ['Orange', '#e08a2e'], ['Yellow', '#e6c84a'],
+    ['Leaf', '#4f9a56'], ['Teal', '#2f9a9a'], ['Blue', '#3a78d0'], ['Purple', '#8a52b8'], ['Pink', '#e46aa4'], ['Chestnut', '#6a4a2e'], ['Gold', '#e0b020'], ['Neon green', '#5bff5b'], ['Ice', '#bfe8ff'], ['Ultraviolet', '#7a2cff']];
+  var ACOL_FREE = 14;
+  var PANTS = ['#2b3340', '#4a3a2a', '#3a4a3a', '#5a5a60'].concat(ACOLS.map(function (a) { return a[1]; })), PANTS_NAMES = ['Navy', 'Brown', 'Green', 'Grey'].concat(ACOLS.map(function (a) { return a[0]; }));
+  var HK_NAMES = ['Match jacket'].concat(ACOLS.map(function (a) { return a[0]; })), KC_NAMES = HK_NAMES;
   var FACES = ['None', 'Sunglasses', 'Gas mask'], JACKS = ['Plain', 'Camo', 'Hi-vis', 'Armour vest'], BACKS = ['None', 'Small pack', 'Big pack', 'Red cape'];
   var MAXP = 4;
   function angDiff(a, b) { return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))); }
@@ -1494,7 +1499,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     function pick(v, n, d) { v = Math.floor(+v); return v >= 0 && v < n ? v : d; }
     l = l || {};
     return { c: pick(l.c, LOOK_COLS.length, (id | 0) % LOOK_COLS.length), h: pick(l.h, HATS.length, 0), sk: pick(l.sk, SKINS.length, 2), hs: pick(l.hs, HAIRS.length, 0), hc: pick(l.hc, HAIRC.length, 1),
-      pn: pick(l.pn, PANTS.length, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0) };
+      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0) };
   }
 
 
@@ -1511,9 +1516,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     'h:8': { s: 'gh', n: 1, t: 'Survive a ghost round in the Haunted House', u: 'ghost rounds' }, 'a:1': { s: 'gh', n: 3, t: 'Survive 3 ghost rounds in the Haunted House', u: 'ghost rounds' },
     'h:7': { s: 'rv', n: 10, t: 'Revive 10 teammates', u: 'revives' }, 'n:1': { s: 'cg', n: 5, t: 'Finish 5 co-op games', u: 'games' }
   };
+  // rare colours work on hat colour, pack colour and pants
+  [['bw', 25, 'Reach wave 25', 'wave'], ['k', 1000, 'Get 1,000 kills in total', 'kills'], ['gh', 2, 'Survive 2 ghost rounds in the Haunted House', 'ghost rounds'], ['bw', 40, 'Reach wave 40', 'wave']].forEach(function (u, i) {
+    var o = { s: u[0], n: u[1], t: u[2], u: u[3] };
+    UNLOCKS['hk:' + (ACOL_FREE + 1 + i)] = o; UNLOCKS['kc:' + (ACOL_FREE + 1 + i)] = o; UNLOCKS['pn:' + (4 + ACOL_FREE + i)] = o;
+  });
   function isUnlocked(slot, v) { var u = UNLOCKS[slot + ':' + v]; return !u || DEV.on || STATS[u.s] >= u.n; }
   function lockCheck() { var ch = false, k; for (k in myLook) if (myLook[k] && !isUnlocked(k, myLook[k])) { myLook[k] = 0; ch = true; } return ch; }
-  var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Colour', LOOK_NAMES], ['h', 'Hat', HATS], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
+  var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Colour', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
   var meTab = 0, mePrev = null, meSel = null, meAng = 0.25;
   function meTiles() {
     var t = ME_TABS[meTab], out = [], i;
@@ -2812,7 +2822,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         pr = UNLOCKS[tl.s + ':' + tl.v];
         h += '<div class="mid">' + esc(pr.t) + '.</div><div class="mbar"><i style="width:' + Math.min(100, STATS[pr.s] / pr.n * 100).toFixed(0) + '%"></i></div><div class="mis">' + Math.min(STATS[pr.s], pr.n).toLocaleString() + ' / ' + pr.n.toLocaleString() + ' ' + pr.u + ' so far. Shown on your player as a preview.</div>';
       } else if (UNLOCKS[tl.s + ':' + tl.v]) h += '<div class="mid">' + esc(UNLOCKS[tl.s + ':' + tl.v].t) + (DEV.on ? ' (dev mode: everything is open)' : ' - earned.') + '</div>';
-      else h += '<div class="mid">Free from the start.</div>';
+      else h += '<div class="mid">' + (tl.s === 'hk' ? (ACOLS[tl.v - 1] && tl.v > ACOL_FREE ? 'Free colours' : 'Free from the start') + '. Colours Cap, Beanie and Band hats only.' : tl.s === 'kc' ? 'Free from the start. Colours the Small pack only.' : 'Free from the start.') + '</div>';
       h += '</div></div></div>';
     } else if (screen === 'online') {
       h += '<h1>Online</h1><p>Up to four players. One of you hosts and the rest join with the host\'s code.</p>';
@@ -2898,7 +2908,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 91';
+  var updMsg = '', VERSION = 'Version 92';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2967,6 +2977,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var cs = ov.querySelectorAll('.ot canvas'), i, t, l;
     for (i = 0; i < cs.length; i++) {
       t = cs[i]; l = {}; for (var k in myLook) l[k] = myLook[k]; l[t.dataset.s] = +t.dataset.v;
+      if (t.dataset.s === 'hk' && !(l.h >= 1 && l.h <= 3)) l.h = 1;
+      if (t.dataset.s === 'kc' && l.k !== 1) l.k = 1;
       var cx = t.getContext('2d'); cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, 128, 150);
       drawMeFig(cx, l, 0.15, 2.3, 64, 110);
     }
@@ -4004,7 +4016,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.translate(0, bob);
     if (back) gun();
     if (L.k === 3 && !back) part(function () { c.beginPath(); c.moveTo(-9, -28); c.lineTo(9, -28); c.lineTo(13, -4); c.lineTo(-13, -4); c.closePath(); }, '#b02a2a');
-    if ((L.k === 1 || L.k === 2) && !back) { a = L.k === 2 ? 1.25 : 1; part(function () { rr(-sx * 9 * a - 5 * a, -26, 10 * a, 15 * a, 3); }, L.k === 2 ? '#5a4a2a' : shade(jc, -60)); }
+    var packC = L.kc ? ACOLS[L.kc - 1][1] : shade(jc, -60);
+    if ((L.k === 1 || L.k === 2) && !back) { a = L.k === 2 ? 1.25 : 1; part(function () { rr(-sx * 9 * a - 5 * a, -26, 10 * a, 15 * a, 3); }, L.k === 2 ? '#5a4a2a' : packC); }
     c.save(); c.translate(0, -bob);
     var legCol = ar.legs > 0 ? TIERCOL[ar.legs] : (PANTS[L.pn] || PANTS[0]);
     part(function () { rr(-7 + stX, -12, 6, 13 - liftA, 2); }, legCol);
@@ -4021,7 +4034,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-5, -22, 10, 2); c.fillRect(-5, -18, 10, 2);
     }
     if (L.n) part(function () { rr(-8, -30, 16, 5, 2); }, '#d6452e');
-    if ((L.k === 1 || L.k === 2) && back) { a = L.k === 2 ? 1.25 : 1; part(function () { rr(-8 * a, -27, 16 * a, 15 * a, 3); }, L.k === 2 ? '#5a4a2a' : shade(jc, -60)); c.fillStyle = '#c9a24a'; c.fillRect(-1, -27, 2, 6); }
+    if ((L.k === 1 || L.k === 2) && back) { a = L.k === 2 ? 1.25 : 1; part(function () { rr(-8 * a, -27, 16 * a, 15 * a, 3); }, L.k === 2 ? '#5a4a2a' : packC); c.fillStyle = '#c9a24a'; c.fillRect(-1, -27, 2, 6); }
     if (L.k === 3 && back) part(function () { c.beginPath(); c.moveTo(-9, -28); c.lineTo(9, -28); c.lineTo(14, -3); c.lineTo(-14, -3); c.closePath(); }, '#b02a2a');
     // hair behind the head
     if (hs === 1 || hs === 5) { c.fillStyle = hair; c.strokeStyle = OUT; c.lineWidth = 2; if (hs === 1) { rr(-9, -38, 18, back ? 19 : 15, 6); c.fill(); c.stroke(); } else { c.beginPath(); c.arc(0, -37, 12, 0, 6.283); c.fill(); c.stroke(); } }
@@ -4048,10 +4061,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (ar.head > 0) {
         part(function () { c.beginPath(); c.arc(0, -38, 9, Math.PI, 0); c.closePath(); }, TIERCOL[ar.head]); part(function () { rr(-12, -39, 24, 3, 1.5); }, shade(TIERCOL[ar.head], -25));
       } else {
-        hatc = shade(jc, -30);
+        var hcol = L.hk ? ACOLS[L.hk - 1][1] : null;
+        hatc = hcol || shade(jc, -30);
         if (hat === 1) { part(function () { c.beginPath(); c.arc(0, -37, 8.6, Math.PI, 0); c.closePath(); }, hatc); if (!back) part(function () { rr(fx >= 0 ? 2 : -14, -37, 12, 3.2, 1.5); }, shade(hatc, -20)); }
-        else if (hat === 2) { part(function () { c.beginPath(); c.arc(0, -38, 8.8, Math.PI, 0); c.closePath(); }, '#e8e1d2'); c.fillStyle = '#d6452e'; c.fillRect(-8.8, -39, 17.6, 2.4); part(function () { c.beginPath(); c.arc(0, -46.5, 2.6, 0, 6.283); }, '#e8e1d2'); }
-        else if (hat === 3) { c.fillStyle = '#d6452e'; c.fillRect(-8, -39, 16, 3.6); c.strokeStyle = OUT; c.lineWidth = 1.6; c.strokeRect(-8, -39, 16, 3.6); if (!front) c.fillRect(sx > 0 ? -12 : 7, -38, 5, 6); }
+        else if (hat === 2) { part(function () { c.beginPath(); c.arc(0, -38, 8.8, Math.PI, 0); c.closePath(); }, hcol || '#e8e1d2'); c.fillStyle = hcol ? shade(hcol, -45) : '#d6452e'; c.fillRect(-8.8, -39, 17.6, 2.4); part(function () { c.beginPath(); c.arc(0, -46.5, 2.6, 0, 6.283); }, hcol || '#e8e1d2'); }
+        else if (hat === 3) { c.fillStyle = hcol || '#d6452e'; c.fillRect(-8, -39, 16, 3.6); c.strokeStyle = OUT; c.lineWidth = 1.6; c.strokeRect(-8, -39, 16, 3.6); if (!front) c.fillRect(sx > 0 ? -12 : 7, -38, 5, 6); }
         else if (hat === 4) { part(function () { c.beginPath(); c.arc(0, -38, 9, Math.PI, 0); c.closePath(); }, '#4a5a3a'); part(function () { rr(-12, -39, 24, 3, 1.5); }, '#3a4a2c'); }
         else if (hat === 5) { part(function () { rr(-13, -40, 26, 4, 2); }, '#2a1a3a'); part(function () { c.beginPath(); c.moveTo(-8, -40); c.lineTo(-1, -60); c.lineTo(8, -40); c.closePath(); }, '#2a1a3a'); c.fillStyle = '#b46bff'; c.fillRect(-8, -44, 16, 3); }
         else if (hat === 6) { part(function () { c.beginPath(); c.moveTo(-8, -41); c.lineTo(-8, -50); c.lineTo(-4, -45); c.lineTo(0, -52); c.lineTo(4, -45); c.lineTo(8, -50); c.lineTo(8, -41); c.closePath(); }, '#f2c14e'); c.fillStyle = '#d6452e'; c.fillRect(-1.2, -47, 2.4, 2.4); }
