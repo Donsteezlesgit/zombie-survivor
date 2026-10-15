@@ -374,18 +374,18 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     fireRange: 160, fireCone: 0.45
   };
   var TYPES = {
-    walker: { r: 11, hp: 40,  spd: 60,  dmg: 8,  cd: 0.9, coins: 2,  skin: '#7f9669', cloth: '#4a4f3c' },
-    runner: { r: 9,  hp: 24,  spd: 122, dmg: 6,  cd: 0.7, coins: 3,  skin: '#93a56c', cloth: '#6b3b32' },
-    tank:   { r: 17, hp: 200, spd: 40,  dmg: 18, cd: 1.1, coins: 10, skin: '#62705a', cloth: '#2f3a3a' },
-    boss:      { r: 27, hp: 700, spd: 50,  dmg: 26, cd: 1.2, coins: 40, skin: '#7a4a46', cloth: '#2a1f1f', boss: 1, kind: 'brute', name: 'Brute boss' },
-    bossRun:   { r: 21, hp: 480, spd: 92,  dmg: 20, cd: 0.9, coins: 40, skin: '#8a5a3c', cloth: '#3a1f18', boss: 1, kind: 'run',   name: 'Sprinter boss' },
-    bossThrow: { r: 26, hp: 650, spd: 55,  dmg: 24, cd: 1.2, coins: 40, skin: '#5f7080', cloth: '#222c38', boss: 1, kind: 'throw', name: 'Thrower boss' },
-    bossFire:  { r: 26, hp: 800, spd: 52,  dmg: 24, cd: 1.2, coins: 40, skin: '#8a3a2a', cloth: '#3a1210', boss: 1, kind: 'fire',  name: 'Pyro boss' },
-    armoured:  { r: 14, hp: 420, spd: 52,  dmg: 24, cd: 1.0, coins: 22, skin: '#6c7c80', cloth: '#262e32' },
-    ghost:     { r: 10, hp: 360, spd: 118, dmg: 3,  cd: 0.8, coins: 30, skin: '#cfe9ff', cloth: '#9fc8f0', ghost: 1 }
+    walker: { r: 9.9, hp: 40,  spd: 60,  dmg: 8,  cd: 0.9, coins: 2,  skin: '#7f9669', cloth: '#4a4f3c' },
+    runner: { r: 8.1,  hp: 24,  spd: 122, dmg: 6,  cd: 0.7, coins: 3,  skin: '#93a56c', cloth: '#6b3b32' },
+    tank:   { r: 15.3, hp: 200, spd: 40,  dmg: 18, cd: 1.1, coins: 10, skin: '#62705a', cloth: '#2f3a3a' },
+    boss:      { r: 24.3, hp: 700, spd: 50,  dmg: 26, cd: 1.2, coins: 40, skin: '#7a4a46', cloth: '#2a1f1f', boss: 1, kind: 'brute', name: 'Brute boss' },
+    bossRun:   { r: 18.9, hp: 480, spd: 92,  dmg: 20, cd: 0.9, coins: 40, skin: '#8a5a3c', cloth: '#3a1f18', boss: 1, kind: 'run',   name: 'Sprinter boss' },
+    bossThrow: { r: 23.4, hp: 650, spd: 55,  dmg: 24, cd: 1.2, coins: 40, skin: '#5f7080', cloth: '#222c38', boss: 1, kind: 'throw', name: 'Thrower boss' },
+    bossFire:  { r: 23.4, hp: 800, spd: 52,  dmg: 24, cd: 1.2, coins: 40, skin: '#8a3a2a', cloth: '#3a1210', boss: 1, kind: 'fire',  name: 'Pyro boss' },
+    armoured:  { r: 12.6, hp: 420, spd: 52,  dmg: 24, cd: 1.0, coins: 22, skin: '#6c7c80', cloth: '#262e32' },
+    ghost:     { r: 9.0, hp: 360, spd: 118, dmg: 3,  cd: 0.8, coins: 30, skin: '#cfe9ff', cloth: '#9fc8f0', ghost: 1 }
   };
   var BOSS_KINDS = ['boss', 'bossRun', 'bossThrow', 'bossFire'];
-  var PR = 11;
+  var PR = 9.9;
 
   // ---------- guns ----------
   // dmg = multiple of base damage per bullet/pellet. mag = rounds per magazine, res = reserve rounds, reload = seconds.
@@ -2793,7 +2793,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 84';
+  var updMsg = '', VERSION = 'Version 85';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
