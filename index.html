@@ -1488,7 +1488,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ['Leaf', '#4f9a56'], ['Teal', '#2f9a9a'], ['Blue', '#3a78d0'], ['Purple', '#8a52b8'], ['Pink', '#e46aa4'], ['Chestnut', '#6a4a2e'], ['Gold', '#e0b020'], ['Neon green', '#5bff5b'], ['Ice', '#bfe8ff'], ['Ultraviolet', '#7a2cff']];
   var ACOL_FREE = 14;
   var PANTS = ['#2b3340', '#4a3a2a', '#3a4a3a', '#5a5a60'].concat(ACOLS.map(function (a) { return a[1]; })), PANTS_NAMES = ['Navy', 'Brown', 'Green', 'Grey'].concat(ACOLS.map(function (a) { return a[0]; }));
-  var HK_NAMES = ['Match jacket'].concat(ACOLS.map(function (a) { return a[0]; })), KC_NAMES = HK_NAMES;
+  var HK_NAMES = ['Default'].concat(ACOLS.map(function (a) { return a[0]; })), KC_NAMES = HK_NAMES;
   var FACES = ['None', 'Sunglasses', 'Gas mask'], JACKS = ['Plain', 'Camo', 'Hi-vis', 'Armour vest'], BACKS = ['None', 'Small pack', 'Big pack', 'Red cape'];
   var MAXP = 4;
   function angDiff(a, b) { return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))); }
@@ -2961,7 +2961,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 97';
+  var updMsg = '', VERSION = 'Version 98';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4069,7 +4069,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.translate(0, bob);
     if (back) gun();
     if (L.k === 3 && !back) part(function () { c.beginPath(); c.moveTo(-9, -28); c.lineTo(9, -28); c.lineTo(13, -4); c.lineTo(-13, -4); c.closePath(); }, '#b02a2a');
-    var packC = L.kc ? ACOLS[L.kc - 1][1] : shade(jc, -60);
+    var packC = L.kc ? ACOLS[L.kc - 1][1] : '#3a342c';
     if ((L.k === 1 || L.k === 2) && !back) { a = L.k === 2 ? 1.25 : 1; part(function () { rr(-sx * 9 * a - 5 * a, -26, 10 * a, 15 * a, 3); }, L.k === 2 ? '#5a4a2a' : packC); }
     c.save(); c.translate(0, -bob);
     var legCol = ar.legs > 0 ? TIERCOL[ar.legs] : (PANTS[L.pn] || PANTS[0]);
@@ -4115,7 +4115,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         part(function () { c.beginPath(); c.arc(0, -38, 9, Math.PI, 0); c.closePath(); }, TIERCOL[ar.head]); part(function () { rr(-12, -39, 24, 3, 1.5); }, shade(TIERCOL[ar.head], -25));
       } else {
         var hcol = L.hk ? ACOLS[L.hk - 1][1] : null;
-        hatc = hcol || shade(jc, -30);
+        hatc = hcol || '#4a4d52';
         if (hat === 1) { part(function () { c.beginPath(); c.arc(0, -37, 8.6, Math.PI, 0); c.closePath(); }, hatc); if (!back) part(function () { rr(fx >= 0 ? 2 : -14, -37, 12, 3.2, 1.5); }, shade(hatc, -20)); }
         else if (hat === 2) { part(function () { c.beginPath(); c.arc(0, -38, 8.8, Math.PI, 0); c.closePath(); }, hcol || '#e8e1d2'); c.fillStyle = hcol ? shade(hcol, -45) : '#d6452e'; c.fillRect(-8.8, -39, 17.6, 2.4); part(function () { c.beginPath(); c.arc(0, -46.5, 2.6, 0, 6.283); }, hcol || '#e8e1d2'); }
         else if (hat === 3) { c.fillStyle = hcol || '#d6452e'; c.fillRect(-8, -39, 16, 3.6); c.strokeStyle = OUT; c.lineWidth = 1.6; c.strokeRect(-8, -39, 16, 3.6); if (!front) c.fillRect(sx > 0 ? -12 : 7, -38, 5, 6); }
