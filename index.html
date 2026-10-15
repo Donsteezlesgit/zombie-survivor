@@ -2892,7 +2892,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var setupNext = 'main', hasPeer = typeof Peer !== 'undefined';
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function blocked() { return !!screen || shopOpen || !!(me && me.boxPrize); }
-  function frozen() { return (net.mode === 'off' && (screen === 'pause' || shopOpen || !!(me && me.boxPrize))) || (DEV.on && DEV.open && DEV.pause && net.mode !== 'client'); }
+  var hostPaused = false, hostPausedC = false;   // host pressed 'Pause for everyone' / client is told so
+  // solo: any open menu (pause, settings, help...) stops the game, except the briefing that is meant to run alongside it
+  function frozen() { return (net.mode === 'off' && ((!!screen && screen !== 'intro') || shopOpen || !!(me && me.boxPrize))) || (net.mode === 'host' && hostPaused) || (DEV.on && DEV.open && DEV.pause && net.mode !== 'client'); }
 
   function rosterHtml() {
     var h = '<div class="roster">', i, r;
@@ -2984,8 +2986,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<button class="chip" data-a="leave" type="button">Leave</button>';
     } else if (screen === 'pause') {
       h += '<h1>' + (net.mode === 'off' ? 'Paused' : 'Menu') + '</h1>';
-      h += '<p>Wave <b>' + wave + '</b> · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : 'The game keeps running while this is open.') + '</p>';
+      h += '<p>Wave <b>' + wave + '</b> · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : (hostPaused ? 'The game is paused for everyone.' : 'The game keeps running while this is open.')) + '</p>';
       h += '<button class="go" data-a="resume" type="button">Resume</button>';
+      if (net.mode === 'host') h += hostPaused ? '<button class="go alt" data-a="hunpause" type="button">Resume for everyone</button>' : '<button class="go alt" data-a="hpause" type="button">Pause for everyone</button>';
       h += '<button class="go alt" data-a="help" type="button">How to play</button>';
       h += '<button class="go alt" data-a="settings" type="button">Settings</button>';
       h += '<button class="go alt" data-a="leave" type="button">' + (net.mode === 'off' ? 'Quit to menu' : 'Leave game') + '</button>';
@@ -3058,7 +3061,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 105';
+  var updMsg = '', VERSION = 'Version 106';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3182,7 +3185,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'join') { netStatus = ''; showScreen('join'); }
     else if (a === 'dojoin') { el = $('codeIn'); joinCode = String(el ? el.value : joinCode).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); netJoin(joinCode); }
     else if (a === 'hstart') hostStart();
-    else if (a === 'resume') showScreen('');
+    else if (a === 'resume') { hostPaused = false; showScreen(''); }
+    else if (a === 'hpause') { if (net.mode === 'host' && state === 'play') { hostPaused = true; renderScreen(); } }
+    else if (a === 'hunpause') { hostPaused = false; showScreen(''); }
     else if (a === 'refresh') refreshApp();
     else if (a === 'copylink') {
       var lk = 'https://donsteezlesgit.github.io/zombie-survivor/';
@@ -4896,7 +4901,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     };
   }
   function buildCommon() {
-    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, mp: mapId, in: introOn ? 1 : 0, br: bonusRoom, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills };
+    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, mp: mapId, in: introOn ? 1 : 0, br: bonusRoom, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills, hp: hostPaused ? 1 : 0 };
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
@@ -5025,7 +5030,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     snaps.push(m); if (snaps.length > 4) snaps.shift();
     introOn = !!m.in; bonusRoom = m.br === undefined ? -1 : m.br;
     if (m.G) { gbDone = m.G[0]; gbOn = !!m.G[1]; }
-    wave = m.wv; phase = m.ph ? 'grace' : 'spawning'; graceT = m.gt; leftN = m.l; kills = m.kt;
+    wave = m.wv; phase = m.ph ? 'grace' : 'spawning'; graceT = m.gt; leftN = m.l; kills = m.kt; hostPausedC = !!m.hp;
     if (m.e) for (i = 0; i < m.e.length; i++) applyEv(m.e[i]);
     if (m.pe) for (i = 0; i < m.pe.length; i++) applyEv(m.pe[i]);
     // players
@@ -5076,7 +5081,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < snaps.length; i++) if (snaps[i].ht >= rt) { s1 = snaps[i]; s0 = i > 0 ? snaps[i - 1] : snaps[i]; break; }
     if (s1.ht > s0.ht) a = Math.max(0, Math.min(1, (rt - s0.ht) / (s1.ht - s0.ht)));
     // own movement is predicted, then eased toward what the host says
-    if (state === 'play' && !me.down) {
+    if (state === 'play' && !me.down && !hostPausedC) {
       movePlayer(me, dt, me.inx, me.iny);
       if (me.sx !== undefined) {
         var ex = me.sx - me.x, ey = me.sy - me.y, ed = Math.hypot(ex, ey), idle = !me.inx && !me.iny;
@@ -5138,6 +5143,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (stSaveT <= 0) { stSaveT = 4; if (stDirty) { stDirty = false; saveStats(); } }
   }
   function statFlush() { if (stDirty) { stDirty = false; saveStats(); } }
+  var pausedTag = document.createElement('div'); pausedTag.hidden = true; pausedTag.textContent = net.mode === 'client' ? 'Paused by the host' : 'Paused';
+  pausedTag.style.cssText = 'position:absolute;z-index:40;left:50%;top:calc(var(--insT,0px) + 64px);transform:translateX(-50%);background:rgba(10,8,7,.85);border:1px solid #d2692a;border-radius:4px;color:#ebe3d4;padding:10px 18px;font:700 18px/1 var(--face-ui);letter-spacing:.14em;text-transform:uppercase;pointer-events:none';
+  game.appendChild(pausedTag);
   function loop(now) {
     // 120Hz phones: run at 60 so the phone does half the drawing and stays cooler
     if (now - last < 14) { requestAnimationFrame(loop); return; }
@@ -5145,6 +5153,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (dt > 0.05) dt = 0.05;
     if (DEV.on && net.mode !== 'client') { dt *= DEV.ts; devTick(); }
     devUpdateBtn();
+    if (net.mode !== 'host' || state !== 'play') hostPaused = false;
+    if (net.mode !== 'client' || state !== 'play') hostPausedC = false;
+    pausedTag.hidden = !((net.mode === 'client' && hostPausedC) || (net.mode === 'host' && hostPaused && !screen)); pausedTag.textContent = net.mode === 'client' ? 'Paused by the host' : 'Paused for everyone';
     if (me) gatherInput();
     if (net.mode === 'client') {
       clientTick(dt);
