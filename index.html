@@ -679,7 +679,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     try { localStorage.setItem('zs-maps-open', String(mapsOpen)); } catch (e) {}
     bannerAll('New map unlocked', MAPS[idx + 1].name, 3);
   }
-  var bestWave = 0, muted = false, myName = '', myLook = { c: 0, h: 0, sk: 2, hs: 0, hc: 1, pn: 0, f: 0, j: 0, k: 0, n: 0, a: 0 }, savedLook = null;
+  var bestWave = 0, muted = false, myName = '', myLook = { c: 0, h: 0, sk: 2, hs: 0, hc: 1, pt: 0, pn: 0, f: 0, j: 0, k: 0, n: 0, a: 0 }, savedLook = null;
   try { bestWave = parseInt(localStorage.getItem('zs-best-wave') || '0', 10) || 0; } catch (e) {}
   try { muted = localStorage.getItem('zs-muted') === '1'; } catch (e) {}
   try { myName = String(localStorage.getItem('zs-name') || '').slice(0, 12); savedLook = JSON.parse(localStorage.getItem('zs-look') || 'null'); } catch (e) {}
@@ -1616,7 +1616,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var HATS = ['Bare', 'Cap', 'Beanie', 'Band', 'Army helmet', 'Witch hat', 'Crown', 'Medic cap', 'Pumpkin head'];
   var SKINS = ['#f6d7bd', '#e8b98f', '#c9a88a', '#a87450', '#7a4e30', '#4e3020'], SKIN_NAMES = ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'];
   var HAIRS = ['Short', 'Long', 'Mohawk', 'Bald', 'Ponytail', 'Afro'];
-  var HAIRC = ['#14100d', '#2a211c', '#6a3b1e', '#8a5a2a', '#d9b45a', '#c9482e', '#9a9a9a', '#e8e1d2', '#c4161c'], HAIRC_NAMES = ['Black', 'Dark brown', 'Brown', 'Light brown', 'Blonde', 'Ginger', 'Grey', 'White', 'Red'];
+  var HAIRC = ['#14100d', '#2a211c', '#6a3b1e', '#8a5a2a', '#d9b45a', '#c9482e', '#9a9a9a', '#e8e1d2', '#c4161c'], HAIRC_NAMES = ['Black', 'Dark brown', 'Brown', 'Light brown', 'Blonde', 'Ginger', 'Grey', 'White', 'Red'], PET_NAMES = ['None', 'Rat', 'Cat', 'Gus', 'Henry', 'Chicken', 'Crow', 'Ghost'];
   // accessory colours: 14 free, then 4 rare ones that are earned (see UNLOCKS)
   var ACOLS = [['Black', '#1d1d20'], ['Charcoal', '#4a4d52'], ['Silver', '#a8aab0'], ['White', '#ececec'], ['Maroon', '#7a1f26'], ['Red', '#c9382e'], ['Orange', '#e08a2e'], ['Yellow', '#e6c84a'],
     ['Leaf', '#4f9a56'], ['Teal', '#2f9a9a'], ['Blue', '#3a78d0'], ['Purple', '#8a52b8'], ['Pink', '#e46aa4'], ['Chestnut', '#6a4a2e'], ['Gold', '#e0b020'], ['Neon green', '#5bff5b'], ['Ice', '#bfe8ff'], ['Ultraviolet', '#7a2cff']];
@@ -1721,7 +1721,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     function pick(v, n, d) { v = Math.floor(+v); return v >= 0 && v < n ? v : d; }
     l = l || {};
     return { c: pick(l.c, LOOK_COLS.length, (id | 0) % LOOK_COLS.length), h: pick(l.h, HATS.length, 0), sk: pick(l.sk, SKINS.length, 2), hs: pick(l.hs, HAIRS.length, 0), hc: pick(l.hc, HAIRC.length, 1),
-      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0) };
+      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0) };
   }
 
 
@@ -1736,6 +1736,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     'k:3': { s: 'k', n: 5000, t: 'Get 5,000 kills in total', u: 'kills' }, 'k:2': { s: 'k', n: 10000, t: 'Get 10,000 kills in total', u: 'kills' },
     'h:5': { s: 'rl', n: 8, t: 'Deliver all 8 relics to the cauldron in one Haunted House game', u: 'relics' },
     'h:8': { s: 'gh', n: 1, t: 'Survive a ghost round in the Haunted House', u: 'ghost rounds' }, 'a:1': { s: 'gh', n: 3, t: 'Survive 3 ghost rounds in the Haunted House', u: 'ghost rounds' },
+    'pt:2': { s: 'gm', n: 10, t: 'Play 10 games', u: 'games' }, 'pt:5': { s: 'k', n: 500, t: 'Get 500 kills in total', u: 'kills' },
+    'pt:6': { s: 'bwh', n: 15, t: 'Reach wave 15 in the Haunted House', u: 'wave' }, 'pt:7': { s: 'gh', n: 3, t: 'Survive 3 ghost rounds in the Haunted House', u: 'ghost rounds' },
     'h:7': { s: 'rv', n: 10, t: 'Revive 10 teammates', u: 'revives' }, 'n:1': { s: 'cg', n: 5, t: 'Finish 5 co-op games', u: 'games' }
   };
   // every accessory colour is earned (Black is free); they work on hat colour, pack colour and pants
@@ -1789,7 +1791,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     unSnap = null;
   }
   function lockCheck() { var ch = false, k; for (k in myLook) if (myLook[k] && !isUnlocked(k, myLook[k])) { myLook[k] = 0; ch = true; } return ch; }
-  var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Shirt', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
+  var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Shirt', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['pt', 'Pet', PET_NAMES], ['x', 'Extras', null]];
   var meTab = 0, mePrev = null, meSel = null, meAng = 0.25, meGridReset = false;
   function meTiles() {
     var t = ME_TABS[meTab], out = [], i;
@@ -3416,7 +3418,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 122';
+  var updMsg = '', VERSION = 'Version 123';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3474,7 +3476,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function drawMeFig(x, look, ang, sc, tx, ty) {
     var P = { x: 0, y: 0, ang: ang, look: look, armor: { head: 0, body: 0, legs: 0 }, inv: 0, step: 0, down: false };
-    x.save(); x.translate(tx, ty); x.scale(sc, sc); drawPlayerBody(x, P, WEAPONS.glock, 1); x.restore();
+    x.save(); x.translate(tx, ty); x.scale(sc, sc); drawPlayerBody(x, P, WEAPONS.glock, 1);
+    if (look.pt) drawPetSprite(x, look.pt, -17, 8, 0.2, 0.6, 0, 1);
+    x.restore();
   }
   function drawPreview() {
     var c = $('prev'); if (!c) return;
@@ -3488,7 +3492,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (t.dataset.s === 'hk' && !(l.h >= 1 && l.h <= 3)) l.h = 1;
       if (t.dataset.s === 'kc' && l.k !== 1) l.k = 1;
       var cx = t.getContext('2d'); cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, 128, 150);
-      drawMeFig(cx, l, 0.15, 2.3, 64, 110);
+      if (t.dataset.s === 'pt') { if (+t.dataset.v) drawPetSprite(cx, +t.dataset.v, 64, 85, 0.35, 0.6, 0, 4.6); }
+      else drawMeFig(cx, l, 0.15, 2.3, 64, 110);
     }
   }
   function saveMe() {
@@ -4529,6 +4534,80 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ghost:   { m: 1, p: [[-8, -4, 10, 8, '#2a2d30'], [-4, -12, 12, 8, '#3a3f45'], [2, -3, 18, 6, '#1d4a2c'], [20, -4, 6, 8, '#78ff9a'], [0, -10, 8, 2, '#78ff9a']] }
   };
   (function () { for (var k in GART) { var a = GART[k], t = 0; a.p.forEach(function (q) { t = Math.max(t, q[0] + q[2]); }); a.tip = t; } })();
+  // ---------- pets (looks only; they trail you, never touch anything) ----------
+  function drawPetSprite(c, pt, x, y, hd, ph, mv, sc) {
+    var s1 = mv ? Math.sin(ph) : 0, s2 = mv ? Math.sin(ph + 1.6) : 0, br = mv ? 0 : Math.sin(ph * 0.4) * 0.25;
+    function E(cx, cy, rx, ry, col) { c.fillStyle = col; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, 6.283); c.fill(); }
+    c.save(); c.translate(x, y); c.scale(sc, sc);
+    if (pt === 7) {
+      var fy = -5 + Math.sin(ph * 0.5) * 1.4;
+      E(0, 4, 4.2, 1.9, 'rgba(0,0,0,0.22)');
+      c.globalAlpha = 0.82; c.fillStyle = '#eaf2f6'; c.beginPath(); c.moveTo(-4.6, fy + 4.2); c.lineTo(-4.6, fy - 1.5);
+      c.arc(0, fy - 1.5, 4.6, Math.PI, 0); c.lineTo(4.6, fy + 4.2);
+      c.quadraticCurveTo(3.1, fy + 1.8, 1.5, fy + 4.2); c.quadraticCurveTo(0, fy + 1.8, -1.5, fy + 4.2); c.quadraticCurveTo(-3.1, fy + 1.8, -4.6, fy + 4.2); c.fill();
+      c.fillStyle = '#1b2733'; c.beginPath(); c.arc(-1.8, fy - 1.8, 0.85, 0, 6.283); c.arc(1.8, fy - 1.8, 0.85, 0, 6.283); c.fill();
+      E(0, fy + 0.6, 0.8, 0.6, '#1b2733');
+      c.restore(); return;
+    }
+    E(0, 1.2, 8, 4.4, 'rgba(0,0,0,0.25)');
+    c.rotate(hd);
+    if (pt === 3 || pt === 4) {
+      var gus = pt === 3, B = gus ? '#1b1714' : '#e6d3a7', L = gus ? '#b87a3c' : '#f1e4c4', EA = gus ? '#0e0b09' : '#caae78';
+      E(3.2 + s1 * 1.8, -3.3, 1.7, 1.2, L); E(3.2 - s1 * 1.8, 3.3, 1.7, 1.2, L); E(-3.2 - s2 * 1.8, -3.3, 1.7, 1.2, L); E(-3.2 + s2 * 1.8, 3.3, 1.7, 1.2, L);
+      c.strokeStyle = B; c.lineWidth = 1.8; c.lineCap = 'round'; c.beginPath(); c.moveTo(-6, 0); c.quadraticCurveTo(-8.5, -1.5 + s1, -10, -0.5 + s1 * 1.6); c.stroke();
+      E(0, 0, 6.3, 3.7 + br, B); if (gus) E(4.6, 0, 1.2, 1.6, '#b87a3c');
+      E(6.5, 0, 3.1, 2.9, B); E(5.7, -3.2, 1.7, 1.2, EA); E(5.7, 3.2, 1.7, 1.2, EA);
+      E(8.9, 0, 1.8, 1.4, L); E(10.1, 0, 0.8, 0.7, '#111'); E(7.5, -1.4, 0.55, 0.55, '#111'); E(7.5, 1.4, 0.55, 0.55, '#111');
+      if (gus) { E(7.1, -2.1, 0.6, 0.45, '#b87a3c'); E(7.1, 2.1, 0.6, 0.45, '#b87a3c'); }
+    } else if (pt === 2) {
+      E(3 + s1 * 1.4, -3, 1.4, 1, '#a8703a'); E(3 - s1 * 1.4, 3, 1.4, 1, '#a8703a'); E(-3 - s2 * 1.4, -3, 1.4, 1, '#a8703a'); E(-3 + s2 * 1.4, 3, 1.4, 1, '#a8703a');
+      c.strokeStyle = '#c98a4b'; c.lineWidth = 1.7; c.lineCap = 'round'; c.beginPath(); c.moveTo(-5.4, 0); c.quadraticCurveTo(-8.5, 2.6 + s1, -10.5, -1 - s1 * 1.5); c.stroke();
+      E(0, 0, 5.8, 3.3 + br, '#c98a4b');
+      c.strokeStyle = '#8a5a2a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-1.5, -3); c.lineTo(-1.5, -1); c.moveTo(0.8, -3.1); c.lineTo(0.8, -1); c.moveTo(-1.5, 3); c.lineTo(-1.5, 1); c.moveTo(0.8, 3.1); c.lineTo(0.8, 1); c.stroke();
+      E(5.8, 0, 2.9, 2.7, '#c98a4b');
+      c.fillStyle = '#c98a4b'; c.beginPath(); c.moveTo(4.4, -1.8); c.lineTo(5.2, -4.6); c.lineTo(6.6, -2.2); c.fill(); c.beginPath(); c.moveTo(4.4, 1.8); c.lineTo(5.2, 4.6); c.lineTo(6.6, 2.2); c.fill();
+      E(7, -1.1, 0.6, 0.6, '#a6dc6e'); E(7, 1.1, 0.6, 0.6, '#a6dc6e'); E(8.4, 0, 0.6, 0.5, '#e29a9a');
+    } else if (pt === 1) {
+      c.strokeStyle = '#d9a0a0'; c.lineWidth = 0.9; c.lineCap = 'round'; c.beginPath(); c.moveTo(-4.6, 0); c.quadraticCurveTo(-8, 2 + s1 * 1.5, -11, -1.5 - s1 * 2); c.stroke();
+      E(2.5 + s1 * 1.2, -2.2, 1.1, 0.8, '#6f6a62'); E(2.5 - s1 * 1.2, 2.2, 1.1, 0.8, '#6f6a62'); E(-2.5 - s2 * 1.2, -2.2, 1.1, 0.8, '#6f6a62'); E(-2.5 + s2 * 1.2, 2.2, 1.1, 0.8, '#6f6a62');
+      E(0, 0, 4.9, 2.7 + br, '#8a847a'); E(5.2, 0, 2.2, 1.9, '#8a847a'); E(7.2, 0, 1.7, 1.1, '#9a948a');
+      E(4.3, -2.1, 1.3, 1.3, '#d3a3a3'); E(4.3, 2.1, 1.3, 1.3, '#d3a3a3'); E(8.6, 0, 0.6, 0.6, '#d98c8c'); E(6.4, -0.9, 0.45, 0.45, '#111'); E(6.4, 0.9, 0.45, 0.45, '#111');
+    } else if (pt === 5) {
+      c.strokeStyle = '#e8a62b'; c.lineWidth = 0.9; c.lineCap = 'round'; c.beginPath(); c.moveTo(0.5, -1.2); c.lineTo(0.5 + s1 * 2, -2.4); c.moveTo(0.5, 1.2); c.lineTo(0.5 - s1 * 2, 2.4); c.stroke();
+      E(-5.2, 0, 2.6, 3, '#dcd5c4'); E(0, 0, 5.3, 4 + br, '#f3efe6'); E(-0.8, -2.5, 3, 1.3, '#e3dccb'); E(-0.8, 2.5, 3, 1.3, '#e3dccb');
+      E(5, 0, 2.3, 2.2, '#f3efe6'); E(4.4, 0, 1.3, 1.1, '#d23a2e');
+      c.fillStyle = '#e8a62b'; c.beginPath(); c.moveTo(6.8, -1); c.lineTo(9.2, 0); c.lineTo(6.8, 1); c.fill(); E(6.3, -1.2, 0.45, 0.45, '#111'); E(6.3, 1.2, 0.45, 0.45, '#111');
+    } else if (pt === 6) {
+      c.strokeStyle = '#3b3a3f'; c.lineWidth = 0.8; c.lineCap = 'round'; c.beginPath(); c.moveTo(0.5, -1.1); c.lineTo(0.5 + s1 * 1.8, -2.2); c.moveTo(0.5, 1.1); c.lineTo(0.5 - s1 * 1.8, 2.2); c.stroke();
+      E(-6, 0, 2.8, 1.7, '#111015'); E(0, 0, 5.4, 3.3 + br, '#17161a'); E(-0.8, -2.4, 3.6, 1.5, '#2b2b36'); E(-0.8, 2.4, 3.6, 1.5, '#2b2b36');
+      E(5, 0, 2.4, 2.3, '#17161a');
+      c.fillStyle = '#55524f'; c.beginPath(); c.moveTo(6.6, -1.2); c.lineTo(9.6, 0); c.lineTo(6.6, 1.2); c.fill(); E(5.9, -1.2, 0.5, 0.5, '#d9d9e2'); E(5.9, 1.2, 0.5, 0.5, '#d9d9e2');
+    }
+    c.restore();
+  }
+  function petUpdate(P, now) {
+    var pt = P.look ? (P.look.pt | 0) : 0, S = P.pet, i, d, px, py, tx, ty, seg, f, dx, dy, dist, dt, st, ta, da, last;
+    if (!pt) { P.pet = null; return null; }
+    if (!S || S.pt !== pt) S = P.pet = { pt: pt, x: P.x - 14, y: P.y + 6, hd: 0, ph: 0, mv: 0, t: now, tr: [{ x: P.x - 14, y: P.y + 6 }, { x: P.x, y: P.y }] };
+    dt = Math.min(0.05, Math.max(0, (now - S.t) / 1000)); S.t = now;
+    if (Math.hypot(P.x - S.x, P.y - S.y) > 260) { S.x = P.x - 10; S.y = P.y + 4; S.tr = [{ x: S.x, y: S.y }, { x: P.x, y: P.y }]; }
+    last = S.tr[S.tr.length - 1];
+    if (Math.hypot(P.x - last.x, P.y - last.y) > 6) { S.tr.push({ x: P.x, y: P.y }); if (S.tr.length > 40) S.tr.shift(); }
+    d = 0; px = P.x; py = P.y; tx = P.x; ty = P.y;
+    for (i = S.tr.length - 1; i >= 0; i--) {
+      seg = Math.hypot(S.tr[i].x - px, S.tr[i].y - py);
+      if (seg > 0 && d + seg >= 22) { f = (22 - d) / seg; tx = px + (S.tr[i].x - px) * f; ty = py + (S.tr[i].y - py) * f; break; }
+      d += seg; px = S.tr[i].x; py = S.tr[i].y; tx = px; ty = py;
+    }
+    dx = tx - S.x; dy = ty - S.y; dist = Math.hypot(dx, dy);
+    if (dist > 2.5) {
+      st = Math.min(dist, Math.min(dist * 7, 230) * dt); S.x += dx / dist * st; S.y += dy / dist * st; S.mv = 1; S.ph += st * 0.55;
+      ta = Math.atan2(dy, dx); da = ta - S.hd; while (da > Math.PI) da -= 6.283; while (da < -Math.PI) da += 6.283; S.hd += da * Math.min(1, dt * 12);
+    } else { S.mv = 0; S.ph += dt * 3; }
+    return S;
+  }
+  function petDraw(S) { drawPetSprite(ctx, S.pt, S.x, S.y, S.hd, S.ph, S.mv, 0.85); }
+
   function drawPlayerBody(c, P, d, tr) {
     var L = P.look || {}, ar = P.armor, jc = LOOK_COLS[L.c] || LOOK_COLS[0], ang = P.ang, skin = SKINS[L.sk] || SKINS[2], hair = HAIRC[L.hc] || HAIRC[1], hs = L.hs | 0, hat = L.h | 0;
     var fx = Math.cos(ang), fy = Math.sin(ang) * 0.8, back = fy < -0.25, front = fy > 0.25, side = Math.abs(fx) > 0.45, sx = fx >= 0 ? 1 : -1;
@@ -4916,11 +4995,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
       if (pvp && P.down) continue;
+      var pS = (!pvp || P === me) ? petUpdate(P, performance.now()) : null;   // PvP: only your own pet is drawn
+      if (pS && pS.y <= P.y) petDraw(pS);
       if (P.down) {
         ctx.globalAlpha = 0.45;
         drawPlayerBody(ctx, P, defOf(rr), rr.tier || 1);
         ctx.globalAlpha = 1;
       } else drawPlayerBody(ctx, P, defOf(rr), rr.tier || 1);
+      if (pS && pS.y > P.y) petDraw(pS);
     }
     drawBats();
     for (i = 0; i < parts.length; i++) {
