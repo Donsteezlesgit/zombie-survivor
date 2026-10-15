@@ -246,6 +246,13 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
 .mrow { display: flex; justify-content: space-around; gap: 12px; margin-top: 8px; }
 .mrow b { display: block; font: 700 30px/1 var(--face-ui); letter-spacing: 0.04em; color: var(--bone); font-variant-numeric: tabular-nums; }
 .mrow small { display: block; margin-top: 4px; font: 600 12px/1 var(--face-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.mrow .mapn { margin-top: 3px; font-size: 10px; letter-spacing: 0.08em; color: #8a7d70; }
+.maps { display: flex; flex-direction: column; gap: 10px; width: 100%; margin: 6px 0 10px; }
+.mapcard { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 14px; border: 1px solid #3a322d; border-radius: 6px; background: rgba(0, 0, 0, 0.35); color: var(--bone); font: inherit; cursor: pointer; }
+.mapcard b { font: 700 20px/1.1 var(--face-ui); letter-spacing: 0.06em; text-transform: uppercase; }
+.mapcard span { font-size: 13px; color: var(--dim); }
+.mapcard em { font: 600 12px/1.2 var(--face-ui); letter-spacing: 0.1em; text-transform: uppercase; color: #d2692a; font-style: normal; }
+.mapcard:disabled { opacity: 0.5; cursor: default; }
 .mplay, .mmore { display: flex; flex-direction: column; gap: 10px; }
 .mme { margin-top: 8px; }
 .mmore { margin-top: 8px; }
@@ -461,13 +468,39 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // ---------- storage (optional) ----------
-  var offWave = 0, offKills = 0;
+  var mapCtx = 'offline', hostMap = 'beginners', mapsOpen = 1;
+  var offWave = 0, offKills = 0, mapRec = {};
   try { offWave = parseInt(localStorage.getItem('zs-off-wave') || localStorage.getItem('zs-best-wave') || '0', 10) || 0; offKills = parseInt(localStorage.getItem('zs-off-kills') || '0', 10) || 0; } catch (e) {}
+  try { mapRec = JSON.parse(localStorage.getItem('zs-maprec') || '{}') || {}; } catch (e) { mapRec = {}; }
+  try { mapsOpen = Math.max(1, parseInt(localStorage.getItem('zs-maps-open') || '1', 10) || 1); } catch (e) {}
+  // records from before there were maps belong to Beginners Ground
+  if (!mapRec.beginners && (offWave || offKills)) mapRec.beginners = { w: offWave, k: offKills };
+  function recOf(id) { return mapRec[id] || { w: 0, k: 0 }; }
+  // overall best across every map, with the map each was set on
+  function bestOverall() {
+    var o = { w: 0, wm: '', k: 0, km: '' }, i, m, r;
+    for (i = 0; i < MAPS.length; i++) {
+      m = MAPS[i]; r = recOf(m.id);
+      if (r.w > o.w) { o.w = r.w; o.wm = m.name; }
+      if (r.k > o.k) { o.k = r.k; o.km = m.name; }
+    }
+    return o;
+  }
   function recordOffline() {
     if (net.mode !== 'off' || !me) return;
-    if (wave > offWave) offWave = wave;
-    if (me.kills > offKills) offKills = me.kills;
-    try { localStorage.setItem('zs-off-wave', String(offWave)); localStorage.setItem('zs-off-kills', String(offKills)); } catch (e) {}
+    var r = mapRec[mapId] || (mapRec[mapId] = { w: 0, k: 0 });
+    if (wave > r.w) r.w = wave;
+    if (me.kills > r.k) r.k = me.kills;
+    var o = bestOverall(); offWave = o.w; offKills = o.k;
+    try { localStorage.setItem('zs-maprec', JSON.stringify(mapRec)); localStorage.setItem('zs-off-wave', String(offWave)); localStorage.setItem('zs-off-kills', String(offKills)); } catch (e) {}
+  }
+  function unlockNextMap() {
+    var idx = 0, i;
+    for (i = 0; i < MAPS.length; i++) if (MAPS[i].id === mapId) idx = i;
+    if (idx + 1 >= MAPS.length || mapsOpen >= idx + 2) return;
+    mapsOpen = idx + 2;
+    try { localStorage.setItem('zs-maps-open', String(mapsOpen)); } catch (e) {}
+    bannerAll('New map unlocked', MAPS[idx + 1].name, 3);
   }
   var bestWave = 0, muted = false, myName = '', myLook = { c: 0, h: 0 }, savedLook = null;
   try { bestWave = parseInt(localStorage.getItem('zs-best-wave') || '0', 10) || 0; } catch (e) {}
@@ -477,10 +510,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   // ---------- world layers ----------
   function makeLayer() {
     var c = document.createElement('canvas');
-    c.width = c.height = Math.round(WORLD * GS);
-    var x = c.getContext('2d');
-    x.scale(GS, GS);
-    return { c: c, x: x };
+    var x = c.getContext('2d'), L = { c: c, x: x };
+    sizeLayer(L);
+    return L;
+  }
+  function sizeLayer(L) {
+    L.c.width = L.c.height = Math.round(WORLD * GS);
+    L.x.setTransform(GS, 0, 0, GS, 0, 0);
   }
   var groundL = makeLayer(), bloodL = makeLayer(), bldL = makeLayer();
   function rnd(a, b) { return a + Math.random() * (b - a); }
@@ -518,7 +554,6 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     g.strokeStyle = 'rgba(210,105,42,0.35)'; g.lineWidth = 2;
     g.strokeRect(WALL, WALL, WORLD - WALL * 2, WORLD - WALL * 2);
   }
-  paintGround();
 
   // ---------- buildings ----------
   // RECTS: solid for movement. BLD: the four spawn buildings, each with a pocket and a barrier zombies must smash.
@@ -529,7 +564,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     return { x: cx - w / 2, y: cy - h / 2, w: w, h: h };
   }
   function addRoof(x, y, w, h, spawn) { var r = { x: x, y: y, w: w, h: h, spawn: !!spawn }; RECTS.push(r); ROOFS.push(r); return r; }
-  (function () {
+  function buildBeginners() {
     var plain = [[300, 300, 170, 120], [1030, 300, 170, 120], [300, 1080, 170, 120], [1030, 1080, 170, 120],
       [560, 520, 110, 70], [830, 910, 110, 70], [440, 690, 70, 110], [990, 690, 70, 110]];
     plain.forEach(function (p) { addRoof(p[0], p[1], p[2], p[3], false); });
@@ -552,7 +587,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       var pk = mkRect(d.ex + d.nx * POCKET_D / 2, d.ey + d.ny * POCKET_D / 2, POCKET_D, POCKET_HW * 2, hz);
       BLD.push({ roof: roof, bar: bar, pocket: pk, sx: d.ex + d.nx * POCKET_D * 0.5, sy: d.ey + d.ny * POCKET_D * 0.5, tx: tx, ty: ty, nx: d.nx, ny: d.ny, ex: d.ex, ey: d.ey });
     });
-  })();
+  }
 
   function paintBuildings() {
     var g = bldL.x, i, r, k;
@@ -574,7 +609,23 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       }
     }
   }
-  paintBuildings();
+
+  // ---------- maps ----------
+  var MAPS = [
+    { id: 'beginners', name: 'Beginners Ground', blurb: 'Open ground, four spawn buildings. Learn the ropes.', world: 1500, gs: 1.5, build: buildBeginners, ground: paintGround, bld: paintBuildings },
+    { id: 'haunted', name: 'Haunted House', blurb: 'Rooms, corridors and doors. Something is stirring in the cauldron.', soon: true, world: 2000, gs: 1, build: buildBeginners, ground: paintGround, bld: paintBuildings }
+  ];
+  function mapDef(id) { for (var i = 0; i < MAPS.length; i++) if (MAPS[i].id === id) return MAPS[i]; return MAPS[0]; }
+  var mapId = '';
+  function setMap(id) {
+    var d = mapDef(id);
+    if (mapId === d.id) return;
+    mapId = d.id; WORLD = d.world; GS = d.gs;
+    sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
+    RECTS.length = 0; BLD.length = 0; ROOFS.length = 0;
+    d.build(); d.ground(); d.bld();
+  }
+  setMap('beginners');
 
   function distRect(x, y, r) {
     var cx = Math.max(r.x, Math.min(r.x + r.w, x)), cy = Math.max(r.y, Math.min(r.y + r.h, y));
@@ -1029,6 +1080,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       if (players[i].down) revivePlayer(players[i], 0.5);
     }
     phase = 'grace'; graceT = graceFor(wave);
+    if (net.mode === 'off' && wave >= 20) unlockNextMap();
     bannerAll('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's · shop is open any time', 2.6);
     stone(330, 330, 0.12, 'square', 0.06); stone(494, 494, 0.12, 'square', 0.06, 0.12); stone(659, 659, 0.2, 'square', 0.06, 0.24);
     saveGame();
@@ -1059,7 +1111,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (cw < 1) return;
     try {
       var data = {
-        wave: cw, wallet: P.wallet, kills: P.kills, hp: P.hp, unlocked: P.unlocked,
+        map: mapId, wave: cw, wallet: P.wallet, kills: P.kills, hp: P.hp, unlocked: P.unlocked,
         upg: P.upg, armor: P.armor,
         bar: BLD.map(function (b) { return b.bar.planks; }),
         slots: P.slots.map(function (g) { if (g && g.temp) g = P.stash; return g ? { id: g.id, tier: g.tier } : null; })
@@ -1078,6 +1130,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function loadGame() {
     var d = readSave(); if (!d) return false;
     net = { mode: 'off' }; localId = 0;
+    setMap(d.map || 'beginners');
     newGame([{ id: 0, name: myName || 'You', look: myLook }]);
     var P = players[0], k, i, g;
     wave = d.wave; P.wallet = +d.wallet || 0; P.kills = +d.kills || 0; kills = P.kills;
@@ -1837,7 +1890,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'main') {
       h += '<div class="mhome">';
       h += '<div class="mtitle"><h1>Zombie<br>Survivor</h1></div>';
-      h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (offWave || '–') + '</b><small>Highest wave</small></div><div><b>' + (offKills || '–') + '</b><small>Most kills</small></div></div></div>';
+      var bo = bestOverall();
+      h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (bo.w || '–') + '</b><small>Highest wave</small>' + (bo.w ? '<small class="mapn">' + esc(bo.wm) + '</small>' : '') + '</div><div><b>' + (bo.k || '–') + '</b><small>Most kills</small>' + (bo.k ? '<small class="mapn">' + esc(bo.km) + '</small>' : '') + '</div></div></div>';
       h += '<div class="mplay"><button class="go" data-a="offline" type="button">Play offline</button>';
       h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button></div>';
       h += '<div class="mme"><button class="go alt" data-a="me" type="button">Your player</button></div>';
@@ -1848,9 +1902,21 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     } else if (screen === 'offline') {
       d = readSave();
       h += '<h1>Offline</h1><p>Just you against the dead. Your game saves on this phone after every wave.</p>';
-      h += '<button class="go" data-a="start" type="button">Start new game</button>';
+      h += '<button class="go" data-a="maps" data-ctx="offline" type="button">Start new game</button>';
       if (d) h += '<button class="go alt" data-a="cont" type="button">Continue (wave ' + d.wave + ' cleared)</button>';
       h += '<button class="chip" data-a="back" data-to="main" type="button">Back</button>';
+    } else if (screen === 'maps') {
+      var onl = mapCtx === 'online';
+      h += '<h1>Choose a map</h1><div class="maps">';
+      for (i = 0; i < MAPS.length; i++) {
+        var mp = MAPS[i], open = onl || i < mapsOpen, rc = recOf(mp.id), dis = !open || mp.soon;
+        h += '<button class="mapcard" type="button" data-a="pickmap" data-id="' + mp.id + '"' + (dis ? ' disabled' : '') + '><b>' + esc(mp.name) + '</b><span>' + esc(mp.blurb) + '</span>';
+        if (mp.soon) h += '<em>Coming soon</em>';
+        else if (!open) h += '<em>Clear wave 20 on ' + esc(MAPS[i - 1].name) + ' to unlock</em>';
+        else if (!onl) h += '<em>' + (rc.w ? 'Best: wave ' + rc.w + ' · ' + rc.k + ' kills' : 'No score yet') + '</em>';
+        h += '</button>';
+      }
+      h += '</div><button class="chip" data-a="back" data-to="' + (onl ? 'host' : 'offline') + '" type="button">Back</button>';
     } else if (screen === 'me') {
       h += '<h1>Your player</h1>';
       h += '<canvas id="prev" width="120" height="120" aria-hidden="true"></canvas>';
@@ -1869,6 +1935,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     } else if (screen === 'host') {
       h += '<h1>Your game</h1><div class="lab">Tell the others this code</div><div class="bigcode">' + esc(hostCode || '....') + '</div>';
       h += rosterHtml();
+      h += '<div class="lab">Map</div><button class="go alt" data-a="maps" data-ctx="online" type="button">' + esc(mapDef(hostMap).name) + ' · change</button>';
       h += '<div class="msg">' + esc(netStatus) + '</div>';
       h += '<button class="go" data-a="hstart" type="button"' + (hostCode ? '' : ' disabled') + '>Start game</button>';
       h += '<button class="chip" data-a="leave" type="button">Cancel</button>';
@@ -1936,7 +2003,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 48';
+  var updMsg = '', VERSION = 'Version 49';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -1986,7 +2053,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   setInterval(function () { if (screen === 'diag') fillDiag(); else { var f = document.getElementById('diagIH'); if (f) f.remove(); } }, 400);
   function showScreen(name) {
     screen = name;
-    game.classList.toggle('inmenu', name === 'main'); game.classList.toggle('diagon', name === 'diag');
+    game.classList.toggle('inmenu', ['main', 'offline', 'maps', 'online', 'me', 'host', 'join', 'wait'].indexOf(name) >= 0); game.classList.toggle('diagon', name === 'diag');
     if (name) {
       joy.active = false; joy.x = joy.y = 0; aim.active = false;
       renderScreen(); ov.hidden = false;
@@ -2005,8 +2072,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (el) myName = cleanName(el.value);
     try { localStorage.setItem('zs-name', myName); localStorage.setItem('zs-look', JSON.stringify(myLook)); } catch (e) {}
   }
-  function startOffline() {
+  function startOffline(id) {
     net = { mode: 'off' }; localId = 0;
+    setMap(id || 'beginners');
     newGame([{ id: 0, name: myName || 'You', look: myLook }]);
   }
   function leaveGame() {
@@ -2023,6 +2091,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var el;
     if (a === 'offline') showScreen('offline');
     else if (a === 'start') { startOffline(); tone(300, 200, 0.08, 'square', 0.05); }
+    else if (a === 'maps') { mapCtx = b.dataset.ctx || 'offline'; showScreen('maps'); }
+    else if (a === 'pickmap') {
+      var pm = mapDef(b.dataset.id);
+      if (pm.soon) return;
+      if (mapCtx === 'online') { hostMap = pm.id; showScreen('host'); }
+      else { startOffline(pm.id); tone(300, 200, 0.08, 'square', 0.05); }
+    }
     else if (a === 'cont') { net = { mode: 'off' }; if (loadGame()) { showScreen(''); tone(300, 200, 0.08, 'square', 0.05); } }
     else if (a === 'online') { setupNext = 'online'; showScreen('me'); }
     else if (a === 'me') { setupNext = 'main'; showScreen('me'); }
@@ -3178,15 +3253,16 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     P.conn = seat.conn; P.wallet = TUNE.lateCoins * wave;
     if (me && !me.down) { P.x = me.x + 24; P.y = me.y; }
     players.push(P);
-    sendTo(seat.conn, { k: 'start', r: roster, gen: gen });
+    sendTo(seat.conn, { k: 'start', r: roster, gen: gen, map: mapId });
     bannerAll(seat.name + ' joined', '', 1.6);
   }
   function hostStart() {
     if (net.mode !== 'host' || !hostCode) return;
     var specs = seats.map(function (s) { return { id: s.id, name: s.name, look: s.look, conn: s.conn }; }), i;
     evBase = 0;
+    setMap(hostMap);
     newGame(specs);
-    for (i = 0; i < seats.length; i++) if (seats[i].conn) { seats[i].conn.evPos = 0; seats[i].conn.lastM = ''; sendTo(seats[i].conn, { k: 'start', r: roster, gen: gen }); }
+    for (i = 0; i < seats.length; i++) if (seats[i].conn) { seats[i].conn.evPos = 0; seats[i].conn.lastM = ''; sendTo(seats[i].conn, { k: 'start', r: roster, gen: gen, map: mapId }); }
   }
 
   function mFor(P) {
@@ -3198,7 +3274,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     };
   }
   function buildCommon() {
-    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills };
+    var o = { k: 'snap', ht: Math.round(performance.now()) / 1000, gen: gen, mp: mapId, wv: wave, ph: phase === 'grace' ? 1 : 0, gt: r1(graceT), l: queue.length + zombies.length, st: state === 'play' ? 1 : (state === 'over' ? 2 : 0), kt: kills };
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
@@ -3301,6 +3377,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   }
   function startClient(m) {
     roster = m.r || roster; gen = m.gen;
+    setMap(m.map || 'beginners');
     players = roster.map(function (r) { return newPlayer(r.id, r.name, cleanLook(r.look, r.id)); });
     me = pById(localId) || ensurePlayer(localId);
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = []; boxes = [];
@@ -3313,7 +3390,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function angLerp(a, b, t) { var d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * t; }
   function onSnap(m) {
     if (net.mode !== 'client' || !me) return;
-    if (m.gen !== gen && m.st === 1) startClient({ r: roster, gen: m.gen });
+    if (m.gen !== gen && m.st === 1) startClient({ r: roster, gen: m.gen, map: m.mp });
     if (m.gen !== gen) return;
     var nowS = performance.now() / 1000, off = nowS - m.ht, i, r, P, k;
     clockOff = clockOff === null ? off : Math.min(off, clockOff + 0.0004);
