@@ -403,6 +403,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   SPECIALS.ray = { id: 'ray', name: 'Ray gun', dmg: 4.2, rate: 3.4, pellets: 1, spread: 0.01, range: 420, speed: 620, pierce: 0, len: 13, gw: 7, ammo: 36, kind: 'ray', blast: 46 };
   SPECIALS.zap = { id: 'zap', name: 'Lightning gun', dmg: 2.4, rate: 5, pellets: 1, spread: 0, range: 300, speed: 0, pierce: 0, len: 16, gw: 6, ammo: 70, kind: 'zap' };
   var BOX_SPECIALS = ['flame', 'rocket', 'mini', 'ray', 'zap'];
+  // the Ghostbuster: green goo slows zombies, then they burst. Infinite ammo, overheats after 10s of fire, 25s cooldown
+  SPECIALS.ghost = { id: 'ghost', name: 'Ghostbuster', dmg: 0.6, rate: 14, pellets: 1, spread: 0.3, range: 235, speed: 300, pierce: 0, len: 17, gw: 9, ammo: 1, kind: 'goo', special: true };
   (function () {
     var k, d, w;
     for (k in SPECIALS) SPECIALS[k].special = true;
@@ -1365,9 +1367,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function defOf(ref) { return WEAPONS[ref.id] || SPECIALS[ref.id]; }
   function curRef(P) {
     if (P.sel === 3 && P.special) return P.special;
+    if (P.sel === 4 && P.ghost) return P.ghost;
     return P.slots[P.sel] || P.slots[P.lastSel] || P.slots[0];
   }
   function isSpecialActive(P) { return P.sel === 3 && !!P.special; }
+  function isGhost(P) { return P.sel === 4 && !!P.ghost; }
   function wstats(P, ref, base) {
     var d = defOf(ref), t = ref.tier || 1;
     return {
@@ -1379,9 +1383,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function setSel(P, n) {
     var old = curRef(P);
     if (old && old.reload > 0) old.reload = 0;
-    if (P.sel !== 3) P.lastSel = P.sel;
+    if (P.sel !== 3 && P.sel !== 4) P.lastSel = P.sel;
     P.sel = n;
-    if (n !== 3) P.lastSel = n;
+    if (n !== 3 && n !== 4) P.lastSel = n;
     P.fireCd = 0.12;
   }
 
@@ -1593,7 +1597,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var i, g, ti = tempIdx(P), any = false, owned = false;
     if (ti < 0) {
       for (i = 0; i < 3; i++) { g = P.slots[i]; if (!g) continue; if (g.id === 'glock') owned = true; if (hasAmmo(g)) any = true; }
-      if (owned || any || isSpecialActive(P)) return;
+      if (owned || any || isSpecialActive(P) || isGhost(P)) return;
       var slot = -1;
       for (i = 0; i < P.unlocked && i < 3; i++) if (!P.slots[i]) { slot = i; break; }
       P.stash = null;
@@ -1729,6 +1733,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var order = [], i;
     for (i = 0; i < P.unlocked; i++) if (P.slots[i]) order.push(i);
     if (P.special) order.push(3);
+    if (P.ghost && gbOn) order.push(4);
     if (order.length < 2) return;
     var k = order.indexOf(P.sel);
     setSel(P, order[(k + 1) % order.length]);
@@ -1967,7 +1972,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       bullets.push({
         x: mx, y: my, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
-        kind: d.kind || 'bullet', blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : 3)),
+        kind: d.kind || 'bullet', blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
         long: d.cls === 'rifle' || d.cls === 'sniper', explosive: expl && !d.kind
       });
     }
@@ -1981,8 +1986,17 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     else if (id === 'rocket') { snoise(0.2, 900, 0.1); stone(140, 50, 0.25, 'sawtooth', 0.06); }
     else if (shotN % 3 === 0) { snoise(0.05, id === 'flame' ? 3000 : 1800, 0.05); }
     if (id === 'flame') addFx(mx, my, 1, 90, 0.3, 4, '255,160,60');
+    if (id === 'ghost') { addFx(mx, my, 1, 70, 0.3, 4, '120,255,140'); if (shotN % 2 === 0) snoise(0.06, 700, 0.05); }
 
-    if (isSpecialActive(P)) {
+    if (isGhost(P)) {
+      var GH2 = P.ghost; GH2.idle = 0; GH2.heat += 1 / (st.rate * 10);
+      if (GH2.heat >= 1) {
+        GH2.heat = 1; GH2.cool = 25;
+        bannerTo(P, 'Overheated', 'Ghostbuster cools down for 25 seconds. Back to your other gun.', 2.4);
+        stone(180, 60, 0.5, 'sawtooth', 0.08);
+        var bk = P.lastSel; if (!(P.slots[bk] && bk < P.unlocked)) { bk = 0; } setSel(P, bk);
+      }
+    } else if (isSpecialActive(P)) {
       P.special.ammo--;
       if (P.special.ammo <= 0) {
         dropSpecial(P);
@@ -1993,6 +2007,24 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     }
   }
 
+  // a goo-covered zombie bursts: big damage to itself, goo splashes the zombies next to it so they burst too. Players are never hurt
+  function gooBurst(z) {
+    var j = zombies.indexOf(z), k, o, dd, R = 78;
+    if (j < 0) return;
+    var dmg = (z.gooDmg || 6) * 14 + z.maxhp * 0.4, owner = z.gooOwner;
+    for (k = 0; k < zombies.length; k++) {
+      o = zombies[k]; if (o === z) continue;
+      dd = Math.hypot(o.x - z.x, o.y - z.y);
+      if (dd < R * 1.15 + o.r) { o.gooT = Math.max(o.gooT || 0, 2.2); if (!(o.fuse > 0)) { o.fuse = 0.55; o.gooOwner = owner; o.gooDmg = z.gooDmg; } }
+    }
+    explode(z.x, z.y, R, dmg * 0.6, z, true, owner);
+    addFx(z.x, z.y, 26, 240, 0.55, 5, '90,255,130'); addFx(z.x, z.y, 10, 110, 0.4, 7, '210,255,220');
+    shakeAt(z.x, z.y, 4); snoise(0.18, 400, 0.1); stone(120, 45, 0.25, 'sine', 0.09);
+    ssplat(z.x, z.y, z.r * 1.6, 0.5);
+    z.fuse = 0; z.gooT = 0;
+    j = zombies.indexOf(z);
+    if (j >= 0) { z.hp -= dmg; z.flash = 0.1; if (z.hp <= 0) killZombie(j, owner); }
+  }
   function zapHit(z, dmg, owner) {
     var j = zombies.indexOf(z);
     if (j >= 0) damageZombie(j, { x: z.x, y: z.y, dx: 0, dy: 0, kind: 'zap', crit: false, dmg: dmg, owner: owner });
@@ -2036,6 +2068,14 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 
   function damageZombie(j, b) {
     var z = zombies[j];
+    if (b.kind === 'goo') {
+      z.hp -= b.dmg * 0.5; z.flash = 0.08;
+      z.gooT = 2.6; z.gooDmg = Math.max(z.gooDmg || 0, b.dmg); z.gooOwner = b.owner;
+      if (!(z.fuse > 0)) z.fuse = 1.1;
+      addFx(b.x, b.y, 3, 70, 0.3, 3, '120,255,140');
+      if (z.hp <= 0) killZombie(j, b.owner);
+      return;
+    }
     z.hp -= b.dmg; z.flash = 0.08;
     var kb = (b.kind === 'fire' ? 20 : 90) * (10 / z.r); z.vx += b.dx * kb; z.vy += b.dy * kb;
     addBlood(b.x, b.y, b.dx, b.dy, b.kind === 'fire' ? 1 : 3, 160);
@@ -2135,6 +2175,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (P.csnd > 0) P.csnd -= dt;
     if (P.inv > 0) P.inv -= dt;
     if (P.flash > 0) P.flash -= dt;
+    if (P.ghost) {
+      var GH = P.ghost; GH.idle = (GH.idle || 0) + dt;
+      if (GH.cool > 0) { GH.cool -= dt; if (GH.cool <= 0) { GH.cool = 0; GH.heat = 0; bannerTo(P, 'Ghostbuster cooled', 'Ready to fire again.', 1.6); } }
+      else if (GH.idle > 0.4 && GH.heat > 0) GH.heat = Math.max(0, GH.heat - dt * 0.15);
+    }
     if (P.down) { P.tgt = null; return; }
     // perk timers hold while a special weapon is out
     if (!isSpecialActive(P)) for (var pk in P.perkT) if (P.perkT[pk] > 0) P.perkT[pk] = Math.max(0, P.perkT[pk] - dt);
@@ -2155,7 +2200,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 
     // reload / ammo state for the active gun
     var canFire = true;
-    if (!isSpecialActive(P)) {
+    if (isGhost(P)) { if (P.ghost.cool > 0) canFire = false; }
+    else if (!isSpecialActive(P)) {
       var gd = st.d;
       if (ref.reload > 0) {
         ref.reload -= dt * (P.perkT.rf > 0 ? 2 : 1);
@@ -2247,6 +2293,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       if (navT <= 0) { navT = 0.3; navUpdate(); }
     }
     // zombies
+    var gooQ = [];
     for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
       if (DEV.on && DEV.zfreeze) { z.vx = z.vy = 0; continue; }
@@ -2311,6 +2358,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
           else if (pdist < 150) mv = 0.4;
         }
       }
+      if (z.gooT > 0) { z.gooT -= dt; mv *= z.boss ? 0.55 : 0.35; }
+      if (z.fuse > 0) { z.fuse -= dt; if (z.fuse <= 0) { z.fuse = 0; gooQ.push(z); } }
       var stopD = (bar || (navOn && z.nvOk && z.nvWay)) ? 0 : z.r + PR - 1;
       if (d > stopD || mv < 0) {
         z.x += Math.cos(ma + drift) * z.spd * lurch * mv * dt;
@@ -2341,6 +2390,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       }
       if (z.atk < -1) z.atk = -1;
     }
+    for (i = 0; i < gooQ.length; i++) gooBurst(gooQ[i]);
     for (i = 0; i < zombies.length; i++) {
       var a = zombies[i];
       for (j = i + 1; j < zombies.length; j++) {
@@ -2609,7 +2659,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 64';
+  var updMsg = '', VERSION = 'Version 65';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3300,12 +3350,17 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (hudCache.swapShow !== showSwap) { hudCache.swapShow = showSwap; swapBtn.hidden = !showSwap; swapGo.hidden = !showSwap; }
     if (showSwap) {
       var ref = curRef(me), d = defOf(ref), sub, cls = 'swap';
-      if (isSpecialActive(me)) { sub = me.special.ammo + ' / ' + me.special.max; cls += ' special'; }
+      if (isGhost(me)) {
+        var gh = me.ghost, hb = Math.round(gh.heat * 10), hs = '';
+        for (var hk = 0; hk < 10; hk++) hs += hk < hb ? '\u25ae' : '\u25af';
+        sub = gh.cool > 0 ? 'OVERHEATED ' + Math.ceil(gh.cool) + 's' : 'HEAT ' + hs; cls += gh.cool > 0 ? ' dry' : ' special';
+      }
+      else if (isSpecialActive(me)) { sub = me.special.ammo + ' / ' + me.special.max; cls += ' special'; }
       else if (ref.reload > 0) { sub = 'Reloading'; cls += ' warn'; }
       else if (ref.mag <= 0 && ref.res <= 0) { sub = 'No ammo'; cls += ' dry'; }
       else if (d.noRes) { sub = ref.mag + ' / ' + gunMag(d); cls += ' special'; }
       else { sub = ref.mag + ' | ' + (ref.res === Infinity ? '∞' : ref.res); if (ref.mag + ref.res <= d.mag * 0.4) cls += ' warn'; }
-      var rc = rarCol(d), html = '<span style="color:' + rc + '">' + d.name + '</span><small>' + sub + '</small>';
+      var rc = d.kind === 'goo' ? '#5dff8a' : rarCol(d), html = '<span style="color:' + rc + '">' + d.name + '</span><small>' + sub + '</small>';
       if (hudCache.swapHtml !== html) { hudCache.swapHtml = html; swapBtn.innerHTML = html; }
       if (hudCache.swapCls !== cls) { hudCache.swapCls = cls; swapBtn.className = cls; }
       var bc = cls.indexOf('dry') >= 0 ? '' : rc;
@@ -3543,12 +3598,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     }
     c.fillStyle = '#c9a88a';
     c.fillRect(2, -9, d.len - 2, 4); c.fillRect(2, 5, d.len - 2, 4);
-    c.fillStyle = d.kind === 'fire' ? '#4a2a1a' : (d.kind === 'rocket' ? '#2c3a2c' : '#17191c');
+    c.fillStyle = d.kind === 'fire' ? '#4a2a1a' : (d.kind === 'rocket' ? '#2c3a2c' : (d.kind === 'goo' ? '#1d4a2c' : '#17191c'));
     c.fillRect(8, -d.gw / 2, d.len + 2, d.gw);
     var sh = Math.max(2.4, d.gw * 0.5), sl = Math.max(4, d.len * 0.38);
     c.fillStyle = rarCol(d); c.fillRect(9, -sh / 2, sl, sh);
     c.fillStyle = tierCol(tr); c.fillRect(9 + sl + 1.5, -sh / 2, sl, sh);
     if (d.kind === 'fire') { c.fillStyle = '#d2692a'; c.fillRect(d.len + 6, -2, 4, 4); }
+    if (d.kind === 'goo') { c.fillStyle = '#78ff9a'; c.fillRect(d.len + 5, -3, 5, 6); c.fillStyle = '#2a2d30'; c.fillRect(2, -d.gw / 2 - 3, 7, d.gw + 6); }
     c.fillStyle = '#c9a88a';
     c.beginPath(); c.arc(1, 0, 6.5, 0, 6.283); c.fill();
     c.fillStyle = ar.head > 0 ? TIERCOL[ar.head] : '#2a211c';
@@ -3860,6 +3916,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       var q = zombies[i];
       if (q.x < cam.x - 30 || q.x > cam.x + vw + 30 || q.y < cam.y - 30 || q.y > cam.y + vh + 30) continue;
       var ca = Math.cos(q.ang), sa = Math.sin(q.ang), ex = q.x + ca * q.r * 0.55, ey = q.y + sa * q.r * 0.55, off = q.r * 0.26, er = q.r * 0.12 + 0.7;
+      var gl = net.mode === 'client' ? (q.goo || 0) : (q.gooT > 0 ? (q.fuse > 0 && q.fuse < 0.35 ? 2 : 1) : 0);
+      if (gl) {
+        var gp = gl === 2 ? 0.55 + 0.35 * Math.sin(time * 40) : 0.32 + 0.1 * Math.sin(time * 8 + q.seed);
+        ctx.fillStyle = 'rgba(80,255,120,' + gp.toFixed(2) + ')'; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * 1.15, 0, 6.283); ctx.fill();
+        if (gl === 2) { ctx.strokeStyle = 'rgba(210,255,220,0.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * 1.45, 0, 6.283); ctx.stroke(); }
+      }
       ctx.fillStyle = q.boss ? '#ff6a2a' : '#e8402e';
       ctx.beginPath(); ctx.arc(ex - sa * off, ey + ca * off, er, 0, 6.283); ctx.fill();
       ctx.beginPath(); ctx.arc(ex + sa * off, ey - ca * off, er, 0, 6.283); ctx.fill();
@@ -3885,6 +3947,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
         ctx.beginPath(); ctx.moveTo(b.x - b.dx * 22, b.y - b.dy * 22); ctx.lineTo(b.x, b.y); ctx.stroke();
         ctx.fillStyle = 'rgba(255,70,90,0.35)'; ctx.beginPath(); ctx.arc(b.x, b.y, 11, 0, 6.283); ctx.fill();
         ctx.fillStyle = '#ffd0c8'; ctx.beginPath(); ctx.arc(b.x, b.y, 4.5, 0, 6.283); ctx.fill();
+      } else if (b.kind === 'goo') {
+        var gf = Math.min(1, b.dist / b.max);
+        ctx.fillStyle = 'rgba(70,255,120,' + (0.35 * (1 - gf * 0.5)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(b.x, b.y, 9, 0, 6.283); ctx.fill();
+        ctx.fillStyle = '#5dff8a'; ctx.beginPath(); ctx.arc(b.x, b.y, 4.6, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(230,255,235,0.85)'; ctx.beginPath(); ctx.arc(b.x - 1.2, b.y - 1.2, 1.5, 0, 6.283); ctx.fill();
       } else if (b.kind === 'rocket') {
         ctx.strokeStyle = 'rgba(255,150,50,0.8)'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(b.x - b.dx * 14, b.y - b.dy * 14); ctx.lineTo(b.x, b.y); ctx.stroke();
@@ -4100,7 +4167,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     return {
       w: r1(P.wallet), kl: P.kills, up: P.upg, ar: [P.armor.head, P.armor.body, P.armor.legs], pt: P.perkT,
       sl: P.slots.map(function (g) { return g ? [g.id, g.tier, g.mag, g.res === Infinity ? -1 : g.res, r2(g.reload)] : 0; }),
-      un: P.unlocked, se: P.sel, sp: P.special ? [P.special.id, P.special.ammo, P.special.max] : 0,
+      gh: P.ghost ? [r2(P.ghost.heat), r1(P.ghost.cool)] : 0, un: P.unlocked, se: P.sel, sp: P.special ? [P.special.id, P.special.ammo, P.special.max] : 0,
       ca: P.cards.map(function (c) { return [c.id, c.bought ? 1 : 0]; }), pg: P.pendingGun || 0, bx: P.boxPrize || 0
     };
   }
@@ -4113,7 +4180,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     });
     o.G = [gbDone, gbOn ? 1 : 0];
     o.Z = zombies.map(function (z) {
-      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? 1 : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA)];
+      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? 1 : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA), z.gooT > 0 ? (z.fuse > 0 && z.fuse < 0.35 ? 2 : 1) : 0];
     });
     o.B = bullets.slice(0, 140).map(function (b) {
       return [BK.indexOf(b.kind), r1(b.x), r1(b.y), r2(b.dx), r2(b.dy), (b.crit ? 1 : 0) | (b.long ? 2 : 0) | (b.explosive ? 4 : 0), r2(Math.min(1, b.dist / b.max)), Math.round(b.speed)];
@@ -4267,7 +4334,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function applyMine(a) {
     me.wallet = a.w; me.kills = a.kl; me.upg = a.up; me.perkT = a.pt;
     me.slots = a.sl.map(function (r) { return r ? { id: r[0], tier: r[1], mag: r[2], res: r[3] < 0 ? Infinity : r[3], reload: r[4] } : null; });
-    me.unlocked = a.un; me.sel = a.se; if (a.se !== 3) me.lastSel = a.se;
+    me.unlocked = a.un; me.sel = a.se; if (a.se !== 3 && a.se !== 4) me.lastSel = a.se;
+    me.ghost = a.gh ? { id: 'ghost', tier: 1, heat: a.gh[0], cool: a.gh[1] } : null;
     me.special = a.sp ? { id: a.sp[0], ammo: a.sp[1], max: a.sp[2] } : null;
     me.cards = a.ca.map(function (r) { return { id: r[0], bought: !!r[1] }; });
     me.pendingGun = a.pg || null; me.boxPrize = a.bx || null;
@@ -4300,7 +4368,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       z = {
         id: r1_[0], type: TYPE_KEYS[r1_[1]], r: t.r, skin: t.skin, cloth: t.cloth, boss: !!t.boss, kind: t.kind || '', seed: (r1_[0] * 7.31) % 10,
         x: r0[2] + (r1_[2] - r0[2]) * a, y: r0[3] + (r1_[3] - r0[3]) * a, ang: angLerp(r0[4], r1_[4], a),
-        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, warn: r1_[8], breath: r1_[9], dashA: r1_[10]
+        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, warn: r1_[8], breath: r1_[9], dashA: r1_[10], goo: r1_[11] || 0
       };
       if (z.breath > 0 && z.kind === 'fire') pyroFx(z);
       zs.push(z);
@@ -4431,6 +4499,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     else if (a === 'bonusoff') bonusRoom = -1;
     else if (a === 'gbspawn') { for (i = 0; i < gbW.length; i++) if (gbSt[i] === 0) gbW[i] = 0; gbSync(Math.max(1, wave)); }
     else if (a === 'gbunlock') { if (gbW.length) { for (i = 0; i < 8; i++) { if (gbSt[i] !== 3) { gbSt[i] = 3; gbDone++; } } for (i = 0; i < players.length; i++) players[i].carry = -1; pickups = pickups.filter(function (q) { return q.kind !== 'item'; }); gbDone = 8; gbUnlock(); } }
+    else if (a === 'gbgun') { gbOn = true; for (i = 0; i < players.length; i++) if (!players[i].ghost) players[i].ghost = mkGhost(); setSel(P, 4); }
+    else if (a === 'gbcool') { for (i = 0; i < players.length; i++) if (players[i].ghost) { players[i].ghost.heat = 0; players[i].ghost.cool = 0; } }
     else if (a === 'gbreset') { gbInit(); pickups = pickups.filter(function (q) { return q.kind !== 'item'; }); for (i = 0; i < players.length; i++) { players[i].carry = -1; players[i].ghost = null; } }
     else if (a === 'doors') { if (DOORS.length) devDoor(true, v === 'open'); else DEV.msg = 'This map has no doors.'; }
     else if (a === 'tp') { if (mapId === 'haunted') { var cx = HH.cols[+v % 3] + HH.Rm / 2, cy = HH.cols[Math.floor(+v / 3)] + HH.Rm / 2; P.x = cx; P.y = cy; } else DEV.msg = 'Room teleport is Haunted House only.'; }
@@ -4472,7 +4542,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     h += '<h3>Map</h3><div class="r">' + b('Barriers full', 'bars', 'full') + b('Barriers broken', 'bars', 'broken') + b('Re-roll boxes', 'box') + b('Box here', 'boxhere') + b('Go to start', 'tpstart') + '</div>';
     if (mapId === 'haunted') {
       h += '<h3>Haunted House</h3><div class="r">' + b('Open all doors', 'doors', 'open') + b('Close all doors', 'doors', 'close') + b('Random bonus room', 'bonus', -1) + b('Bonus off', 'bonusoff') + '</div>';
-      h += '<h3>Ghostbuster quest</h3><div class="r">' + b('Spawn all relics', 'gbspawn') + b('Deliver all, unlock gun', 'gbunlock') + b('Reset quest', 'gbreset') + '</div><div class="m" style="color:#9c8f7e">Cauldron ' + gbDone + ' / 8 · relic waves ' + gbW.join(',') + '</div>';
+      h += '<h3>Ghostbuster quest</h3><div class="r">' + b('Spawn all relics', 'gbspawn') + b('Deliver all, unlock gun', 'gbunlock') + b('Give Ghostbuster now', 'gbgun') + b('Cool it down', 'gbcool') + b('Reset quest', 'gbreset') + '</div><div class="m" style="color:#9c8f7e">Cauldron ' + gbDone + ' / 8 · relic waves ' + gbW.join(',') + '</div>';
       h += '<div class="r" style="margin-top:6px">'; HH_NAMES.forEach(function (n, i) { h += b('Go: ' + n[0], 'tp', i); }); h += '</div>';
       h += '<div class="r" style="margin-top:6px">'; HH_NAMES.forEach(function (n, i) { h += b('Bonus: ' + n[0], 'bonus', i); }); h += '</div>';
     }
