@@ -2793,7 +2793,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 78';
+  var updMsg = '', VERSION = 'Version 79';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2870,6 +2870,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var el = $('nameIn');
     if (el) myName = cleanName(el.value);
     lockCheck();
+    savedLook = cleanLook(myLook, 0);
     try { localStorage.setItem('zs-name', myName); localStorage.setItem('zs-look', JSON.stringify(myLook)); } catch (e) {}
   }
   function startOffline(id) {
@@ -2881,7 +2882,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (state === 'play') recordOffline();
     netClose();
     net = { mode: 'off' }; state = 'ready'; localId = 0; roster = []; netStatus = '';
-    myLook = cleanLook(savedLook, Math.floor(Math.random() * LOOK_COLS.length));
+    myLook = cleanLook(myLook, 0);
   players = [newPlayer(0, 'You', myLook)]; me = players[0];
     zombies = []; bullets = []; coins = []; pickups = []; ebullets = []; boxes = []; fx = []; parts = [];
     shopOpen = false; shop.hidden = true; boxUI.hidden = true;
@@ -3858,7 +3859,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
         else if (hs === 2) { rr(-2.4, -45, 4.8, 11, 2); c.fill(); c.stroke(); }
         else { c.beginPath(); c.arc(0, -36.5, 8, Math.PI, 0); c.fill(); c.stroke(); c.fillRect(-8, -37, 16, 3); }
       }
-      if (front || side) {
+      if (!back && (front || side)) {
         var ex = side ? fx * 4.5 : 0;
         if (L.f !== 1) { c.fillStyle = '#14100d'; c.fillRect(-4 + ex * 0.8, -35, 2.2, 3); c.fillRect(2 + ex * 0.8, -35, 2.2, 3); }
         else { part(function () { rr(-6.5 + ex * 0.8, -36.5, 13, 4.2, 1.5); }, '#101418'); c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(-5 + ex * 0.8, -35.6, 3, 1); }
