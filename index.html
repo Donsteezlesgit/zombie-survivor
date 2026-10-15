@@ -482,7 +482,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.2, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -3183,7 +3183,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 119';
+  var updMsg = '', VERSION = 'Version 120';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4927,6 +4927,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     clearTimeout(joinTimer);
     try { if (pr) pr.destroy(); } catch (e) {}
   }
+  var pingMs = null, pingT = 0;
   function netSend(m) { try { if (myConn && myConn.open) myConn.send(m); } catch (e) {} }
   function sendTo(c, m) { try { if (c && c.open) c.send(m); } catch (e) {} }
 
@@ -4990,6 +4991,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } else if (m.k === 'cmd' && seat) {
       P = pById(seat.id);
       if (P && (m.c === 'swap' || m.c === 'shop' || m.c === 'box')) hostCmd(P, { c: m.c, a: String(m.a || ''), id: m.id });
+    } else if (m.k === 'png') { sendTo(c, { k: 'pong', t: m.t }); if (seat) seat.ping = Math.round(+m.p || 0);
     } else if (m.k === 'bye') hostLeave(c);
   }
   function hostLeave(c) {
@@ -5055,7 +5057,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       c = seats[i].conn; if (!c || !c.open || !c.seat) continue;
       any = true;
       if (now - c.lastMsg > 8000) { hostLeave(c); i--; continue; }
-      if (c.dataChannel && c.dataChannel.bufferedAmount > 200000) { minPos = Math.min(minPos, c.evPos); continue; }
+      if (c.dataChannel && c.dataChannel.bufferedAmount > TUNE.sendCap) { minPos = Math.min(minPos, c.evPos); continue; }
       if (!base) base = JSON.stringify(buildCommon());
       var P = pById(seats[i].id);
       ev = evq.slice(Math.max(0, c.evPos - evBase));
@@ -5108,6 +5110,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (typeof m === 'string') { try { m = JSON.parse(m); } catch (e) { return; } }
     if (!m || typeof m !== 'object') return;
     if (m.k === 'snap') onSnap(m);
+    else if (m.k === 'pong') { var pt = performance.now() - m.t; pingMs = pingMs === null ? pt : pingMs * 0.7 + pt * 0.3; }
     else if (m.k === 'stat') { if (m.s === 'rv') statAdd('rv', 1); }
     else if (m.k === 'welcome') {
       clearTimeout(joinTimer);
@@ -5154,7 +5157,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     lastSnapAt = performance.now();
     m.Zm = {}; for (i = 0; i < m.Z.length; i++) m.Zm[m.Z[i][0]] = m.Z[i];
     m.Pm = {}; for (i = 0; i < m.P.length; i++) m.Pm[m.P[i][0]] = m.P[i];
-    snaps.push(m); if (snaps.length > 4) snaps.shift();
+    snaps.push(m); if (snaps.length > 6) snaps.shift();
     introOn = !!m.in; bonusRoom = m.br === undefined ? -1 : m.br;
     if (m.G) { gbDone = m.G[0]; gbOn = !!m.G[1]; }
     wave = m.wv; phase = m.ph ? 'grace' : 'spawning'; graceT = m.gt; leftN = m.l; kills = m.kt; hostPausedC = !!m.hp;
@@ -5204,7 +5207,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // each frame on a client: walk, smooth everything else between the last two snapshots
   function clientTick(dt) {
     if (!snaps.length || !me) return;
-    var nowS = performance.now() / 1000, rt = nowS - clockOff - 0.1, i, s0 = snaps[0], s1 = snaps[snaps.length - 1], a = 1, r0, r1_, z, P, t;
+    var nowS = performance.now() / 1000, rt = nowS - clockOff - TUNE.interp, i, s0 = snaps[0], s1 = snaps[snaps.length - 1], a = 1, r0, r1_, z, P, t;
     for (i = 0; i < snaps.length; i++) if (snaps[i].ht >= rt) { s1 = snaps[i]; s0 = i > 0 ? snaps[i - 1] : snaps[i]; break; }
     if (s1.ht > s0.ht) a = Math.max(0, Math.min(1, (rt - s0.ht) / (s1.ht - s0.ht)));
     // own movement is predicted, then eased toward what the host says
@@ -5273,6 +5276,21 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var pausedTag = document.createElement('div'); pausedTag.hidden = true; pausedTag.textContent = net.mode === 'client' ? 'Paused by the host' : 'Paused';
   pausedTag.style.cssText = 'position:absolute;z-index:40;left:50%;top:calc(var(--insT,0px) + 64px);transform:translateX(-50%);background:rgba(10,8,7,.85);border:1px solid #d2692a;border-radius:4px;color:#ebe3d4;padding:10px 18px;font:700 18px/1 var(--face-ui);letter-spacing:.14em;text-transform:uppercase;pointer-events:none';
   game.appendChild(pausedTag);
+  var pingTag = document.createElement('div'); pingTag.hidden = true;
+  pingTag.style.cssText = 'position:absolute;z-index:39;left:max(10px,env(safe-area-inset-left));bottom:calc(var(--insB,0px) + 8px);font:700 12px/1 var(--face-ui);letter-spacing:.1em;color:#9b9086;pointer-events:none;text-transform:uppercase';
+  game.appendChild(pingTag);
+  function pingUpdate(dtm) {
+    var on = net.mode !== 'off' && state === 'play' && !screen, i, t = [], c;
+    pingTag.hidden = !on; if (!on) { if (net.mode === 'off') pingMs = null; return; }
+    if (net.mode === 'client') {
+      pingT -= dtm; if (pingT <= 0) { pingT = 2; netSend({ k: 'png', t: performance.now(), p: pingMs === null ? 0 : Math.round(pingMs) }); }
+      if (pingMs === null) { pingTag.textContent = 'Ping ...'; return; }
+      pingTag.textContent = 'Ping ' + Math.round(pingMs) + ' ms'; pingTag.style.color = pingMs > 160 ? '#e0675c' : (pingMs > 90 ? '#f2c14e' : '#9cb883');
+    } else {
+      for (i = 0; i < seats.length; i++) { c = seats[i]; if (c.conn && c.ping) t.push(Math.round(c.ping)); }
+      pingTag.textContent = t.length ? 'Ping ' + t.join(' / ') + ' ms' : 'Host'; pingTag.style.color = t.length && Math.max.apply(null, t) > 160 ? '#e0675c' : '#9b9086';
+    }
+  }
   function loop(now) {
     // 120Hz phones: run at 60 so the phone does half the drawing and stays cooler
     if (now - last < 14) { requestAnimationFrame(loop); return; }
@@ -5287,7 +5305,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (net.mode === 'client') {
       clientTick(dt);
       inT += dt;
-      if (state === 'play' && inT >= 0.033) {
+      if (state === 'play' && inT >= TUNE.inDt) {
         inT = 0;
         var ca = me.cone && me.aimAng !== null ? Math.round(me.aimAng * 100) : 0;
         var is = Math.round(me.inx * 100) + ',' + Math.round(me.iny * 100) + ',' + (me.cone ? 1 : 0) + ',' + ca;
@@ -5298,13 +5316,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       leftN = queue.length + zombies.length;
       if (net.mode === 'host') {
         snapT += dt;
-        if (snapT >= 0.05 && state !== 'ready') { snapT = 0; sendSnaps(); }
+        if (snapT >= TUNE.snapDt && state !== 'ready') { snapT = 0; sendSnaps(); }
       }
     }
     statTick(dt);
     tickVisuals(dt); tickAtmos(dt);
     render();
-    hudT -= dt;
+    hudT -= dt; pingUpdate(dt);
     if (hudT <= 0) { hudT = 0.1; updateHud(); }
     requestAnimationFrame(loop);
   }
