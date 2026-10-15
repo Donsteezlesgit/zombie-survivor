@@ -485,10 +485,10 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
-    l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
+    l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
     specStep: 10, specDmg: 0.6, specAmmo: 0.2,
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
-    throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 25, lateHp: 0.05, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
+    throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45
   };
   var TYPES = {
@@ -1786,6 +1786,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function graceFor(w) { return Math.round(Math.max(TUNE.graceMin, TUNE.grace - (TUNE.grace - TUNE.graceMin) * (w - 1) / (TUNE.graceWave - 1))); }
   function lateN(w) { return Math.max(0, w - TUNE.lateStart); }
+  function rampN(w) { return Math.max(0, w - (TUNE.rampFrom - 1)); }
   function perkFactor(w) { return w <= TUNE.lateStart ? 1 : Math.max(TUNE.perkFloor, 1 - (1 - TUNE.perkFloor) * (w - TUNE.lateStart) / (TUNE.perkFadeEnd - TUNE.lateStart)); }
   function specStage() { return Math.floor(wave / TUNE.specStep) + Math.max(0, Math.floor((wave - 20) / 5)); }
   function specMult() { return 1 + TUNE.specDmg * specStage(); }
@@ -1949,7 +1950,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       ok = true; for (i = 0; i < players.length; i++) if (Math.hypot(players[i].x - x, players[i].y - y) < 260) ok = false;
     }
     var hpS = 1 + TUNE.zHpScale * (wave - 1), dS = 1 + TUNE.zDmgScale * (wave - 1);
-    hpS *= 1 + TUNE.lateHp * lateN(wave); hpS *= 1 + TUNE.coopHp * (Math.max(1, players.length) - 1);
+    hpS *= 1 + TUNE.lateHp * rampN(wave); hpS *= 1 + TUNE.coopHp * (Math.max(1, players.length) - 1);
     zombies.push({
       id: zid++, x: x, y: y, type: type, r: t.r, hp: t.hp * hpS, maxhp: t.hp * hpS, boss: false, kind: '', ghost: true,
       spd: t.spd * (0.9 + Math.random() * 0.2), dmg: t.dmg * dS, cd: t.cd,
@@ -1967,9 +1968,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var t = TYPES[type], b = BLD[bi], jit = rnd(-POCKET_HW * 0.5, POCKET_HW * 0.5);
     var x = b.sx + b.tx * jit, y = b.sy + b.ty * jit;
     var hpS = 1 + TUNE.zHpScale * (wave - 1), dS = 1 + TUNE.zDmgScale * (wave - 1);
-    var es = 1 + TUNE.earlyStep * (Math.min(wave, TUNE.lateStart - 1) - 1); hpS *= es; dS *= es;
+    var es = 1 + TUNE.earlyStep * (Math.min(wave, TUNE.earlyCap) - 1); hpS *= es; dS *= es;
     if (wave >= TUNE.l25.wave) { hpS *= TUNE.l25.hp; dS *= TUNE.l25.dmg; }
-    hpS *= 1 + TUNE.lateHp * lateN(wave); dS *= 1 + TUNE.lateDmg * lateN(wave);
+    hpS *= 1 + TUNE.lateHp * rampN(wave); dS *= 1 + TUNE.lateDmg * lateN(wave);
     hpS *= 1 + TUNE.coopHp * (Math.max(1, players.length) - 1);
     zombies.push({
       id: zid++, x: x, y: y, type: type, r: t.r, hp: t.hp * hpS, maxhp: t.hp * hpS, boss: !!t.boss, kind: t.kind || '',
@@ -2274,7 +2275,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (Math.random() >= TUNE.boxSpecial) {
       for (i = 0; i < SHOP_GUNS.length; i++) {
         if (ownsGun(P, SHOP_GUNS[i])) continue;
-        ids.push(SHOP_GUNS[i]); ws.push(1 / (WEAPONS[SHOP_GUNS[i]].price + 150)); tot += ws[ws.length - 1];
+        ids.push(SHOP_GUNS[i]); ws.push(1 / Math.pow(WEAPONS[SHOP_GUNS[i]].price + 150, TUNE.boxPow)); tot += ws[ws.length - 1];
       }
       if (ids.length) {
         r = Math.random() * tot;
@@ -3136,8 +3137,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
-      h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
-      h += '<div class="swipe">' + (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic') + '</div>';
+      if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
+      h += '<div class="swipe">' + (net.mode !== 'off' ? 'Online games use two thumbs: left walks, right aims' : (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic')) + '</div>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
       h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
       h += '<button class="chip" data-a="backup" type="button">Backup progress</button>';
@@ -3182,7 +3183,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 116';
+  var updMsg = '', VERSION = 'Version 117';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3390,9 +3391,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   var GUIDE = [
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
-    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
-    { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
-    { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 25. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
+    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
+    { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
+    { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a special weapon crate, lots of coins, and often a power-up.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
     { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock.', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
@@ -3402,7 +3403,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Armour and healing', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Healing, Gear tab: Bandage (+25), Medkit (+60), Full restore. Health drops also appear from zombies, but rarely.'] },
     { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Bosses and tanks drop special crates. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
-    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
+    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
     { t: 'Ghost rounds', art: 'ghosts', b: ['Haunted House only. Every 10th wave (10, 20, 30...) is a ghost round.', 'No zombies spawn and the usual boss is skipped. Only small ghosts come.', 'Ghosts are fast and have lots of health, but barely hurt you.', 'They fly through walls and shut doors. Your bullets still stop at walls.', 'Each ghost drops a lot of coins when it dies.'] },
@@ -3426,7 +3427,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return h;
   }
   function introSlides() {
-    var ctl = ctrlMode === 'two' ? 'Left thumb walks, right thumb aims the yellow cone. Your gun fires by itself at zombies inside it.' : 'Drag anywhere to walk. Your gun aims and fires by itself.';
+    var ctl = ctrlEff() === 'two' ? 'Left thumb walks, right thumb aims the yellow cone. Your gun fires by itself at zombies inside it.' : 'Drag anywhere to walk. Your gun aims and fires by itself.';
     var list = [{ t: 'Controls', x: ctl, art: 'move' }];
     if (mapId === 'haunted') {
       list.push({ t: 'The Haunted House', art: 'haunted', b: ['Zombies climb in through four windows. Stand next to broken planks to rebuild them.', 'Rooms are joined by long corridors with a door at each end.', 'Mystery boxes only appear inside the house.'] });
@@ -3956,6 +3957,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   // ---------- input ----------
   var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
+  function ctrlEff() { return net.mode === 'off' ? ctrlMode : 'two'; }
   var ctrlMode = 'two';   // 'one' = one finger, auto aim. 'two' = left thumb walks, right thumb aims a cone
   try { if (localStorage.getItem('zs-ctrl') === 'one') ctrlMode = 'one'; } catch (e) {}
   function setCtrl(m) { ctrlMode = m; try { localStorage.setItem('zs-ctrl', m); } catch (e) {} joy.active = false; joy.x = joy.y = 0; aim.active = false; }
@@ -3964,7 +3966,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (state !== 'play' || blocked()) return;
     if (e.target.closest && e.target.closest('button,#mm,#bigMap')) return;
     var r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    if (ctrlMode === 'two' && x > r.width / 2) {
+    if (ctrlEff() === 'two' && x > r.width / 2) {
       if (aim.active && now() - aim.t < 400) return;
       aim.active = true; aim.t = now(); aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0;
     } else {
@@ -3997,7 +3999,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (t.target && t.target.closest && t.target.closest('button,#mm,#bigMap')) continue;
       x = t.clientX - r.left; y = t.clientY - r.top;
       if (y > r.height - DEAD) continue;
-      st = (ctrlMode === 'two' && x > r.width / 2) ? aim : joy;
+      st = (ctrlEff() === 'two' && x > r.width / 2) ? aim : joy;
       if (st.active) continue;
       st.active = true; st.tid = t.identifier; st.ox = x; st.oy = y; st.x = st.y = 0;
       e.preventDefault();
@@ -4068,7 +4070,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (keys.l) mx -= 1; if (keys.r) mx += 1; if (keys.u) my -= 1; if (keys.d) my += 1;
     }
     me.inx = mx; me.iny = my;
-    me.cone = ctrlMode === 'two';
+    me.cone = ctrlEff() === 'two';
     if (me.cone) { if (aim.ang !== null) me.aimAng = aim.ang; else if (me.aimAng === null) me.aimAng = me.ang; }
   }
 
