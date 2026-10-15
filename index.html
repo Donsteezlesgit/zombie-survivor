@@ -2021,7 +2021,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- save / continue (offline only, this device) ----------
   var SAVE_KEY = 'zs-save-v1';
   function saveGame() {
-    if (net.mode !== 'off' || !players[0]) return;
+    if (net.mode !== 'off' || !players[0] || (typeof DEV !== 'undefined' && DEV.test)) return;   // dev test games never overwrite the real save
     var P = players[0], cw = phase === 'spawning' ? wave - 1 : wave;   // last fully cleared wave
     if (cw < 1) return;
     try {
@@ -2045,6 +2045,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function loadGame() {
     var d = readSave(); if (!d) return false;
     net = { mode: 'off' }; localId = 0;
+    if (typeof DEV !== 'undefined') DEV.test = false;
     setMap(d.map || 'beginners');
     newGame([{ id: 0, name: myName || 'You', look: myLook }]);
     var P = players[0], k, i, g;
@@ -3061,7 +3062,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 107';
+  var updMsg = '', VERSION = 'Version 108';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3145,6 +3146,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function startOffline(id) {
     net = { mode: 'off' }; localId = 0;
+    if (typeof DEV !== 'undefined') DEV.test = false;
     setMap(id || 'beginners');
     newGame([{ id: 0, name: myName || 'You', look: myLook }]);
   }
@@ -5184,7 +5186,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
 
   // ---------- dev mode (password in Settings, then a DEV button floats over the game) ----------
-  var DEV = { on: false, open: false, god: false, kill1: false, zfreeze: false, inf: false, ts: 1, pause: true, msg: '' };
+  var DEV = { on: false, open: false, god: false, kill1: false, zfreeze: false, inf: false, ts: 1, pause: true, msg: '', test: false, su: { map: 'beginners', wave: 10, lvl: 'typical' } };
   try { DEV.on = localStorage.getItem('zs-dev') === '1'; } catch (e) {}
   lockCheck();
   var devBtn = document.createElement('button'); devBtn.id = 'devBtn'; devBtn.type = 'button'; devBtn.textContent = 'DEV'; devBtn.hidden = true;
@@ -5239,6 +5241,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'killall') { while (zombies.length) killZombie(zombies.length - 1, P.id); }
     else if (a === 'clearwave') { queue = []; while (zombies.length) killZombie(zombies.length - 1, P.id); }
     else if (a === 'nextwave') { zombies = []; queue = []; if (phase === 'grace') graceT = 0.01; else startWave(wave + 1); }
+    else if (a === 'suwave') { DEV.su.wave = +v; }
+    else if (a === 'setup') { devSetup(); return; }
     else if (a === 'gotowave') { var n = Math.max(1, Math.min(999, parseInt(($('devWave') || {}).value, 10) || 1)); zombies = []; coins = []; pickups = []; startWave(n); showScreenSafe(); }
     else if (a === 'spawn') devSpawn(v, 1);
     else if (a === 'spawn10') devSpawn(v, 10);
@@ -5279,10 +5283,106 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function showScreenSafe() { if (screen === 'intro') showScreen(''); }
   function hurtPlayerForce(P) { P.hp = 0; downPlayer(P); }
   function downAll() { for (var i = 0; i < players.length; i++) if (!players[i].down) hurtPlayerForce(players[i]); }
+
+  // ---------- dev test setup: start a fresh solo game on any map at any wave with a typical loadout ----------
+  // Coins a solo player would have earned by clearing waves 1..v, using the same mix and coin maths as the real game.
+  function devWaveYield(v) {
+    var n = 6 + 4 * (v - 1), sc = (1 + TUNE.coinWave * (v - 1)) * (v >= TUNE.l25.wave ? TUNE.l25.coin : 1) * (1 + TUNE.lateCoin * lateN(v)), coinsSum = 0, cnt = 0;
+    if (mapId === 'haunted' && v > 0 && v % 10 === 0) {
+      var gn = Math.min(14, 6 + Math.floor(v / 5));
+      return { coins: gn * TYPES.ghost.coins * sc, zombies: gn };
+    }
+    var tankP = v >= 5 ? Math.min(0.2, 0.04 * (v - 4)) : 0;
+    var armP = v >= TUNE.lateStart ? Math.min(0.22, 0.03 * (v - TUNE.lateStart + 1)) : 0;
+    var runP = v >= 3 ? Math.min(0.35, 0.08 * (v - 2)) : 0;
+    var walkP = 1 - tankP - armP - runP;
+    coinsSum = n * (walkP * TYPES.walker.coins + runP * TYPES.runner.coins + tankP * TYPES.tank.coins + armP * TYPES.armoured.coins) * sc;
+    cnt = n;
+    if (v % 5 === 0) { var nb = 1 + Math.floor(v / 15); coinsSum += nb * TYPES.boss.coins * sc; cnt += nb; }
+    return { coins: coinsSum, zombies: cnt };
+  }
+  function devCoinsBefore(w) { var v, c = 0, z = 0, y; for (v = 1; v < w; v++) { y = devWaveYield(v); c += y.coins; z += y.zombies; } return { coins: c, zombies: Math.round(z) }; }
+  var DEV_LEVELS = { glock: { name: 'Starter Glock only', f: 0 }, light: { name: 'Light (behind the curve)', f: 0.5 }, typical: { name: 'Typical', f: 0.85 }, strong: { name: 'Strong (ahead of the curve)', f: 1.5 } };
+  // Spends a coin budget the way a player roughly would: slots, guns, Mk levels, upgrade cards, armour. Uses the real shop prices.
+  function devLoadout(P, B) {
+    var i, k, p, id, cost, prog, sum = [];
+    if (B >= 200) { P.unlocked = 2; B -= SLOT_COST[1]; }
+    if (B >= 800) { P.unlocked = 3; B -= SLOT_COST[2]; }
+    // early on nearly everything goes into the first real gun; later the spend spreads across guns, Mk levels, upgrade cards and armour
+    var early = B < 300, gunB = B * (early ? 1 : 0.55), tierB = early ? 0 : B * 0.1, upB = early ? 0 : B * 0.2, armB = early ? 0 : B * 0.15, used = {};
+    P.slots = [null, null, null];
+    for (i = 0; i < P.unlocked; i++) {
+      var best = null, bestAny = null, fallback = null, cap = gunB;
+      for (k = 0; k < SHOP_GUNS.length; k++) {
+        var w = WEAPONS[SHOP_GUNS[k]];
+        if (w.price > cap || ownsGun(P, w.id)) continue;
+        if (i === 0 && (w.cls === 'sniper' || w.cls === 'shotgun')) { fallback = w; continue; }   // main gun is a rifle, SMG, LMG or pistol; snipers and shotguns come second
+        bestAny = w; if (!used[w.cls]) best = w;
+      }
+      var pick = best || bestAny || fallback;
+      if (pick) { P.slots[i] = makeGun(pick.id); used[pick.cls] = 1; gunB -= pick.price; }
+      else if (i === 0) P.slots[0] = makeGun('glock');
+    }
+    if (!P.slots[0]) P.slots[0] = makeGun('glock');
+    P.sel = 0; P.lastSel = 0; P.special = null;
+    var order = [0, 0, 1, 0, 1, 2];
+    do {
+      prog = false;
+      for (i = 0; i < order.length; i++) {
+        var g = P.slots[order[i]]; if (!g || g.tier >= TUNE.maxTier) continue;
+        cost = gunUpCost(g); if (cost <= tierB) { tierB -= cost; g.tier++; prog = true; }
+      }
+    } while (prog);
+    var uids = ['dmg', 'rate', 'hp', 'spd', 'cval', 'crit', 'rest', 'mag'];
+    do {
+      prog = false;
+      for (i = 0; i < uids.length; i++) { id = uids[i]; cost = upgCost(P, id); if (cost <= upB) { upB -= cost; P.upg[id]++; prog = true; } }
+    } while (prog);
+    var parts = ['body', 'head', 'legs'];
+    do {
+      prog = false;
+      for (i = 0; i < parts.length; i++) { p = parts[i]; var t = P.armor[p]; if (t < 4 && ARM[p].cost[t] <= armB) { armB -= ARM[p].cost[t]; P.armor[p] = t + 1; prog = true; } }
+    } while (prog);
+    P.wallet = Math.round(gunB + tierB + upB + armB);
+    P.hp = maxHpNow(P);
+    for (i = 0; i < 3; i++) if (P.slots[i]) sum.push(WEAPONS[P.slots[i].id].name + ' Mk ' + (P.slots[i].tier));
+    var ups = 0; for (k in P.upg) ups += P.upg[k];
+    return sum.join(', ') + ' · ' + ups + ' upgrade levels · armour H' + P.armor.head + ' B' + P.armor.body + ' L' + P.armor.legs + ' · ' + P.wallet + ' coins left';
+  }
+  function devSetup() {
+    if (net.mode !== 'off') { DEV.msg = 'Test setup works offline only. Leave the online game first.'; devRender(); return; }
+    var map = ($('devSuMap') || {}).value || DEV.su.map, lvl = ($('devSuLvl') || {}).value || DEV.su.lvl;
+    var n = Math.max(1, Math.min(999, parseInt(($('devSuWave') || {}).value, 10) || DEV.su.wave || 1));
+    if (!DEV_LEVELS[lvl]) lvl = 'typical';
+    DEV.su = { map: map, wave: n, lvl: lvl };
+    startOffline(map);
+    DEV.test = true;
+    var P = players[0], y = devCoinsBefore(n), summary = devLoadout(P, y.coins * DEV_LEVELS[lvl].f);
+    P.kills = y.zombies; kills = y.zombies;
+    rollCards(P);
+    introOn = false; state = 'play'; showScreen('');
+    wave = n - 1; phase = 'grace'; graceT = 12;
+    showBanner('Test: wave ' + n, mapDef(map).name + ' · ' + DEV_LEVELS[lvl].name, 3);
+    DEV.msg = 'Test game on ' + mapDef(map).name + ', wave ' + n + ' next in 12s. ' + summary + '. Dev test games never save.';
+    DEV.open = true; devPanel.hidden = false; devUpdateBtn(); devRender();
+  }
+  devPanel.addEventListener('change', function (e) {
+    var id = e.target && e.target.id;
+    if (id === 'devSuMap') DEV.su.map = e.target.value; else if (id === 'devSuLvl') DEV.su.lvl = e.target.value;
+    else if (id === 'devSuWave') DEV.su.wave = Math.max(1, Math.min(999, parseInt(e.target.value, 10) || 1));
+  });
   function devRender() {
     var h = '<div class="top"><b style="font-size:16px;color:#78e0a0">DEV MODE</b><button data-d="close" type="button">Close</button></div>';
     function t(name, key, on) { return '<button data-d="' + key + '" class="' + (on ? 'on' : '') + '" type="button">' + name + '</button>'; }
     function b(name, a, v) { return '<button data-d="' + a + '"' + (v !== undefined ? ' data-v="' + v + '"' : '') + ' type="button">' + name + '</button>'; }
+    h += '<h3>Test setup</h3><div class="r"><select id="devSuMap">';
+    MAPS.forEach(function (mp) { h += '<option value="' + mp.id + '"' + (DEV.su.map === mp.id ? ' selected' : '') + '>' + esc(mp.name) + '</option>'; });
+    h += '</select><input id="devSuWave" type="number" min="1" max="999" value="' + DEV.su.wave + '" inputmode="numeric"></div>';
+    h += '<div class="r" style="margin-top:6px">';
+    [5, 10, 15, 20, 25, 30, 40, 50].forEach(function (x) { h += '<button data-d="suwave" data-v="' + x + '" class="' + (DEV.su.wave === x ? 'on' : '') + '" type="button">' + x + '</button>'; });
+    h += '</div><div class="r" style="margin-top:6px"><select id="devSuLvl">';
+    Object.keys(DEV_LEVELS).forEach(function (k) { h += '<option value="' + k + '"' + (DEV.su.lvl === k ? ' selected' : '') + '>' + DEV_LEVELS[k].name + '</option>'; });
+    h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + '</div><div class="m" style="color:#9c8f7e">Fresh solo game on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
     h += '<h3>Switches</h3><div class="r">' + t('God mode', 'god', DEV.god) + t('Instakill', 'kill1', DEV.kill1) + t('Freeze zombies', 'zfreeze', DEV.zfreeze) + t('Infinite ammo', 'inf', DEV.inf) + t('Pause while open', 'pause', DEV.pause) + '</div>';
     h += '<h3>Game speed</h3><div class="r">';
     [0.25, 0.5, 1, 2].forEach(function (x) { h += '<button data-d="ts" data-v="' + x + '" class="' + (DEV.ts === x ? 'on' : '') + '" type="button">' + x + 'x</button>'; });
