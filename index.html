@@ -468,7 +468,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // ---------- storage (optional) ----------
-  var mapCtx = 'offline', hostMap = 'beginners', mapsOpen = 1;
+  var settingsFrom = 'main', mapCtx = 'offline', hostMap = 'beginners', mapsOpen = 1;
   var offWave = 0, offKills = 0, mapRec = {};
   try { offWave = parseInt(localStorage.getItem('zs-off-wave') || localStorage.getItem('zs-best-wave') || '0', 10) || 0; offKills = parseInt(localStorage.getItem('zs-off-kills') || '0', 10) || 0; } catch (e) {}
   try { mapRec = JSON.parse(localStorage.getItem('zs-maprec') || '{}') || {}; } catch (e) { mapRec = {}; }
@@ -2329,6 +2329,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       h += '<p>Wave <b>' + wave + '</b> · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : 'The game keeps running while this is open.') + '</p>';
       h += '<button class="go" data-a="resume" type="button">Resume</button>';
       h += '<button class="go alt" data-a="help" type="button">How to play</button>';
+      h += '<button class="go alt" data-a="settings" type="button">Settings</button>';
       h += '<button class="go alt" data-a="leave" type="button">' + (net.mode === 'off' ? 'Quit to menu' : 'Leave game') + '</button>';
       h += '<button class="chip" data-a="mute" type="button">' + (muted ? 'Sound off' : 'Sound on') + '</button>';
     } else if (screen === 'over') {
@@ -2356,7 +2357,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       h += '<button class="chip" data-a="backup" type="button">Backup progress</button>';
       h += '<button class="chip" data-a="diag" type="button">Screen info</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
-      h += '<button class="go" data-a="back" data-to="main" type="button">Back</button>';
+      h += '<button class="go" data-a="back" data-to="' + settingsFrom + '" type="button">Back</button>';
     } else if (screen === 'backup') {
       h += '<h1>Backup</h1><p>Copy this code and keep it safe. After re-adding the app, paste it here and tap Restore.</p>';
       h += '<textarea class="bk" id="bkText" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off">' + backupCode() + '</textarea>';
@@ -2379,7 +2380,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 51';
+  var updMsg = '', VERSION = 'Version 52';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2511,7 +2512,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       game.style.height = ''; game.style.bottom = ''; setTimeout(fit, 50); setTimeout(fillDiag, 200);
     }
     else if (a === 'diag') { showScreen('diag'); fillDiag(); }
-    else if (a === 'settings') { updMsg = ''; showScreen('settings'); }
+    else if (a === 'settings') { updMsg = ''; if (screen === 'main' || screen === 'pause') settingsFrom = screen; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
     else if (a === 'guide') { helpFrom = screen; helpIdx = 0; showScreen('guide'); }
