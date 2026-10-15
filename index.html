@@ -2709,7 +2709,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 72';
+  var updMsg = '', VERSION = 'Version 73';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3960,12 +3960,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
     function lab(t, tx, ty, col, sz) { c.font = '700 ' + (sz || fs) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.85)'; var hw = c.measureText(t).width / 2 + 2; tx = Math.max(hw, Math.min(S - hw, tx)); c.strokeText(t, tx, ty); c.fillStyle = col || '#ebe3d4'; c.fillText(t, tx, ty); }
     if (mapId === 'haunted') {
-      for (i = 0; i < HH_NAMES.length; i++) {
-        x = (HH.cols[i % 3] + HH.Rm / 2) * k;
-        lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), x, (HH.cols[Math.floor(i / 3)] + 30) * k, '#cdbfa8');
-      }
       if (bonusRoom >= 0) { var br = bonusRect(); c.strokeStyle = '#ffd25a'; c.lineWidth = 2; c.strokeRect(br.x * k, br.y * k, br.w * k, br.h * k); lab('BONUS', (br.x + br.w / 2) * k, (br.y + br.h / 2 + 40) * k, '#ffd25a'); }
     }
+    function labR(t, tx, ty, col) { c.textAlign = 'left'; c.font = '700 ' + fs + 'px sans-serif'; var w = c.measureText(t).width; if (tx + w > S - 2) { c.textAlign = 'right'; tx -= 16; } c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.85)'; c.strokeText(t, tx, ty); c.fillStyle = col; c.fillText(t, tx, ty); c.textAlign = 'center'; }
     for (i = 0; i < DOORS.length; i++) { o = DOORS[i]; c.fillStyle = o.open ? '#78e0a0' : '#c9a24a'; c.fillRect(o.x * k, o.y * k, Math.max(2, o.w * k), Math.max(2, o.h * k)); }
     for (i = 0; i < BLD.length; i++) {
       o = BLD[i]; x = o.sx * k; y = o.sy * k;
@@ -3973,15 +3970,15 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       lab(bigDir(o)[0] + (o.win ? ' win ' : ' spawn ') + o.bar.planks + '/' + o.bar.max, x, y + (o.ny > 0.5 ? 16 : o.ny < -0.5 ? -16 : 16), '#ff9a8a');
     }
     for (i = 0; i < boxes.length; i++) {
-      x = boxes[i].x * k; y = boxes[i].y * k; c.fillStyle = '#f2c14e'; c.fillRect(x - 5, y - 5, 10, 10); lab('Box', x, y - 11, '#f2c14e');
+      x = boxes[i].x * k; y = boxes[i].y * k; c.fillStyle = '#f2c14e'; c.fillRect(x - 5, y - 5, 10, 10); labR('Box', x + 8, y, '#f2c14e');
     }
     for (i = 0; i < pickups.length; i++) {
       o = pickups[i]; x = o.x * k; y = o.y * k;
-      if (o.kind === 'item') { c.fillStyle = GB_COLS[o.id]; c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x + 5, y); c.lineTo(x, y + 6); c.lineTo(x - 5, y); c.closePath(); c.fill(); lab(GB_NAMES[o.id], x, y + 12, GB_COLS[o.id]); }
+      if (o.kind === 'item') { c.fillStyle = GB_COLS[o.id]; c.beginPath(); c.moveTo(x, y - 6); c.lineTo(x + 5, y); c.lineTo(x, y + 6); c.lineTo(x - 5, y); c.closePath(); c.fill(); labR(GB_NAMES[o.id], x + 8, y, GB_COLS[o.id]); }
       else { c.fillStyle = o.kind === 'special' ? '#b46bff' : o.kind === 'health' ? '#ff5a6a' : o.kind === 'ammo' ? '#78e0a0' : '#5ac8ff'; c.beginPath(); c.arc(x, y, 3.2, 0, 6.283); c.fill(); }
     }
     if (mapId === 'haunted' && !gbOn) {
-      x = GB_CAULDRON.x * k; y = GB_CAULDRON.y * k; c.strokeStyle = '#3ad870'; c.lineWidth = 2.4; c.beginPath(); c.arc(x, y, 8, 0, 6.283); c.stroke(); lab('Cauldron', x, y + 15, '#3ad870');
+      x = GB_CAULDRON.x * k; y = GB_CAULDRON.y * k; c.strokeStyle = '#3ad870'; c.lineWidth = 2.4; c.beginPath(); c.arc(x, y, 8, 0, 6.283); c.stroke(); labR('Cauldron', x + 11, y, '#3ad870');
     }
     for (i = 0; i < zombies.length; i++) {
       o = zombies[i]; x = o.x * k; y = o.y * k; d = o.boss ? 3.6 : 2.2;
@@ -3990,10 +3987,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     for (i = 0; i < players.length; i++) {
       o = players[i]; x = o.x * k; y = o.y * k; c.globalAlpha = o.down ? 0.5 : 1;
       c.fillStyle = o === me ? '#ebe3d4' : LOOK_COLS[o.look.c]; c.beginPath(); c.arc(x, y, o === me ? 5 : 4, 0, 6.283); c.fill();
-      if (o === me) { c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke(); lab('You', x, y - 12, '#ebe3d4'); }
+      if (o === me) { c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke(); labR('You', x + 8, y - 9, '#ebe3d4'); }
       else lab(o.name || 'Player', x, y - 11, LOOK_COLS[o.look.c]);
       c.globalAlpha = 1;
     }
+    if (mapId === 'haunted') for (i = 0; i < HH_NAMES.length; i++) lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), (HH.cols[i % 3] + HH.Rm / 2) * k, (HH.cols[Math.floor(i / 3)] + HH.Rm / 2) * k, '#e6d9c0', fs + 1);
   }
 
   function render() {
