@@ -1503,7 +1503,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.fillStyle=col;pts.forEach(p=>{c.beginPath();c.arc(p[0],p[1],p[2],0,6.283);c.fill()});c.lineWidth=2}
   function hbumps(c,list,col){c.strokeStyle=HOUT;c.lineWidth=4;list.forEach(p=>{c.beginPath();c.arc(p[0],p[1],p[2],0,6.283);c.stroke()});c.fillStyle=col;list.forEach(p=>{c.beginPath();c.arc(p[0],p[1],p[2],0,6.283);c.fill()});c.lineWidth=2}
   function hcurls(c,list,col){c.strokeStyle=col;c.lineWidth=1.1;list.forEach(p=>{c.beginPath();c.arc(p[0],p[1],1.5,0.4,4.4);c.stroke()});c.strokeStyle=HOUT;c.lineWidth=2}
-  function hear(c,x,y,skin){c.lineWidth=1.3;c.beginPath();c.ellipse(x,y,1.1,1.7,0,0,6.283);c.fillStyle=shade(skin,-18);c.fill();c.stroke();c.lineWidth=2}
+  function hear() {}   // ears removed (kept as a no-op)
   function hbackMass(c,hair,fn,cx){cx=cx||0;var rc=cx?8.9:9.9;c.strokeStyle=HOUT;c.lineWidth=4;fn();c.stroke();c.beginPath();c.arc(cx,-.4,rc,0,6.283);c.stroke();c.fillStyle=hair;fn();c.fill();c.beginPath();c.arc(cx,-.4,rc,0,6.283);c.fill();c.lineWidth=2}
   function hairBack(c,hs,view,hair){
     var d=shade(hair,-34),L=shade(hair,30);c.strokeStyle=HOUT;c.lineWidth=2;
@@ -3058,7 +3058,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 104';
+  var updMsg = '', VERSION = 'Version 105';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
