@@ -1551,7 +1551,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (!unSnap || DEV.on) return;
     var seen = {}, nm;
     for (var k in UNLOCKS) if (!unSnap[k] && STATS[UNLOCKS[k].s] >= UNLOCKS[k].n) {
-      nm = unName(k).replace(/^Colour: /, 'Top colour: ');
+      nm = unName(k).replace(/^Shirt: /, 'Shirt: ');
       if (/^(Hat colour|Pack colour|Pants): /.test(nm)) nm = nm.split(': ')[1] + ' (hat, pack, pants)';   // one entry per colour, it unlocks for hat, pack and pants
       if (seen[nm]) continue; seen[nm] = 1;
       var kv = +k.split(':')[1], ks = k.split(':')[0];
@@ -1560,7 +1560,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     unSnap = null;
   }
   function lockCheck() { var ch = false, k; for (k in myLook) if (myLook[k] && !isUnlocked(k, myLook[k])) { myLook[k] = 0; ch = true; } return ch; }
-  var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Colour', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
+  var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Shirt', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
   var meTab = 0, mePrev = null, meSel = null, meAng = 0.25, meGridReset = false;
   function meTiles() {
     var t = ME_TABS[meTab], out = [], i;
@@ -2961,7 +2961,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 98';
+  var updMsg = '', VERSION = 'Version 99';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
