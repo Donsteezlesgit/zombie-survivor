@@ -566,7 +566,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var BEG_LAMPS = [];
   function begLamps() {
     var L = [], n = 0, y, x, i;
-    function lamp(px, py, dx, dy, big) { n++; L.push({ x: px, y: py, dx: dx, dy: dy, big: big ? 1 : 0, off: (!big && n % 50 === 17) ? 1 : 0 }); }
+    function lamp(px, py, dx, dy, big) { n++; L.push({ x: px, y: py, dx: dx, dy: dy, big: big ? 1 : 0, off: (!big && n % 10 === 4) ? 1 : 0 }); }
     var ys = [260, 400, 540, 960, 1100, 1240], ys2 = [330, 470, 610, 890, 1030, 1170];
     for (i = 0; i < 6; i++) { lamp(690, ys[i], 1, 0); lamp(810, ys2[i], -1, 0); lamp(ys[i], 683, 0, 1); lamp(ys2[i], 817, 0, -1); }
     [260, 400, 540, 830, 970, 1110].forEach(function (v) { lamp(v, 435, 0, 1); });
@@ -2891,7 +2891,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 87';
+  var updMsg = '', VERSION = 'Version 88';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
