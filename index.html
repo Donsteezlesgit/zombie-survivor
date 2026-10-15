@@ -1533,6 +1533,28 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ['h:1', 'k', 100, 'Get 100 kills in total', 'kills'], ['h:2', 'bwb', 8, 'Reach wave 8 on Beginners Ground', 'wave'], ['h:3', 'gp', 30, 'Get 30 pistol kills in one game', 'pistol kills'],
     ['k:1', 'gm', 10, 'Play 10 games', 'games']].forEach(function (u) { UNLOCKS[u[0]] = { s: u[1], n: u[2], t: u[3], u: u[4] }; });
   function isUnlocked(slot, v) { var u = UNLOCKS[slot + ':' + v]; return !u || DEV.on || STATS[u.s] >= u.n; }
+  // what this game unlocked: snapshot at the start, compare at the end
+  var unSnap = null, newUn = [];
+  function unTake() { unSnap = {}; for (var k in UNLOCKS) unSnap[k] = STATS[UNLOCKS[k].s] >= UNLOCKS[k].n; newUn = []; }
+  function unName(k) {
+    var sl = k.split(':')[0], v = +k.split(':')[1], i;
+    if (sl === 'n') return 'Extra: Team scarf';
+    if (sl === 'a') return 'Extra: Ghost glow';
+    for (i = 0; i < ME_TABS.length; i++) if (ME_TABS[i][0] === sl && ME_TABS[i][2]) return ME_TABS[i][1] + ': ' + ME_TABS[i][2][v];
+    return k;
+  }
+  function unDiff() {
+    newUn = [];
+    if (!unSnap || DEV.on) return;
+    var seen = {}, nm;
+    for (var k in UNLOCKS) if (!unSnap[k] && STATS[UNLOCKS[k].s] >= UNLOCKS[k].n) {
+      nm = unName(k);
+      if (/^(Hat colour|Pack colour|Pants): /.test(nm)) nm = 'Colour: ' + nm.split(': ')[1];   // one entry per colour, it unlocks for hat, pack and pants
+      if (seen[nm]) continue; seen[nm] = 1;
+      newUn.push({ n: nm, t: UNLOCKS[k].t });
+    }
+    unSnap = null;
+  }
   function lockCheck() { var ch = false, k; for (k in myLook) if (myLook[k] && !isUnlocked(k, myLook[k])) { myLook[k] = 0; ch = true; } return ch; }
   var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Colour', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
   var meTab = 0, mePrev = null, meSel = null, meAng = 0.25, meGridReset = false;
@@ -2092,9 +2114,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function gameOver() {
     if (state !== 'play') return;
+    statTick(0);
     state = 'over'; joy.active = false; joy.x = joy.y = 0;
     if (players.length > 1) statAdd('cg', 1);
-    statFlush();
+    statFlush(); unDiff();
     recordOffline();
     if (net.mode === 'off') clearSave();
     overBest = wave > bestWave && !DEV.on;
@@ -2875,6 +2898,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         for (i = 0; i < players.length; i++) h += '<div class="rrow"><i class="dot" style="background:' + LOOK_COLS[players[i].look.c] + '"></i><span>' + esc(players[i].name) + '</span><small>' + players[i].kills + ' kills</small></div>';
         h += '</div>';
       } else h += '<p><b>' + (me ? me.kills : 0) + '</b> kills.</p>';
+      if (newUn.length) {
+        h += '<div class="roster"><div class="rrow"><b>Unlocked this game</b></div>';
+        for (i = 0; i < newUn.length && i < 8; i++) h += '<div class="rrow"><span>' + esc(newUn[i].n) + '</span><small>' + esc(newUn[i].t) + '</small></div>';
+        if (newUn.length > 8) h += '<div class="rrow"><small>+' + (newUn.length - 8) + ' more in Customise</small></div>';
+        h += '</div>';
+      }
       if (net.mode === 'client') h += '<p>Waiting for the host to start again.</p><button class="chip" data-a="leave" type="button">Leave</button>';
       else {
         h += '<button class="go" data-a="again" type="button">' + (net.mode === 'host' ? 'Play again' : 'Try again') + '</button>';
@@ -2929,7 +2958,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 94';
+  var updMsg = '', VERSION = 'Version 95';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4926,9 +4955,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < BLD.length && i < m.R.length; i++) { BLD[i].bar.planks = m.R[i][0]; BLD[i].bar.rt = m.R[i][1]; }
     if (m.D) for (i = 0; i < DOORS.length && i < m.D.length; i++) { DOORS[i].open = !!m.D[i][0]; DOORS[i].prog = m.D[i][1]; DOORS[i].zt = m.D[i][2]; }
     if (m.st === 2 && state === 'play') {
+      statTick(0);
       state = 'over'; joy.active = false; joy.x = joy.y = 0;
       if (players.length > 1) statAdd('cg', 1);
-      statFlush();
+      statFlush(); unDiff();
       overBest = wave > bestWave && !DEV.on;
       if (overBest) { bestWave = wave; try { localStorage.setItem('zs-best-wave', String(wave)); } catch (e) {} }
       showScreen('over');
@@ -4999,7 +5029,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function statMax(k, v) { if (DEV.on || !(k in STATS) || v <= STATS[k]) return; STATS[k] = v; stDirty = true; }
   function statTick(dt) {
     if (state !== 'play' || !me) { stK = 0; stW = 0; stIn = false; return; }
-    if (!stIn) { stIn = true; statAdd('gm', 1); for (var gq in gk) gk[gq] = 0; }
+    if (!stIn) { stIn = true; unTake(); statAdd('gm', 1); for (var gq in gk) gk[gq] = 0; }
     var kk = me.kills | 0;
     if (kk < stK) stK = 0;
     if (kk > stK) { statAdd('k', kk - stK); statAdd(mapId === 'haunted' ? 'kh' : 'kb', kk - stK); stK = kk; }
