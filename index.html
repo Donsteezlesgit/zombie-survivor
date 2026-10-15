@@ -2961,7 +2961,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 99';
+  var updMsg = '', VERSION = 'Version 100';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4115,7 +4115,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         part(function () { c.beginPath(); c.arc(0, -38, 9, Math.PI, 0); c.closePath(); }, TIERCOL[ar.head]); part(function () { rr(-12, -39, 24, 3, 1.5); }, shade(TIERCOL[ar.head], -25));
       } else {
         var hcol = L.hk ? ACOLS[L.hk - 1][1] : null;
-        hatc = hcol || '#4a4d52';
+        hatc = hcol || '#6b7352';
         if (hat === 1) { part(function () { c.beginPath(); c.arc(0, -37, 8.6, Math.PI, 0); c.closePath(); }, hatc); if (!back) part(function () { rr(fx >= 0 ? 2 : -14, -37, 12, 3.2, 1.5); }, shade(hatc, -20)); }
         else if (hat === 2) { part(function () { c.beginPath(); c.arc(0, -38, 8.8, Math.PI, 0); c.closePath(); }, hcol || '#e8e1d2'); c.fillStyle = hcol ? shade(hcol, -45) : '#d6452e'; c.fillRect(-8.8, -39, 17.6, 2.4); part(function () { c.beginPath(); c.arc(0, -46.5, 2.6, 0, 6.283); }, hcol || '#e8e1d2'); }
         else if (hat === 3) { c.fillStyle = hcol || '#d6452e'; c.fillRect(-8, -39, 16, 3.6); c.strokeStyle = OUT; c.lineWidth = 1.6; c.strokeRect(-8, -39, 16, 3.6); if (!front) c.fillRect(sx > 0 ? -12 : 7, -38, 5, 6); }
