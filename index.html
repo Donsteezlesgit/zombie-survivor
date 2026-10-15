@@ -1524,7 +1524,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function isUnlocked(slot, v) { var u = UNLOCKS[slot + ':' + v]; return !u || DEV.on || STATS[u.s] >= u.n; }
   function lockCheck() { var ch = false, k; for (k in myLook) if (myLook[k] && !isUnlocked(k, myLook[k])) { myLook[k] = 0; ch = true; } return ch; }
   var ME_TABS = [['sk', 'Skin', SKIN_NAMES], ['hs', 'Hair', HAIRS], ['hc', 'Hair colour', HAIRC_NAMES], ['c', 'Colour', LOOK_NAMES], ['h', 'Hat', HATS], ['hk', 'Hat colour', HK_NAMES], ['f', 'Face', FACES], ['j', 'Jacket', JACKS], ['k', 'Back', BACKS], ['kc', 'Pack colour', KC_NAMES], ['pn', 'Pants', PANTS_NAMES], ['x', 'Extras', null]];
-  var meTab = 0, mePrev = null, meSel = null, meAng = 0.25;
+  var meTab = 0, mePrev = null, meSel = null, meAng = 0.25, meGridReset = false;
   function meTiles() {
     var t = ME_TABS[meTab], out = [], i;
     if (t[0] === 'x') return [{ s: 'n', v: 1, name: 'Team scarf', tog: true }, { s: 'a', v: 1, name: 'Ghost glow', tog: true }];
@@ -2904,11 +2904,20 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } else if (screen === 'lost') {
       h += '<h1>Connection lost</h1><p>' + esc(netStatus || 'The host went away.') + '</p><button class="go" data-a="leave" type="button">Menu</button>';
     }
+    // keep scrolled lists where they were when a tap redraws the screen (otherwise they jump back to the start)
+    var sn = null, ks = ['.mtabs', '.mgrid'], ke, kj;
+    if (ov._scr === screen) { sn = { o: [ov.scrollLeft, ov.scrollTop] }; for (kj = 0; kj < ks.length; kj++) { ke = ov.querySelector(ks[kj]); sn[ks[kj]] = ke ? [ke.scrollLeft, ke.scrollTop] : null; } }
     ov.innerHTML = h;
+    ov._scr = screen;
+    if (sn) {
+      ov.scrollLeft = sn.o[0]; ov.scrollTop = sn.o[1];
+      for (kj = 0; kj < ks.length; kj++) { ke = ov.querySelector(ks[kj]); if (ke && sn[ks[kj]]) { ke.scrollLeft = sn[ks[kj]][0]; ke.scrollTop = (ks[kj] === '.mgrid' && meGridReset) ? 0 : sn[ks[kj]][1]; } }
+    }
+    meGridReset = false;
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 92';
+  var updMsg = '', VERSION = 'Version 93';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3019,7 +3028,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'cont') { net = { mode: 'off' }; if (loadGame()) { showScreen(''); tone(300, 200, 0.08, 'square', 0.05); } }
     else if (a === 'online') { setupNext = 'online'; showScreen('me'); }
     else if (a === 'me') { setupNext = 'main'; showScreen('me'); }
-    else if (a === 'mtab') { saveMe(); meTab = +b.dataset.i; mePrev = null; meSel = null; renderScreen(); }
+    else if (a === 'mtab') { saveMe(); meTab = +b.dataset.i; mePrev = null; meSel = null; meGridReset = true; renderScreen(); }
     else if (a === 'mturn') { meAng += (+b.dataset.d || 1) * Math.PI / 4; drawPreview(); }
     else if (a === 'opt') {
       saveMe(); var os = b.dataset.s, ov2 = +b.dataset.v, gr = ov.querySelector('.mgrid'), st = gr ? gr.scrollTop : 0;
