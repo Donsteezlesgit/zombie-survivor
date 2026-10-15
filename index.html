@@ -2793,7 +2793,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 82';
+  var updMsg = '', VERSION = 'Version 83';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3740,7 +3740,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function zHeadY(z) { var s = ZSZ[z.type] || ZSZ.walker; return zFeet(z) - (z.boss ? 52 : z.type === 'ghost' ? 46 : 46) * s[1]; }
   function zRR(c, x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
   function drawGhost(z, c) {
-    var sc = ZSZ.ghost[0], fl = z.flash > 0, bob = Math.sin(time * 4 + z.seed) * 2.2, ang = z.ang, fx = Math.cos(ang), back = Math.sin(ang) * 0.8 < -0.25, sx = fx >= 0 ? 1 : -1, side = Math.abs(fx) > 0.45, e;
+    var sc = ZSZ.ghost[0], fl = z.flash > 0, bob = Math.sin(time * 4 + z.seed) * 2.2, ang = z.ang, fx = Math.cos(ang), back = false, sx = fx >= 0 ? 1 : -1, side = Math.abs(fx) > 0.45, e;
     c.save(); c.translate(z.x, z.y + z.r * 0.9 + 6 + bob); c.scale(sc, sc);
     c.globalAlpha = fl ? 1 : 0.72 + 0.12 * Math.sin(time * 6 + z.seed);
     var g = c.createRadialGradient(0, -22, 3, 0, -22, 30); g.addColorStop(0, 'rgba(191,230,255,0.33)'); g.addColorStop(1, 'rgba(191,230,255,0)');
@@ -3782,6 +3782,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     part(function () { zRR(c, -7 * bulk, -10 + Math.max(0, sg * 0.3), lw, 11, 2); }, pn); part(function () { zRR(c, bulk, -10 + Math.max(0, -sg * 0.3), lw, 11, 2); }, pn);
     c.fillStyle = OUT; c.fillRect(-7 * bulk, -2, lw, 3); c.fillRect(bulk, -2, lw, 3);
     if (side) arm(sx * 2, -24, sx * (17 + bulk * 2), -21 + sg * 0.2, aw);
+    if (back && !side) { arm(-sdw + 1, -24, -sdw - 4, -36 - Math.max(0, sg) * 0.3, aw); arm(sdw - 1, -24, sdw + 4, -36 - Math.max(0, -sg) * 0.3, aw); }
     part(function () { zRR(c, -sdw, -28, sdw * 2, 19, 5); }, cl);
     c.fillStyle = shade(cl, -35); c.fillRect(-sdw + 2, -21, 5, 3); c.fillRect(sdw - 7, -16, 4, 4);
     c.fillStyle = OUT; c.beginPath(); c.moveTo(-sdw, -9); for (var q = 0; q <= 4; q++) c.lineTo(-sdw + q * sdw * 0.5, -9 + (q % 2 ? 3 : 0)); c.lineTo(sdw, -9); c.closePath(); c.fill();
@@ -3797,12 +3798,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (k === 'bossFire') { var fw = 0.8 * Math.sin(time * 9 + z.seed); c.fillStyle = '#ff9a2a'; c.strokeStyle = OUT; c.lineWidth = 1.6; [-5, 0, 5].forEach(function (qq, i) { c.beginPath(); c.moveTo(hx + qq - 3, hy - 8); c.quadraticCurveTo(hx + qq, hy - 20 - (i % 2) * 4 - fw * 2, hx + qq + 3, hy - 8); c.fill(); c.stroke(); }); }
     if (k === 'walker' || k === 'runner' || k === 'bossRun') {
       c.fillStyle = hair; c.strokeStyle = OUT; c.lineWidth = 1.6;
-      if (back) { c.beginPath(); c.arc(hx, hy - 2, hr, 0, 6.283); c.fill(); c.stroke(); }
-      else { c.beginPath(); c.arc(hx, hy - 3.5, hr, Math.PI * 1.05, Math.PI * 1.95); c.lineTo(hx + hr * 0.5, hy - 6); c.lineTo(hx - hr * 0.2, hy - 4); c.lineTo(hx - hr * 0.7, hy - 6); c.closePath(); c.fill(); c.stroke(); }
+      { c.beginPath(); c.arc(hx, hy - 3.5, hr, Math.PI * 1.05, Math.PI * 1.95); c.lineTo(hx + hr * 0.5, hy - 6); c.lineTo(hx - hr * 0.2, hy - 4); c.lineTo(hx - hr * 0.7, hy - 6); c.closePath(); c.fill(); c.stroke(); }
     }
-    if (k === 'armoured') { part(function () { c.beginPath(); c.arc(hx, hy - 3, hr + 1.3, Math.PI, 0); c.lineTo(hx + hr + 1.3, hy + 1); c.lineTo(hx - hr - 1.3, hy + 1); c.closePath(); }, '#4a545a'); if (!back) { c.fillStyle = '#0d1114'; c.fillRect(hx - 6 + (side ? sx * 2 : 0), hy - 4, 12, 3); } }
+    if (k === 'armoured') { part(function () { c.beginPath(); c.arc(hx, hy - 3, hr + 1.3, Math.PI, 0); c.lineTo(hx + hr + 1.3, hy + 1); c.lineTo(hx - hr - 1.3, hy + 1); c.closePath(); }, '#4a545a'); { c.fillStyle = '#0d1114'; c.fillRect(hx - 6 + (side ? sx * 2 : 0), hy - 4, 12, 3); } }
     if (k === 'boss') { c.fillStyle = '#d8cfb8'; c.strokeStyle = OUT; c.lineWidth = 1.4; [-6, 0, 6].forEach(function (qq) { c.beginPath(); c.moveTo(hx + qq - 2, hy - 8); c.lineTo(hx + qq, hy - 15); c.lineTo(hx + qq + 2, hy - 8); c.fill(); c.stroke(); }); }
-    if (!back) {
+    {
       var ex = side ? sx * 4 : 0, ec = (k === 'boss' || k === 'bossRun' || k === 'bossFire') ? '#ff3a2a' : '#ffe45a';
       if (k !== 'armoured') {
         c.fillStyle = ec; c.fillRect(hx - 4.2 + ex * 0.8, hy - 4.5, 2.4, 2.4); c.fillRect(hx + 1.8 + ex * 0.8, hy - 4.5, 2.4, 2.4);
@@ -3810,9 +3810,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       } else { c.fillStyle = '#ff5a3a'; c.fillRect(hx - 3 + (side ? sx * 2 : 0), hy - 3.6, 2, 1.6); c.fillRect(hx + 1 + (side ? sx * 2 : 0), hy - 3.6, 2, 1.6); }
     }
     if (front && !side) { arm(-sdw + 1, -24, -sdw - 2.5, -9 + Math.max(0, sg) * 0.2, aw); arm(sdw - 1, -24, sdw + 2.5, -9 + Math.max(0, -sg) * 0.2, aw); }
-    if (back && !side) { arm(-sdw + 1, -24, -sdw - 1, -13, aw); arm(sdw - 1, -24, sdw + 1, -13, aw); }
     if (side) arm(-sx, -22, sx * (16 + bulk * 2), -17 - sg * 0.2, aw);
-    if (k === 'bossThrow' && !back) { part(function () { c.beginPath(); c.arc(side ? sx * 13 : 9, -17, 5.2, 0, 6.283); }, '#8a8478'); c.fillStyle = '#5a564c'; c.fillRect((side ? sx * 13 : 9) - 1.5, -19, 3, 2); }
+    if (k === 'bossThrow') { part(function () { c.beginPath(); c.arc(side ? sx * 13 : 9, -17, 5.2, 0, 6.283); }, '#8a8478'); c.fillStyle = '#5a564c'; c.fillRect((side ? sx * 13 : 9) - 1.5, -19, 3, 2); }
     c.restore();
   }
 
