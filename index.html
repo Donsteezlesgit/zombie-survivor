@@ -2154,7 +2154,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     } else if (phase === 'grace') {
       // short breather between waves; opening the shop pauses this countdown when playing offline
       graceT -= dt;
-      if (graceT <= 0) startWave(wave + 1);
+      // the briefing stays up until you start, if you are still reading it when the countdown ends
+      if (graceT <= 0) { if (introOn && screen === 'intro') graceT = 0; else startWave(wave + 1); }
     }
 
     if (navOn) {
@@ -2506,7 +2507,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 57';
+  var updMsg = '', VERSION = 'Version 58';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2731,7 +2732,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     return list;
   }
   function introHtml() {
-    return helpHtml(introSlides(), mapDef(mapId).name, '<div class="swipe">Swipe for tips · wave 1 starts in <b id="introT">' + Math.max(0, Math.ceil(graceT)) + '</b>s</div><button class="go" data-a="introdone" type="button">Got it</button>');
+    return helpHtml(introSlides(), mapDef(mapId).name, '<div class="swipe" id="introMsg">Swipe for tips · wave 1 starts in <b id="introT">' + Math.max(0, Math.ceil(graceT)) + '</b>s</div><button class="go" data-a="introdone" id="introBtn" type="button">Got it</button>');
   }
   function helpDots() {
     var s = $('slides'), d = $('dots'); if (!s || !d) return;
@@ -3018,7 +3019,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     setText(hptxt, 'hp', me.down ? 'DOWN' : hp + ' / ' + mx);
     var w = Math.max(0, Math.min(100, (me.hp / maxHpNow(me)) * 100)).toFixed(1) + '%';
     if (hudCache.hpw !== w) { hudCache.hpw = w; hpfill.style.width = w; }
-    if (screen === 'intro') { if (!introOn) showScreen(''); else { var te = $('introT'); if (te) te.textContent = Math.max(0, Math.ceil(graceT)); } }
+    if (screen === 'intro') { if (!introOn) showScreen(''); else {
+      var te = $('introT'), im = $('introMsg'), ib = $('introBtn');
+      if (graceT <= 0.05) {
+        if (im) im.textContent = net.mode === 'client' ? 'Waiting for the host to start. Keep reading.' : 'Keep reading. Start when you are ready.';
+        if (ib) ib.textContent = net.mode === 'client' ? 'Close' : 'Start game';
+      } else if (te) te.textContent = Math.max(0, Math.ceil(graceT));
+    } }
     setText(waveN, 'wave', 'Wave ' + Math.max(1, wave));
     setText(leftEl, 'left', phase === 'grace' ? (introOn ? 'Starts ' : 'Next wave ') + Math.max(0, Math.ceil(graceT)) + 's' : leftN + ' left');
     var anyArm = me.armor.head + me.armor.body + me.armor.legs > 0;
