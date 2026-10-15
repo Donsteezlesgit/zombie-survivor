@@ -369,7 +369,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.2, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.4, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.33, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -408,15 +408,15 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   }
   //   id         name              class     price  dmg   rate  pel spread range speed pierce mag  res  reload
   G('glock',   'Glock 17',        'pistol',     0, 1.0,  3.6,  1, 0.03, 400,  640, 0,  15,  Infinity, 1.1);
-  G('m1911',   'Colt M1911',      'pistol',    90, 1.6,  2.8,  1, 0.03, 410,  660, 0,   7,  56, 1.2);
-  G('uzi',     'Uzi',             'smg',      130, 0.5, 12,    1, 0.20, 360,  680, 0,  32, 192, 1.6);
-  G('python',  'Colt Python',     'pistol',   190, 3.2,  1.7,  1, 0.02, 430,  760, 1,   6,  48, 2.0);
-  G('rem870',  'Remington 870',   'shotgun',  210, 1.0,  0.9,  8, 0.65, 240,  560, 0,   6,  36, 2.6);
-  G('mp5',     'HK MP5',          'smg',      280, 0.65, 11,   1, 0.12, 380,  700, 0,  30, 180, 1.6);
-  G('ak47',    'AK-47',           'rifle',    420, 1.5,  7.5,  1, 0.08, 420,  800, 0,  30, 180, 2.0);
-  G('deagle',  'Desert Eagle',    'pistol',   440, 5.0,  1.9,  1, 0.03, 440,  820, 1,   8,  56, 1.9);
-  G('p90',     'FN P90',          'smg',      640, 0.75, 14,   1, 0.11, 390,  720, 0,  50, 250, 1.8);
-  G('m4a1',    'Colt M4A1',       'rifle',    680, 1.4,  9.5,  1, 0.05, 440,  850, 0,  30, 210, 1.7);
+  G('m1911',   'Colt M1911',      'pistol',    90, 1.6,  2.8,  1, 0.03, 410,  660, 0,   7, 112, 1.2);
+  G('uzi',     'Uzi',             'smg',      130, 0.5, 12,    1, 0.20, 360,  680, 0,  32, 384, 1.6);
+  G('python',  'Colt Python',     'pistol',   190, 3.2,  1.7,  1, 0.02, 430,  760, 1,   6,  96, 2.0);
+  G('rem870',  'Remington 870',   'shotgun',  210, 1.0,  0.9,  8, 0.65, 240,  560, 0,   6,  72, 2.6);
+  G('mp5',     'HK MP5',          'smg',      280, 0.65, 11,   1, 0.12, 380,  700, 0,  30, 360, 1.6);
+  G('ak47',    'AK-47',           'rifle',    420, 1.5,  7.5,  1, 0.08, 420,  800, 0,  30, 360, 2.0);
+  G('deagle',  'Desert Eagle',    'pistol',   440, 5.0,  1.9,  1, 0.03, 440,  820, 1,   8, 112, 1.9);
+  G('p90',     'FN P90',          'smg',      640, 0.75, 14,   1, 0.11, 390,  720, 0,  50, 500, 1.8);
+  G('m4a1',    'Colt M4A1',       'rifle',    680, 1.4,  9.5,  1, 0.05, 440,  850, 0,  30, 420, 1.7);
   G('benelli', 'Benelli M4',      'shotgun',  720, 1.0,  2.0,  8, 0.60, 250,  580, 0,   8,  48, 2.4);
   G('svd',     'Dragunov SVD',    'sniper',   780, 5.5,  2.0,  1, 0.01, 500, 1000, 2,  10,  70, 2.4);
   G('scarh',   'FN SCAR-H',       'rifle',   1050, 2.5,  6.5,  1, 0.04, 460,  900, 1,  20, 140, 2.0);
@@ -1921,7 +1921,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     P.fireCd = 0.12;
   }
 
-  // end of wave: mags topped up, reserve gets a third of its max (+7% per Ammo restock level)
+  // end of wave: mags topped up, reserve gets 60% of its max (+7% per Ammo restock level)
   function waveRefillGun(g, P) {
     var d = WEAPONS[g.id]; if (!d || d.res === Infinity) { refillGun(g); return; }
     var f = Math.min(1, TUNE.waveRefill + TUNE.restockStep * ((P.upg && P.upg.rest) || 0));
@@ -3061,7 +3061,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 106';
+  var updMsg = '', VERSION = 'Version 107';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
