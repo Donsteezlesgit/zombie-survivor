@@ -3183,7 +3183,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 117';
+  var updMsg = '', VERSION = 'Version 118';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5333,7 +5333,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       devBtn.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
     });
   })();
-  function devUpdateBtn() { devBtn.textContent = DEV.open ? 'CLOSE DEV' : 'DEV'; devBtn.className = DEV.open ? 'x' : ''; devBtn.hidden = !(DEV.on && !screen); if (!DEV.on || screen) { DEV.open = false; devPanel.hidden = true; } }
+  function devUpdateBtn() { devBtn.textContent = DEV.open ? 'CLOSE DEV' : 'DEV'; devBtn.className = DEV.open ? 'x' : ''; devBtn.hidden = !(DEV.on && !screen && net.mode !== 'client'); if (!DEV.on || screen || net.mode === 'client') { DEV.open = false; devPanel.hidden = true; } }
   function devDoor(all, open) { for (var i = 0; i < DOORS.length; i++) { DOORS[i].open = open; DOORS[i].prog = 0; } if (typeof navInit === 'function' && MAPCFG.nav === true) navInit(); }
   function devPos(P, d) { var a = P.aimAng !== null && P.aimAng !== undefined ? P.aimAng : P.ang; return { x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d }; }
   function devSpawn(type, n) {
@@ -5475,20 +5475,27 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return sum.join(', ') + ' · ' + ups + ' upgrade levels · armour H' + P.armor.head + ' B' + P.armor.body + ' L' + P.armor.legs + ' · ' + P.wallet + ' coins left';
   }
   function devSetup() {
-    if (net.mode !== 'off') { DEV.msg = 'Test setup works offline only. Leave the online game first.'; devRender(); return; }
+    if (net.mode === 'client') { DEV.msg = 'Test setup only works for the host or offline.'; devRender(); return; }
+    var online = net.mode === 'host';
+    if (online && !hostCode) { DEV.msg = 'Open your room first, then start the test.'; devRender(); return; }
     var map = ($('devSuMap') || {}).value || DEV.su.map, lvl = ($('devSuLvl') || {}).value || DEV.su.lvl;
     var n = Math.max(1, Math.min(999, parseInt(($('devSuWave') || {}).value, 10) || DEV.su.wave || 1));
     if (!DEV_LEVELS[lvl]) lvl = 'typical';
     DEV.su = { map: map, wave: n, lvl: lvl };
-    startOffline(map);
+    if (online) { hostMap = map; hostStart(); } else startOffline(map);
     DEV.test = true;
-    var P = players[0], y = devCoinsBefore(n), summary = devLoadout(P, y.coins * DEV_LEVELS[lvl].f);
-    P.kills = y.zombies; kills = y.zombies;
-    rollCards(P);
+    var np = players.length, share = np > 1 ? (1 + TUNE.coopCount * (np - 1)) * (1 + TUNE.coopCoin * (np - 1)) / np : 1;
+    var y = devCoinsBefore(n), summary = '', i, pk = Math.round(y.zombies * (np > 1 ? (1 + TUNE.coopCount * (np - 1)) / np : 1));
+    kills = 0;
+    for (i = 0; i < np; i++) {
+      summary = devLoadout(players[i], y.coins * DEV_LEVELS[lvl].f * share);
+      players[i].kills = pk; kills += pk;
+      rollCards(players[i]);
+    }
     introOn = false; state = 'play'; showScreen('');
     wave = n - 1; phase = 'grace'; graceT = 12;
-    showBanner('Test: wave ' + n, mapDef(map).name + ' · ' + DEV_LEVELS[lvl].name, 3);
-    DEV.msg = 'Test game on ' + mapDef(map).name + ', wave ' + n + ' next in 12s. ' + summary + '. Dev test games never save.';
+    showBanner('Test: wave ' + n, mapDef(map).name + ' \u00b7 ' + DEV_LEVELS[lvl].name, 3);
+    DEV.msg = 'Test game on ' + mapDef(map).name + ', wave ' + n + ' next in 12s' + (online ? ', ' + np + ' player' + (np > 1 ? 's' : '') + ' in the room' : '') + '. ' + summary + '. Dev test games never save.';
     DEV.open = true; devPanel.hidden = false; devUpdateBtn(); devRender();
   }
   devPanel.addEventListener('change', function (e) {
@@ -5507,7 +5514,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     [5, 10, 15, 20, 25, 30, 40, 50].forEach(function (x) { h += '<button data-d="suwave" data-v="' + x + '" class="' + (DEV.su.wave === x ? 'on' : '') + '" type="button">' + x + '</button>'; });
     h += '</div><div class="r" style="margin-top:6px"><select id="devSuLvl">';
     Object.keys(DEV_LEVELS).forEach(function (k) { h += '<option value="' + k + '"' + (DEV.su.lvl === k ? ' selected' : '') + '>' + DEV_LEVELS[k].name + '</option>'; });
-    h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + '</div><div class="m" style="color:#9c8f7e">Fresh solo game on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
+    h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + '</div><div class="m" style="color:#9c8f7e">Fresh game (solo, or your whole room when hosting) on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
     h += '<h3>Switches</h3><div class="r">' + t('God mode', 'god', DEV.god) + t('Instakill', 'kill1', DEV.kill1) + t('Freeze zombies', 'zfreeze', DEV.zfreeze) + t('Infinite ammo', 'inf', DEV.inf) + t('Pause while open', 'pause', DEV.pause) + '</div>';
     h += '<h3>Game speed</h3><div class="r">';
     [0.25, 0.5, 1, 2].forEach(function (x) { h += '<button data-d="ts" data-v="' + x + '" class="' + (DEV.ts === x ? 'on' : '') + '" type="button">' + x + 'x</button>'; });
