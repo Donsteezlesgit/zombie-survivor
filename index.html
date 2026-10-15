@@ -2659,7 +2659,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 66';
+  var updMsg = '', VERSION = 'Version 67';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3091,9 +3091,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       txt('zombies climb in · rebuild the planks', 125, 142, 13, '#9c8f7e');
     } else if (k === 'relic') {
       var rcols = ['#d9b46a', '#b07ad8', '#5fe08a', '#d6dae0', '#8a7af0', '#f0ecd8', '#f2e08a', '#78c8ff'];
-      for (i = 0; i < 8; i++) { var rx2 = 22 + i * 34; c.fillStyle = rcols[i] + '44'; c.beginPath(); c.arc(rx2, 22, 12, 0, 6.283); c.fill(); c.fillStyle = rcols[i]; c.beginPath(); c.moveTo(rx2, 14); c.lineTo(rx2 + 6, 22); c.lineTo(rx2, 30); c.lineTo(rx2 - 6, 22); c.closePath(); c.fill(); }
-      txt('8 relics', 140, 44, 14, '#9c8f7e');
-      pl(60, 100, 0, 0, 1.9); c.fillStyle = '#78c8ff55'; c.beginPath(); c.arc(60, 72, 11, 0, 6.283); c.fill(); c.fillStyle = '#78c8ff'; c.beginPath(); c.moveTo(60, 65); c.lineTo(66, 72); c.lineTo(60, 79); c.lineTo(54, 72); c.closePath(); c.fill();
+      for (i = 0; i < 8; i++) { var rx2 = 20 + i * 34; c.fillStyle = rcols[i] + '44'; c.beginPath(); c.arc(rx2, 22, 15, 0, 6.283); c.fill(); drawRelic(c, i, rx2, 22, 0.95); }
+      txt('8 relics', 140, 48, 14, '#9c8f7e');
+      pl(60, 100, 0, 0, 1.9); c.fillStyle = '#78c8ff55'; c.beginPath(); c.arc(60, 72, 15, 0, 6.283); c.fill(); drawRelic(c, 7, 60, 72, 0.95);
       c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(96, 100); c.lineTo(168, 100); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#d2692a'; c.beginPath(); c.moveTo(178, 100); c.lineTo(164, 93); c.lineTo(164, 107); c.fill();
       c.fillStyle = 'rgba(80,255,140,0.2)'; c.beginPath(); c.arc(220, 100, 38, 0, 6.283); c.fill();
@@ -3651,6 +3651,74 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   // which gun a player is holding as seen from this screen
   function viewRef(P) { return (net.mode === 'client' && P !== me && P.cur) ? P.cur : curRef(P); }
 
+
+  // each relic drawn as the thing it is (about 24 units across at scale 1), centred on x, y
+  function drawRelic(c, id, x, y, sc) {
+    c.save(); c.translate(x, y); c.scale(sc, sc); c.lineJoin = 'round'; c.lineCap = 'round';
+    var g;
+    if (id === 0) {            // ancient tome
+      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(-9, -9, 20, 22);
+      c.fillStyle = '#5a2e1c'; c.fillRect(-10, -12, 20, 24); c.strokeStyle = '#2a140c'; c.lineWidth = 1.5; c.strokeRect(-10, -12, 20, 24);
+      c.fillStyle = '#8a4a2a'; c.fillRect(-10, -12, 4, 24);
+      c.fillStyle = '#d9b46a'; c.fillRect(-10, -12, 4, 3); c.fillRect(-10, 9, 4, 3); c.fillRect(6, -12, 4, 3); c.fillRect(6, 9, 4, 3);
+      c.strokeStyle = '#d9b46a'; c.lineWidth = 1.4; c.beginPath(); c.arc(1, 0, 5, 0, 6.283); c.stroke();
+      c.beginPath(); c.moveTo(1, -3); c.lineTo(3.5, 2); c.lineTo(-1.5, 2); c.closePath(); c.stroke();
+    } else if (id === 1) {     // witch's broom
+      c.rotate(-0.75);
+      c.fillStyle = '#6b4424'; c.fillRect(-14, -2, 20, 4); c.strokeStyle = '#2a1a0c'; c.lineWidth = 1; c.strokeRect(-14, -2, 20, 4);
+      c.fillStyle = '#d4b04a'; c.beginPath(); c.moveTo(6, -3); c.lineTo(15, -9); c.lineTo(17, -3); c.lineTo(17, 3); c.lineTo(15, 9); c.lineTo(6, 3); c.closePath(); c.fill();
+      c.strokeStyle = '#8a6a22'; c.lineWidth = 1; for (var bi = -2; bi <= 2; bi++) { c.beginPath(); c.moveTo(7, bi * 1.2); c.lineTo(16, bi * 3.4); c.stroke(); }
+      c.fillStyle = '#7a3ab0'; c.fillRect(5, -4, 3, 8);
+    } else if (id === 2) {     // potion vial
+      c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(1, 11, 9, 2.5, 0, 0, 6.283); c.fill();
+      c.fillStyle = '#cfe8dc'; c.beginPath(); c.arc(0, 4, 9, 0, 6.283); c.fill(); c.fillRect(-3, -9, 6, 10);
+      c.fillStyle = '#3fdc78'; c.beginPath(); c.arc(0, 4, 7.4, 0, 6.283); c.fill(); c.fillRect(-1.6, -1, 3.2, 3);
+      c.fillStyle = '#8a5a30'; c.fillRect(-3.5, -12, 7, 4);
+      c.strokeStyle = '#1d3a2c'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 4, 9, 0, 6.283); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,0.75)'; c.beginPath(); c.arc(-3.5, 1.5, 2, 0, 6.283); c.fill();
+      c.fillStyle = 'rgba(200,255,220,0.8)'; c.beginPath(); c.arc(3, 6, 1.3, 0, 6.283); c.arc(1, 2, 1, 0, 6.283); c.fill();
+    } else if (id === 3) {     // iron ladle
+      c.rotate(-0.6);
+      c.fillStyle = '#5a5e66'; c.fillRect(-15, -2, 18, 4);
+      c.fillStyle = '#8a8f98'; c.fillRect(-15, -2, 18, 1.5);
+      c.fillStyle = '#2a2c30'; c.beginPath(); c.arc(9, 0, 8, 0, 6.283); c.fill();
+      c.fillStyle = '#9aa0aa'; c.beginPath(); c.arc(9, 0, 6.4, 0, 6.283); c.fill();
+      c.fillStyle = '#3a3d44'; c.beginPath(); c.arc(9.5, 0.5, 4.6, 0, 6.283); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.arc(6.5, -3, 1.6, 0, 6.283); c.fill();
+      c.fillStyle = '#17181b'; c.beginPath(); c.arc(-15, 0, 2.4, 0, 6.283); c.fill();
+    } else if (id === 4) {     // nightshade
+      c.strokeStyle = '#2f6a34'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 12); c.quadraticCurveTo(-2, 2, 1, -9); c.stroke();
+      c.fillStyle = '#3f8a44';
+      c.beginPath(); c.ellipse(-6, 3, 6, 3, -0.6, 0, 6.283); c.fill(); c.beginPath(); c.ellipse(6, -1, 6, 3, 0.6, 0, 6.283); c.fill(); c.beginPath(); c.ellipse(-5, -6, 5, 2.6, -0.5, 0, 6.283); c.fill();
+      c.fillStyle = '#4a1a6a'; c.beginPath(); c.arc(-3, -10, 3.6, 0, 6.283); c.arc(4, -8, 3.2, 0, 6.283); c.arc(1, -3, 3.4, 0, 6.283); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.6)'; c.beginPath(); c.arc(-4, -11, 1, 0, 6.283); c.arc(3, -9, 0.9, 0, 6.283); c.arc(0, -4, 1, 0, 6.283); c.fill();
+      c.fillStyle = '#6a2a8a'; c.fillRect(-1, -14, 2, 3);
+    } else if (id === 5) {     // cracked skull
+      c.fillStyle = '#e8e2cc'; c.beginPath(); c.arc(0, -2, 10, 3.4, 6.0); c.lineTo(8, 5); c.lineTo(6, 9); c.lineTo(-6, 9); c.lineTo(-8, 5); c.closePath(); c.fill();
+      c.strokeStyle = '#3a3426'; c.lineWidth = 1.3; c.stroke();
+      c.fillStyle = '#17120e'; c.beginPath(); c.ellipse(-4, -1, 2.8, 3.2, 0, 0, 6.283); c.ellipse(4, -1, 2.8, 3.2, 0, 0, 6.283); c.fill();
+      c.beginPath(); c.moveTo(0, 3); c.lineTo(-1.6, 6); c.lineTo(1.6, 6); c.closePath(); c.fill();
+      c.strokeStyle = '#3a3426'; c.lineWidth = 1; c.beginPath(); c.moveTo(-3, 9); c.lineTo(-3, 7); c.moveTo(0, 9); c.lineTo(0, 7); c.moveTo(3, 9); c.lineTo(3, 7); c.stroke();
+      c.strokeStyle = '#4a3a2a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(1, -11); c.lineTo(-1, -6); c.lineTo(2, -3); c.stroke();
+    } else if (id === 6) {     // silver goblet
+      g = c.createLinearGradient(-9, 0, 9, 0); g.addColorStop(0, '#9aa0aa'); g.addColorStop(0.45, '#f4f6fa'); g.addColorStop(1, '#8a909a');
+      c.fillStyle = g; c.beginPath(); c.moveTo(-9, -11); c.lineTo(9, -11); c.quadraticCurveTo(9, 0, 2, 1); c.lineTo(2, 7); c.lineTo(7, 10); c.lineTo(7, 12); c.lineTo(-7, 12); c.lineTo(-7, 10); c.lineTo(-2, 7); c.lineTo(-2, 1); c.quadraticCurveTo(-9, 0, -9, -11); c.closePath(); c.fill();
+      c.strokeStyle = '#4a4e56'; c.lineWidth = 1.2; c.stroke();
+      c.fillStyle = '#7a1a2a'; c.beginPath(); c.ellipse(0, -10, 8, 2, 0, 0, 6.283); c.fill();
+      c.fillStyle = '#d9b46a'; c.beginPath(); c.arc(0, -4, 1.6, 0, 6.283); c.fill();
+    } else {                   // crystal ball
+      c.fillStyle = '#4a3a2a'; c.beginPath(); c.moveTo(-8, 12); c.lineTo(-5, 6); c.lineTo(5, 6); c.lineTo(8, 12); c.closePath(); c.fill();
+      c.strokeStyle = '#2a1e12'; c.lineWidth = 1.2; c.stroke();
+      c.fillStyle = '#d9b46a'; c.fillRect(-5, 6, 10, 2);
+      g = c.createRadialGradient(-3, -5, 1, 0, -2, 11); g.addColorStop(0, '#e8f6ff'); g.addColorStop(0.5, '#6ab6f0'); g.addColorStop(1, '#2a4a9a');
+      c.fillStyle = g; c.beginPath(); c.arc(0, -2, 10, 0, 6.283); c.fill();
+      c.strokeStyle = '#1a2a5a'; c.lineWidth = 1.2; c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 1.4; c.beginPath(); c.arc(0, -2, 6, 3.6, 5.2); c.stroke();
+      c.strokeStyle = 'rgba(200,170,255,0.7)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-4, 1); c.quadraticCurveTo(0, -4, 4, 0); c.stroke();
+    }
+    c.restore();
+  }
+
   function drawPickup(pu) {
     var blink = pu.t < 4 && Math.floor(time * 6) % 2 === 0;
     if (blink) return;
@@ -3671,9 +3739,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       col = GB_COLS[pu.id] || '#fff'; var by = y + Math.sin(time * 3 + pu.id) * 3;
       var rg = ctx.createRadialGradient(x, by, 2, x, by, 34); rg.addColorStop(0, col + 'cc'); rg.addColorStop(1, col + '00');
       ctx.fillStyle = rg; ctx.globalAlpha = 0.5 + 0.4 * pulse; ctx.beginPath(); ctx.arc(x, by, 34, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.fillStyle = '#17120e'; ctx.beginPath(); ctx.arc(x, by, 11, 0, 6.283); ctx.fill();
-      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, by - 9); ctx.lineTo(x + 7, by); ctx.lineTo(x, by + 9); ctx.lineTo(x - 7, by); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(x - 2, by - 3, 2, 0, 6.283); ctx.fill();
+      drawRelic(ctx, pu.id, x, by, 1.35);
     } else if (pu.kind === 'health') {
       ctx.fillStyle = 'rgba(120,224,160,' + (0.2 + 0.18 * pulse).toFixed(2) + ')';
       ctx.beginPath(); ctx.arc(x, y, 17, 0, 6.283); ctx.fill();
@@ -3998,8 +4064,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       P = players[i]; rr = viewRef(P); if (!rr) continue;
       if (P.carry >= 0 && !P.down) {
         var ob = P.y - 26 + Math.sin(time * 4) * 2, oc = GB_COLS[P.carry] || '#fff';
-        ctx.fillStyle = oc + '55'; ctx.beginPath(); ctx.arc(P.x, ob, 13, 0, 6.283); ctx.fill();
-        ctx.fillStyle = oc; ctx.beginPath(); ctx.moveTo(P.x, ob - 7); ctx.lineTo(P.x + 5.5, ob); ctx.lineTo(P.x, ob + 7); ctx.lineTo(P.x - 5.5, ob); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = oc + '55'; ctx.beginPath(); ctx.arc(P.x, ob, 15, 0, 6.283); ctx.fill();
+        drawRelic(ctx, P.carry, P.x, ob, 0.95);
       }
       if (P.flash > 0 && !P.down) {
         var md = defOf(rr), fx0 = P.x + Math.cos(P.ang) * (md.len + 14), fy0 = P.y + Math.sin(P.ang) * (md.len + 14);
