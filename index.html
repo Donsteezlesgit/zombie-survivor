@@ -1258,6 +1258,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   }
   function pickPerk() {
     var ids = Object.keys(PERKS), tot = 0, i;
+    // no Magnet power-up online (it would drag everyone's coins to the picker)
+    if (net.mode !== 'off') ids = ids.filter(function (k) { return k !== 'mg'; });
     for (i = 0; i < ids.length; i++) tot += PERKS[ids[i]].w;
     var r = Math.random() * tot;
     for (i = 0; i < ids.length; i++) { r -= PERKS[ids[i]].w; if (r <= 0) return ids[i]; }
@@ -1296,9 +1298,14 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       }
       ptone(P, 240, 360, 0.08, 'square', 0.05); ptone(P, 360, 480, 0.06, 'square', 0.05, 0.07);
     } else if (p.kind === 'perk') {
-      if (p.id === 'ma') maxAmmo(P);
-      else { P.perkT[p.id] = TUNE.perkDur; ptone(P, 500, 1000, 0.18, 'square', 0.06); }
-      priv(P, ['V', 15]);
+      // a power-up goes to the whole team
+      for (var pi = 0; pi < players.length; pi++) {
+        var Q = players[pi];
+        if (Q.down) continue;
+        if (p.id === 'ma') maxAmmo(Q);
+        else { Q.perkT[p.id] = TUNE.perkDur; ptone(Q, 500, 1000, 0.18, 'square', 0.06); }
+        priv(Q, ['V', 15]);
+      }
     }
   }
 
@@ -1929,7 +1936,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 47';
+  var updMsg = '', VERSION = 'Version 48';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2111,7 +2118,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     { t: 'Armour and healing', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Healing, Gear tab: Bandage (+25), Medkit (+60), Full restore. Health drops also appear from zombies, but rarely.'] },
     { t: 'Special weapons', art: 'box', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Bosses and tanks drop special crates. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
-    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
+    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'Saving and settings', art: 'move', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
