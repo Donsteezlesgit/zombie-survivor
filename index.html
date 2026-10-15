@@ -1504,12 +1504,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function hbumps(c,list,col){c.strokeStyle=HOUT;c.lineWidth=4;list.forEach(p=>{c.beginPath();c.arc(p[0],p[1],p[2],0,6.283);c.stroke()});c.fillStyle=col;list.forEach(p=>{c.beginPath();c.arc(p[0],p[1],p[2],0,6.283);c.fill()});c.lineWidth=2}
   function hcurls(c,list,col){c.strokeStyle=col;c.lineWidth=1.1;list.forEach(p=>{c.beginPath();c.arc(p[0],p[1],1.5,0.4,4.4);c.stroke()});c.strokeStyle=HOUT;c.lineWidth=2}
   function hear(c,x,y,skin){c.lineWidth=1.3;c.beginPath();c.ellipse(x,y,1.1,1.7,0,0,6.283);c.fillStyle=shade(skin,-18);c.fill();c.stroke();c.lineWidth=2}
+  function hbackMass(c,hair,fn){c.strokeStyle=HOUT;c.lineWidth=4;fn();c.stroke();c.beginPath();c.arc(0,-.4,9.9,0,6.283);c.stroke();c.fillStyle=hair;fn();c.fill();c.beginPath();c.arc(0,-.4,9.9,0,6.283);c.fill();c.lineWidth=2}
   function hairBack(c,hs,view,hair){
     var d=shade(hair,-34),L=shade(hair,30);c.strokeStyle=HOUT;c.lineWidth=2;
     if(hs===1){
       if(view==='f'){[-9.5,5.9].forEach(x=>{hrr(c,x,-4,3.6,15,[2,2,2.5,2.5]);hfs(c,hair)});hlines(c,[[-7.7,-2,-7.9,5,-7.7,10],[7.7,-2,7.9,5,7.7,10]],d)}
-      else if(view==='s'){hrr(c,-11,-6.5,13.5,21,[6,2,3,7]);hfs(c,hair);hlines(c,[[-5,-3,-8,5,-6,12],[-1,-4,-4,5,-2,12],[-9,-1,-10,6,-9,11]],d)}
-      else{hrr(c,-10.6,-8,21.2,24,[8,8,4,4]);hfs(c,hair);hlines(c,[[0,-6,-.6,5,0,15],[-4,-6,-5,5,-4.4,15],[4,-6,5,5,4.4,15],[-8,-3,-9,6,-8,14],[8,-3,9,6,8,14]],d)}
+      else if(view==='s'){hbackMass(c,hair,function(){hrr(c,-11,-6.5,13.5,21,[6,2,3,7])});hlines(c,[[-5,-3,-8,5,-6,12],[-1,-4,-4,5,-2,12],[-9,-1,-10,6,-9,11]],d)}
+      else{hbackMass(c,hair,function(){hrr(c,-10.6,-8,21.2,24,[8,8,4,4])});hlines(c,[[-4,-6,-5,5,-4.4,15],[4,-6,5,5,4.4,15],[-8,-3,-9,6,-8,14],[8,-3,9,6,8,14]],d)}
     }
     if(hs===4){
       if(view==='f'){c.beginPath();c.ellipse(-9.6,5,2.2,5.2,.22,0,6.283);hfs(c,hair)}
@@ -1532,9 +1533,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if(hs===1){
       if(f){c.beginPath();c.moveTo(-8.6,3);c.lineTo(-8.6,-1);c.arc(0,-1,8.6,Math.PI,0);c.lineTo(8.6,3);c.quadraticCurveTo(5.6,-.4,.8,-6.2);c.lineTo(-.8,-6.2);c.quadraticCurveTo(-5.6,-.4,-8.6,3);c.closePath();hfs(c,hair);
         hlines(c,[[0,-8.4,-3,-5,-6.6,-.6],[0,-8.4,3,-5,6.6,-.6],[-6.5,-6,-7.6,-2,-7.8,2],[6.5,-6,7.6,-2,7.8,2]],d);hlines(c,[[-5,-7.4,-1,-8.9,3,-7.8]],L,1.3)}
-      else if(s){c.beginPath();c.moveTo(-8.6,8);c.lineTo(-8.6,-1);c.arc(0,-1,8.6,Math.PI,-.4);c.quadraticCurveTo(5,-4,3.6,.6);c.lineTo(1.8,8);c.closePath();hfs(c,hair);
+      else if(s){c.beginPath();c.moveTo(-9.9,10);c.lineTo(-9.9,-.4);c.arc(0,-.4,9.9,Math.PI,-.4);c.quadraticCurveTo(4.2,-3.6,1,-.6);c.quadraticCurveTo(.4,3,-.2,8.6);c.lineTo(-9.9,10);c.closePath();c.fillStyle=hair;c.fill();
+        c.beginPath();c.moveTo(9.12,-4.26);c.quadraticCurveTo(4.2,-3.6,1,-.6);c.stroke();
         hlines(c,[[-3,-8,-6,-3,-6,6],[0,-8.4,-2,-2,-1,6],[-6,-6,-8,0,-7.6,6]],d);hlines(c,[[-4,-7.4,0,-9,4,-7]],L,1.3)}
-      else{c.beginPath();c.arc(0,-.5,8.7,0,6.283);hfs(c,hair);hlines(c,[[0,-8,-.5,-2,0,6],[-4,-7,-5,-1,-4.6,5],[4,-7,5,-1,4.6,5]],d);hlines(c,[[-5,-6.4,-1,-8.6,3,-7.4]],L,1.3)}
+      else{c.beginPath();c.arc(0,-.4,9.9,0,6.283);c.fillStyle=hair;c.fill();hlines(c,[[-4,-7,-5,-1,-4.6,5],[4,-7,5,-1,4.6,5]],d);hlines(c,[[-5,-6.4,-1,-8.6,3,-7.4]],L,1.3)}
     }
     if(hs===2){
       // shaved sides: the scalp shows a darker stubble tone
@@ -3056,7 +3058,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 102';
+  var updMsg = '', VERSION = 'Version 103';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
