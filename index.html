@@ -1017,6 +1017,20 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     for (var i = 0; i < BLD.length; i++) if (inRect(z.x, z.y, BLD[i].pocket)) return i;
     return -1;
   }
+  // walls and shut doors stop bullets; planks over a window and open doors do not
+  function solidAt(x, y) {
+    for (var i = 0; i < RECTS.length; i++) {
+      var q = RECTS[i];
+      if (q.bar || q.furn || (q.door && q.open)) continue;
+      if (x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h) return true;
+    }
+    return false;
+  }
+  function shotClear(x0, y0, x1, y1) {
+    var dx = x1 - x0, dy = y1 - y0, n = Math.ceil(Math.hypot(dx, dy) / 6), i;
+    for (i = 1; i < n; i++) if (solidAt(x0 + dx * i / n, y0 + dy * i / n)) return false;
+    return true;
+  }
   function wallHit(x, y, rad) {
     for (var i = 0; i < RECTS.length; i++) {
       var r = RECTS[i];
@@ -1785,7 +1799,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       for (k = 0; k < zombies.length; k++) {
         z = zombies[k]; if (seen.indexOf(z) >= 0) continue;
         dd = (z.x - cur.x) * (z.x - cur.x) + (z.y - cur.y) * (z.y - cur.y);
-        if (dd < bd) { bd = dd; best = z; }
+        if (dd < bd && shotClear(cur.x, cur.y, z.x, z.y)) { bd = dd; best = z; }
       }
       if (!best) break;
       dmg *= 0.85; seen.push(best); pts.push({ x: best.x, y: best.y });
@@ -1828,6 +1842,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       var b = bullets[i], move = b.speed * dt, steps = Math.max(1, Math.ceil(move / 5)), sd = move / steps, dead = false;
       for (var s = 0; s < steps && !dead; s++) {
         b.x += b.dx * sd; b.y += b.dy * sd; b.dist += sd;
+        if (solidAt(b.x, b.y)) {
+          if (b.kind === 'rocket') explode(b.x - b.dx * sd, b.y - b.dy * sd, b.blast, b.dmg, null, false, b.owner);
+          else addFx(b.x - b.dx * sd, b.y - b.dy * sd, 2, 70, 0.18, 2, '200,190,170');
+          dead = true; break;
+        }
         for (var j = zombies.length - 1; j >= 0; j--) {
           var z = zombies[j];
           if (!z) break;
@@ -1921,7 +1940,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
       var ddx = z.x - P.x, ddy = z.y - P.y, dd = ddx * ddx + ddy * ddy;
-      if (dd < bd && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF)) { bd = dd; tgt = z; }
+      if (dd < bd && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF) && shotClear(P.x, P.y, z.x, z.y)) { bd = dd; tgt = z; }
     }
     P.tgt = tgt;
     if (tgt) P.idle = 0; else P.idle += dt;
@@ -2360,7 +2379,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 50';
+  var updMsg = '', VERSION = 'Version 51';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2552,7 +2571,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
-    { t: 'Haunted House', art: 'shop', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Doors block you and zombies, not bullets.', 'Mystery boxes only appear inside the house.'] },
+    { t: 'Haunted House', art: 'shop', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'Saving and settings', art: 'move', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
