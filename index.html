@@ -1616,7 +1616,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var HATS = ['Bare', 'Cap', 'Beanie', 'Band', 'Army helmet', 'Witch hat', 'Crown', 'Medic cap', 'Pumpkin head'];
   var SKINS = ['#f6d7bd', '#e8b98f', '#c9a88a', '#a87450', '#7a4e30', '#4e3020'], SKIN_NAMES = ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'];
   var HAIRS = ['Short', 'Long', 'Mohawk', 'Bald', 'Ponytail', 'Afro'];
-  var HAIRC = ['#14100d', '#2a211c', '#6a3b1e', '#8a5a2a', '#d9b45a', '#c9482e', '#9a9a9a', '#e8e1d2'], HAIRC_NAMES = ['Black', 'Dark brown', 'Brown', 'Light brown', 'Blonde', 'Ginger', 'Grey', 'White'];
+  var HAIRC = ['#14100d', '#2a211c', '#6a3b1e', '#8a5a2a', '#d9b45a', '#c9482e', '#9a9a9a', '#e8e1d2', '#c4161c'], HAIRC_NAMES = ['Black', 'Dark brown', 'Brown', 'Light brown', 'Blonde', 'Ginger', 'Grey', 'White', 'Red'];
   // accessory colours: 14 free, then 4 rare ones that are earned (see UNLOCKS)
   var ACOLS = [['Black', '#1d1d20'], ['Charcoal', '#4a4d52'], ['Silver', '#a8aab0'], ['White', '#ececec'], ['Maroon', '#7a1f26'], ['Red', '#c9382e'], ['Orange', '#e08a2e'], ['Yellow', '#e6c84a'],
     ['Leaf', '#4f9a56'], ['Teal', '#2f9a9a'], ['Blue', '#3a78d0'], ['Purple', '#8a52b8'], ['Pink', '#e46aa4'], ['Chestnut', '#6a4a2e'], ['Gold', '#e0b020'], ['Neon green', '#5bff5b'], ['Ice', '#bfe8ff'], ['Ultraviolet', '#7a2cff']];
@@ -3416,7 +3416,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 121';
+  var updMsg = '', VERSION = 'Version 122';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
