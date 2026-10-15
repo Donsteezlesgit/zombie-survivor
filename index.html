@@ -2793,7 +2793,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 80';
+  var updMsg = '', VERSION = 'Version 81';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4365,11 +4365,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       }
     }
     if (me && me.cone && !me.down && state === 'play' && me.aimAng !== null) {
-      var cr = Math.min(420, defOf(viewRef(me)).range);
-      var cg = ctx.createRadialGradient(me.x, me.y, 10, me.x, me.y, cr);
+      var cd0 = defOf(viewRef(me)), cr = Math.min(420, cd0.range), cm = cd0.len + 11, cxx = me.x + Math.cos(me.aimAng) * cm, cyy = me.y - 3 + Math.sin(me.aimAng) * cm;
+      var cg = ctx.createRadialGradient(cxx, cyy, 6, cxx, cyy, cr);
       cg.addColorStop(0, 'rgba(242,193,78,0.16)'); cg.addColorStop(1, 'rgba(242,193,78,0.02)');
       ctx.fillStyle = cg; ctx.strokeStyle = 'rgba(242,193,78,0.14)'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(me.x, me.y); ctx.arc(me.x, me.y, cr, me.aimAng - CONE_HALF, me.aimAng + CONE_HALF); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cxx, cyy); ctx.arc(cxx, cyy, cr, me.aimAng - CONE_HALF, me.aimAng + CONE_HALF); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     // muzzle flashes, reload bar, revive rings, names
     for (i = 0; i < players.length; i++) {
