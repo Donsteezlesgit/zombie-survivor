@@ -1038,6 +1038,81 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     bonusRoom = -1;
     if (mapId === 'haunted' && Math.random() < TUNE.bonusChance) bonusRoom = Math.floor(Math.random() * 9);
   }
+
+  // ---------- Ghostbuster quest (Haunted House): 8 relics, one per room (not the Great Hall), carried to the cauldron ----------
+  var GB_NAMES = ['Ancient tome', "Witch's broom", 'Potion vial', 'Iron ladle', 'Nightshade', 'Cracked skull', 'Silver goblet', 'Crystal ball'];
+  var GB_ROOMS = [0, 1, 2, 3, 5, 6, 7, 8];
+  var GB_COLS = ['#d9b46a', '#b07ad8', '#5fe08a', '#d6dae0', '#8a7af0', '#f0ecd8', '#f2e08a', '#78c8ff'];
+  var GB_CAULDRON = { x: 1000, y: 1060 };
+  var gbW = [], gbSt = [], gbDone = 0, gbOn = false, gbT = 0;   // wave each relic appears, state (0 waiting, 1 on the floor, 2 carried, 3 delivered)
+  function mkGhost() { return { id: 'ghost', tier: 1, heat: 0, cool: 0 }; }
+  function gbInit() {
+    var i, j, t, w, tries = 0, cur;
+    gbW = []; gbSt = []; gbDone = 0; gbOn = false; gbT = 0;
+    if (mapId !== 'haunted') return;
+    do {
+      w = []; cur = 1 + Math.floor(Math.random() * 2);
+      for (i = 0; i < 8; i++) { w.push(cur); cur += 2 + Math.floor(Math.random() * 2); }
+      tries++;
+    } while (w[7] > 20 && tries < 60);
+    for (i = 7; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = w[i]; w[i] = w[j]; w[j] = t; }
+    gbW = w; for (i = 0; i < 8; i++) gbSt.push(0);
+  }
+  function gbRoomRect(room) { var col = room % 3, row = Math.floor(room / 3); return { x: HH.cols[col], y: HH.cols[row], w: HH.Rm, h: HH.Rm }; }
+  function gbSpot(room) {
+    var r = gbRoomRect(room), k, x, y, j, ok;
+    for (k = 0; k < 80; k++) {
+      x = r.x + 50 + Math.random() * (r.w - 100); y = r.y + 50 + Math.random() * (r.h - 100); ok = true;
+      for (j = 0; ok && j < RECTS.length; j++) if (distRect(x, y, RECTS[j]) < 34) ok = false;
+      if (ok) return { x: x, y: y };
+    }
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  }
+  function gbDrop(i, pos) { var q = pos || gbSpot(GB_ROOMS[i]); pickups.push({ x: q.x, y: q.y, kind: 'item', id: i, t: 1e9 }); }
+  function gbHas(i) { for (var k = 0; k < pickups.length; k++) if (pickups[k].kind === 'item' && pickups[k].id === i) return true; return false; }
+  function gbCarrier(i) { for (var k = 0; k < players.length; k++) if (players[k].carry === i) return players[k]; return null; }
+  function gbSync(n) {
+    var fresh = [], i;
+    if (!gbW.length || net.mode === 'client') return fresh;
+    for (i = 0; i < 8; i++) {
+      if (gbSt[i] === 0 && gbW[i] <= n) { gbSt[i] = 1; fresh.push(i); gbDrop(i, null); }
+      else if (gbSt[i] === 1 && !gbHas(i)) gbDrop(i, null);
+      else if (gbSt[i] === 2 && !gbCarrier(i)) { gbSt[i] = 1; gbDrop(i, null); }
+    }
+    return fresh;
+  }
+  function gbPickup(P, pu) {
+    P.carry = pu.id; gbSt[pu.id] = 2;
+    bannerTo(P, GB_NAMES[pu.id], 'Take it to the cauldron in the Great Hall.', 2.4);
+    ptone(P, 600, 1000, 0.15, 'sine', 0.07);
+  }
+  function gbDropCarried(P) {
+    if (!(P.carry >= 0)) return;
+    var id = P.carry; P.carry = -1;
+    if (gbW.length) { gbSt[id] = 1; gbDrop(id, { x: P.x, y: P.y }); bannerTo(P, 'You dropped it', GB_NAMES[id] + ' is on the floor.', 1.8); }
+  }
+  function gbUnlock() {
+    gbOn = true;
+    for (var i = 0; i < players.length; i++) if (!players[i].ghost) players[i].ghost = mkGhost();
+    bannerAll('The Ghostbuster is ready', 'Everyone has a new gun. Swap to it with the round button.', 4);
+    addFx(GB_CAULDRON.x, GB_CAULDRON.y, 40, 300, 0.8, 6, '120,255,150');
+    stone(200, 900, 0.8, 'sine', 0.1);
+  }
+  function gbDeliver(P) {
+    var id = P.carry; P.carry = -1; gbSt[id] = 3; gbDone++;
+    addFx(GB_CAULDRON.x, GB_CAULDRON.y, 22, 200, 0.6, 5, '120,255,150');
+    snoise(0.15, 800, 0.08); stone(300, 700, 0.3, 'sine', 0.08);
+    if (gbDone >= 8) gbUnlock();
+    else bannerAll('Cauldron ' + gbDone + ' / 8', GB_NAMES[id] + ' added. ' + (8 - gbDone) + ' to go.', 2.2);
+  }
+  function gbTick(dt) {
+    if (!gbW.length || gbOn && gbDone >= 8) return;
+    gbT -= dt; if (gbT <= 0) { gbT = 1.5; gbSync(Math.max(0, wave)); }
+    for (var i = 0; i < players.length; i++) {
+      var P = players[i];
+      if (!P.down && P.carry >= 0 && Math.hypot(P.x - GB_CAULDRON.x, P.y - GB_CAULDRON.y) < 80) gbDeliver(P);
+    }
+  }
   var lightF = 0, lightT = 6, bats = [];
   function tickAtmos(dt) {
     if (MAPCFG.nav !== true) { lightF = 0; return; }
@@ -1321,7 +1396,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0, rest: 0 },
       perkT: { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 },
       slots: [makeGun('glock'), null, null], unlocked: 1, special: null, sel: 0, lastSel: 0,
-      cards: [], pendingGun: null, boxPrize: null, rebuildLeft: 0,
+      cards: [], pendingGun: null, boxPrize: null, rebuildLeft: 0, carry: -1, ghost: gbOn ? mkGhost() : null,
       inx: 0, iny: 0, cone: false, aimAng: null, mvx: 0, mvy: 0, csnd: 0, mhp: 0, cur: null, down: false, rev: 0, tgt: null, pev: [], conn: null
     };
     P.hp = maxHpNow(P);
@@ -1473,6 +1548,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     ebullets = []; bolts = [];
     placeBoxes();
     rollBonusRoom();
+    var gbNew = gbSync(n);
+    if (gbNew.length) bannerAll('Wave ' + n, 'A relic appeared in the ' + HH_NAMES[GB_ROOMS[gbNew[0]]][0] + '. Carry it to the cauldron.', 3.4); else
     bannerAll('Wave ' + n, bonusRoom >= 0 ? 'Bonus room: ' + bonusName() + '. Double coins and more ammo drops inside.' : (n === 1 ? 'Stand at a broken barrier to rebuild it.' : (boss ? 'Something big is coming.' : queue.length + ' zombies incoming.')), bonusRoom >= 0 ? 3.6 : 2.6);
   }
 
@@ -1576,6 +1653,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     }
     me = pById(localId) || players[0];
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = []; evq = [];
+    gbInit();
+    for (i = 0; i < players.length; i++) { players[i].carry = -1; players[i].ghost = null; }
     for (i = 0; i < DOORS.length; i++) { DOORS[i].open = false; DOORS[i].prog = 0; DOORS[i].zt = 0; DOORS[i].wait = false; }
     navT = 0;
     kills = 0; shake = 0; hurtFlash = 0; gen++;
@@ -1596,7 +1675,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (cw < 1) return;
     try {
       var data = {
-        map: mapId, doors: DOORS.map(function (d) { return d.open ? 1 : 0; }), wave: cw, wallet: P.wallet, kills: P.kills, hp: P.hp, unlocked: P.unlocked,
+        map: mapId, doors: DOORS.map(function (d) { return d.open ? 1 : 0; }), gb: gbW.length ? { w: gbW, s: gbSt.map(function (x) { return x === 2 ? 1 : x; }), d: gbDone } : 0, wave: cw, wallet: P.wallet, kills: P.kills, hp: P.hp, unlocked: P.unlocked,
         upg: P.upg, armor: P.armor,
         bar: BLD.map(function (b) { return b.bar.planks; }),
         slots: P.slots.map(function (g) { if (g && g.temp) g = P.stash; return g ? { id: g.id, tier: g.tier } : null; })
@@ -1634,6 +1713,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       if (pl >= 0 && pl <= bb.max) { bb.planks = Math.floor(pl); bb.acc = 0; bb.rt = 0; }
     }
     if (d.doors) for (i = 0; i < DOORS.length && i < d.doors.length; i++) DOORS[i].open = !!d.doors[i];
+    if (d.gb && d.gb.w && d.gb.w.length === 8 && gbW.length === 8) { gbW = d.gb.w.map(Number); gbSt = d.gb.s.map(Number); gbDone = Math.max(0, Math.min(8, +d.gb.d || 0)); if (gbDone >= 8) { gbOn = true; P.ghost = mkGhost(); } }
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; queue = []; ebullets = []; bolts = [];
     P.hp = Math.max(1, Math.min(maxHpNow(P), +d.hp || maxHpNow(P)));
     introOn = false;
@@ -1776,6 +1856,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   }
   function downPlayer(P) {
     P.down = true; P.rev = 0; P.tgt = null; P.inx = P.iny = 0; P.boxPrize = null;
+    gbDropCarried(P);
     if (allDown()) { gameOver(); return; }
     bannerTo(P, 'You are down', 'A teammate can revive you. Or wait for the wave to end.', 2.4);
     stone(160, 60, 0.4, 'sawtooth', 0.07);
@@ -2350,6 +2431,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     // pickups: walk over them
     for (i = pickups.length - 1; i >= 0; i--) {
       var pu = pickups[i];
+      if (pu.kind === 'item') {
+        for (var gq = 0; gq < players.length; gq++) {
+          var GQ = players[gq];
+          if (!GQ.down && GQ.carry < 0 && Math.hypot(GQ.x - pu.x, GQ.y - pu.y) < 26) { pickups.splice(i, 1); gbPickup(GQ, pu); break; }
+        }
+        continue;
+      }
       pu.t -= dt;
       evictFromPockets(pu, false);
       T = nearestAlive(pu.x, pu.y);
@@ -2364,6 +2452,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       if (T && Math.hypot(T.x - pu.x, T.y - pu.y) < 22) { var got = pu; pickups.splice(i, 1); collect(T, got); }
       else if (pu.t <= 0) pickups.splice(i, 1);
     }
+
+    gbTick(dt);
 
     // downed players get revived by a teammate standing next to them
     for (i = 0; i < players.length; i++) {
@@ -2519,7 +2609,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 63';
+  var updMsg = '', VERSION = 'Version 64';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3175,6 +3265,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var ph = '', k;
     for (k in me.perkT) if (me.perkT[k] > 0) ph += '<span class="perk" style="color:' + PERKS[k].col + '">' + PERKS[k].name + ' ' + Math.ceil(me.perkT[k]) + 's' + (isSpecialActive(me) ? ' (held)' : '') + '</span>';
     if (bonusRoom >= 0) ph += '<span class="perk" style="color:#ffd25a">Bonus room: ' + bonusName() + (inBonus(me) ? ' (inside)' : '') + '</span>';
+    if (mapId === 'haunted') {
+      if (!gbOn) ph += '<span class="perk" style="color:#78e0a0">Cauldron ' + gbDone + ' / 8</span>';
+      if (me.carry >= 0) ph += '<span class="perk" style="color:' + GB_COLS[me.carry] + '">Carrying: ' + GB_NAMES[me.carry] + '</span>';
+      var gi, gn = 0;
+      for (gi = 0; gi < pickups.length && gn < 3; gi++) if (pickups[gi].kind === 'item') { ph += '<span class="perk" style="color:' + GB_COLS[pickups[gi].id] + '">' + GB_NAMES[pickups[gi].id] + ': ' + HH_NAMES[GB_ROOMS[pickups[gi].id]][0] + '</span>'; gn++; }
+    }
     if (hudCache.perks !== ph) { hudCache.perks = ph; perksEl.innerHTML = ph; }
 
     // teammates
@@ -3491,6 +3587,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       ctx.fillStyle = '#4a4a2c'; ctx.fillRect(x - 7, y - 5, 14, 10);
       ctx.fillStyle = '#d6aa46';
       ctx.fillRect(x - 5, y - 3, 2, 6); ctx.fillRect(x - 1, y - 3, 2, 6); ctx.fillRect(x + 3, y - 3, 2, 6);
+    } else if (pu.kind === 'item') {
+      col = GB_COLS[pu.id] || '#fff'; var by = y + Math.sin(time * 3 + pu.id) * 3;
+      var rg = ctx.createRadialGradient(x, by, 2, x, by, 34); rg.addColorStop(0, col + 'cc'); rg.addColorStop(1, col + '00');
+      ctx.fillStyle = rg; ctx.globalAlpha = 0.5 + 0.4 * pulse; ctx.beginPath(); ctx.arc(x, by, 34, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#17120e'; ctx.beginPath(); ctx.arc(x, by, 11, 0, 6.283); ctx.fill();
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, by - 9); ctx.lineTo(x + 7, by); ctx.lineTo(x, by + 9); ctx.lineTo(x - 7, by); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(x - 2, by - 3, 2, 0, 6.283); ctx.fill();
     } else if (pu.kind === 'health') {
       ctx.fillStyle = 'rgba(120,224,160,' + (0.2 + 0.18 * pulse).toFixed(2) + ')';
       ctx.beginPath(); ctx.arc(x, y, 17, 0, 6.283); ctx.fill();
@@ -3568,6 +3671,19 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       d = Math.hypot(x, y);
       if (d > edge) { x = x / d * edge; y = y / d * edge; }
       mmx.beginPath(); mmx.arc(c + x, c + y, 2.4, 0, 6.283); mmx.fill();
+    }
+    if (mapId === 'haunted') {
+      for (i = 0; i < pickups.length; i++) {
+        if (pickups[i].kind !== 'item') continue;
+        x = (pickups[i].x - px) * k; y = (pickups[i].y - py) * k; d = Math.hypot(x, y);
+        if (d > edge) { x = x / d * edge; y = y / d * edge; }
+        mmx.fillStyle = GB_COLS[pickups[i].id]; mmx.beginPath(); mmx.moveTo(c + x, c + y - 4); mmx.lineTo(c + x + 3.4, c + y); mmx.lineTo(c + x, c + y + 4); mmx.lineTo(c + x - 3.4, c + y); mmx.closePath(); mmx.fill();
+      }
+      if (!gbOn) {
+        x = (GB_CAULDRON.x - px) * k; y = (GB_CAULDRON.y - py) * k; d = Math.hypot(x, y);
+        if (d > edge) { x = x / d * edge; y = y / d * edge; }
+        mmx.strokeStyle = '#3ad870'; mmx.lineWidth = me.carry >= 0 ? 2.4 : 1.4; mmx.beginPath(); mmx.arc(c + x, c + y, me.carry >= 0 ? 5 : 3.6, 0, 6.283); mmx.stroke();
+      }
     }
     for (i = 0; i < players.length; i++) {
       o = players[i]; if (o === me) continue;
@@ -3691,6 +3807,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       ctx.beginPath(); ctx.arc(cn.x - 1, cn.y - 1, 1.2, 0, 6.283); ctx.fill();
     }
     for (i = 0; i < pickups.length; i++) drawPickup(pickups[i]);
+    if (mapId === 'haunted' && !gbOn) {
+      var cp = 0.5 + 0.5 * Math.sin(time * 3), carrying = me && me.carry >= 0;
+      ctx.strokeStyle = 'rgba(80,255,140,' + (carrying ? 0.35 + 0.4 * cp : 0.14).toFixed(2) + ')'; ctx.lineWidth = carrying ? 4 : 2;
+      ctx.beginPath(); ctx.arc(GB_CAULDRON.x, GB_CAULDRON.y, 80, 0, 6.283); ctx.stroke();
+      ctx.fillStyle = 'rgba(190,255,210,0.9)'; ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(gbDone + ' / 8', GB_CAULDRON.x, GB_CAULDRON.y - 46);
+    }
     for (i = 0; i < boxes.length; i++) {
       var bx0 = boxes[i], bp = 0.5 + 0.5 * Math.sin(time * 4 + i);
       ctx.fillStyle = 'rgba(242,193,78,' + (0.12 + 0.12 * bp).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(bx0.x, bx0.y, 30, 0, 6.283); ctx.fill();
@@ -3782,6 +3905,11 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     // muzzle flashes, reload bar, revive rings, names
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
+      if (P.carry >= 0 && !P.down) {
+        var ob = P.y - 26 + Math.sin(time * 4) * 2, oc = GB_COLS[P.carry] || '#fff';
+        ctx.fillStyle = oc + '55'; ctx.beginPath(); ctx.arc(P.x, ob, 13, 0, 6.283); ctx.fill();
+        ctx.fillStyle = oc; ctx.beginPath(); ctx.moveTo(P.x, ob - 7); ctx.lineTo(P.x + 5.5, ob); ctx.lineTo(P.x, ob + 7); ctx.lineTo(P.x - 5.5, ob); ctx.closePath(); ctx.fill();
+      }
       if (P.flash > 0 && !P.down) {
         var md = defOf(rr), fx0 = P.x + Math.cos(P.ang) * (md.len + 14), fy0 = P.y + Math.sin(P.ang) * (md.len + 14);
         var fg = ctx.createRadialGradient(fx0, fy0, 0, fx0, fy0, 16);
@@ -3854,7 +3982,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 
 
   // ---------- online play (phone to phone, the host runs the game) ----------
-  var PEER_PREFIX = 'zsurvivor-', BK = ['bullet', 'fire', 'ray', 'rocket'], PK = ['special', 'health', 'ammo', 'perk'];
+  var PEER_PREFIX = 'zsurvivor-', BK = ['bullet', 'fire', 'ray', 'rocket', 'goo'], PK = ['special', 'health', 'ammo', 'perk', 'item'];
   var peer = null, seats = [], myConn = null, evBase = 0;
   var snaps = [], clockOff = null, lastSnapAt = 0, joinTimer = 0;
 
@@ -3981,8 +4109,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
-      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs];
+      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry];
     });
+    o.G = [gbDone, gbOn ? 1 : 0];
     o.Z = zombies.map(function (z) {
       return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? 1 : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA)];
     });
@@ -4087,7 +4216,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = []; boxes = [];
     snaps = []; clockOff = null; lastSnapAt = performance.now();
     bloodL.x.clearRect(0, 0, WORLD, WORLD);
-    wave = 1; phase = 'spawning'; kills = 0; shake = 0; hurtFlash = 0;
+    wave = 1; phase = 'spawning'; kills = 0; shake = 0; hurtFlash = 0; gbW = []; gbSt = []; gbDone = 0; gbOn = false;
     state = 'play'; shopOpen = false; shop.hidden = true; boxUI.hidden = true;
     introOn = true; showScreen('intro');
   }
@@ -4103,6 +4232,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     m.Pm = {}; for (i = 0; i < m.P.length; i++) m.Pm[m.P[i][0]] = m.P[i];
     snaps.push(m); if (snaps.length > 4) snaps.shift();
     introOn = !!m.in; bonusRoom = m.br === undefined ? -1 : m.br;
+    if (m.G) { gbDone = m.G[0]; gbOn = !!m.G[1]; }
     wave = m.wv; phase = m.ph ? 'grace' : 'spawning'; graceT = m.gt; leftN = m.l; kills = m.kt;
     if (m.e) for (i = 0; i < m.e.length; i++) applyEv(m.e[i]);
     if (m.pe) for (i = 0; i < m.pe.length; i++) applyEv(m.pe[i]);
@@ -4111,6 +4241,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       r = m.P[i]; P = ensurePlayer(r[0]);
       P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11] };
       if (r[12]) P.flash = 0.06;
+      P.carry = r[15] === undefined ? -1 : r[15];
       P.kills = r[13]; P.armor = { head: Math.floor(r[14] / 100), body: Math.floor(r[14] / 10) % 10, legs: r[14] % 10 };
       if (P === me) {
         P.sx = r[1]; P.sy = r[2]; P.ang = r[3];
@@ -4298,6 +4429,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     else if (a === 'coinrain') { for (i = 0; i < 40; i++) coins.push({ x: P.x + rnd(-80, 80), y: P.y + rnd(-80, 80), vx: rnd(-60, 60), vy: rnd(-60, 60), v: 5, to: -1 }); }
     else if (a === 'bonus') { if (mapId === 'haunted') { bonusRoom = +v >= 0 ? +v : Math.floor(Math.random() * 9); } else DEV.msg = 'Bonus rooms are on the Haunted House map only.'; }
     else if (a === 'bonusoff') bonusRoom = -1;
+    else if (a === 'gbspawn') { for (i = 0; i < gbW.length; i++) if (gbSt[i] === 0) gbW[i] = 0; gbSync(Math.max(1, wave)); }
+    else if (a === 'gbunlock') { if (gbW.length) { for (i = 0; i < 8; i++) { if (gbSt[i] !== 3) { gbSt[i] = 3; gbDone++; } } for (i = 0; i < players.length; i++) players[i].carry = -1; pickups = pickups.filter(function (q) { return q.kind !== 'item'; }); gbDone = 8; gbUnlock(); } }
+    else if (a === 'gbreset') { gbInit(); pickups = pickups.filter(function (q) { return q.kind !== 'item'; }); for (i = 0; i < players.length; i++) { players[i].carry = -1; players[i].ghost = null; } }
     else if (a === 'doors') { if (DOORS.length) devDoor(true, v === 'open'); else DEV.msg = 'This map has no doors.'; }
     else if (a === 'tp') { if (mapId === 'haunted') { var cx = HH.cols[+v % 3] + HH.Rm / 2, cy = HH.cols[Math.floor(+v / 3)] + HH.Rm / 2; P.x = cx; P.y = cy; } else DEV.msg = 'Room teleport is Haunted House only.'; }
     else if (a === 'tpstart') { P.x = MAPCFG.sx; P.y = MAPCFG.sy; }
@@ -4338,6 +4472,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     h += '<h3>Map</h3><div class="r">' + b('Barriers full', 'bars', 'full') + b('Barriers broken', 'bars', 'broken') + b('Re-roll boxes', 'box') + b('Box here', 'boxhere') + b('Go to start', 'tpstart') + '</div>';
     if (mapId === 'haunted') {
       h += '<h3>Haunted House</h3><div class="r">' + b('Open all doors', 'doors', 'open') + b('Close all doors', 'doors', 'close') + b('Random bonus room', 'bonus', -1) + b('Bonus off', 'bonusoff') + '</div>';
+      h += '<h3>Ghostbuster quest</h3><div class="r">' + b('Spawn all relics', 'gbspawn') + b('Deliver all, unlock gun', 'gbunlock') + b('Reset quest', 'gbreset') + '</div><div class="m" style="color:#9c8f7e">Cauldron ' + gbDone + ' / 8 · relic waves ' + gbW.join(',') + '</div>';
       h += '<div class="r" style="margin-top:6px">'; HH_NAMES.forEach(function (n, i) { h += b('Go: ' + n[0], 'tp', i); }); h += '</div>';
       h += '<div class="r" style="margin-top:6px">'; HH_NAMES.forEach(function (n, i) { h += b('Bonus: ' + n[0], 'bonus', i); }); h += '</div>';
     }
