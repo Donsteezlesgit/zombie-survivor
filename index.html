@@ -482,7 +482,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.2, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 25, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -1899,7 +1899,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     var q = [], n = Math.round((6 + 4 * (w - 1)) * (1 + TUNE.coopCount * (np - 1))), i;
     var tankP = w >= 5 ? Math.min(0.2, 0.04 * (w - 4)) : 0;
-    var armP = w >= TUNE.lateStart ? Math.min(0.22, 0.03 * (w - TUNE.lateStart + 1)) : 0;
+    var armP = w >= TUNE.lateStart ? Math.min(0.22, 0.03 * (w - TUNE.lateStart + 1)) : (w >= TUNE.armEarlyFrom ? TUNE.armEarlyP : 0);
     var runnerP = w >= 3 ? Math.min(0.35, 0.08 * (w - 2)) : 0;
     for (i = 0; i < n; i++) {
       var r = Math.random();
@@ -2038,7 +2038,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // end of wave: mags topped up, reserve gets 60% of its max (+7% per Ammo restock level)
   function waveRefillGun(g, P) {
     var d = WEAPONS[g.id]; if (!d || d.res === Infinity) { refillGun(g); return; }
-    var f = Math.min(1, TUNE.waveRefill + TUNE.restockStep * ((P.upg && P.upg.rest) || 0));
+    var ac = TUNE.ammoCls[d.cls], f = Math.min(1, (ac ? ac.refill : TUNE.waveRefill) + TUNE.restockStep * ((P.upg && P.upg.rest) || 0));
     g.mag = gunMag(d); g.reload = 0;
     g.res = Math.min(d.res, g.res + Math.round(d.res * f));
   }
@@ -2387,7 +2387,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (i = 0; i < 4; i++) {
         g = i < 3 ? P.slots[i] : P.stash; if (!g || g.temp) continue;
         d = WEAPONS[g.id];
-        g.res = Math.min(d.res, g.res + Math.max(1, Math.round(d.mag * TUNE.ammoFrac)));
+        g.res = Math.min(d.res, g.res + Math.max(1, Math.round(d.mag * (TUNE.ammoCls[d.cls] ? TUNE.ammoCls[d.cls].frac : TUNE.ammoFrac))));
       }
       ptone(P, 240, 360, 0.08, 'square', 0.05); ptone(P, 360, 480, 0.06, 'square', 0.05, 0.07);
     } else if (p.kind === 'perk') {
@@ -2439,7 +2439,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         x: mx, y: my, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
         kind: d.kind || 'bullet', blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
-        long: d.cls === 'rifle' || d.cls === 'sniper', explosive: expl && !d.kind
+        long: d.cls === 'rifle' || d.cls === 'sniper', explosive: expl && !d.kind, arm: !d.special, pel: d.pellets > 1
       });
     }
     if (d.kind === 'zap') zapShoot(P, st, mx, my);
@@ -2537,7 +2537,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (z.hp <= 0) killZombie(j, b.owner);
       return;
     }
-    z.hp -= b.dmg; z.flash = 0.08;
+    var dm = b.dmg, ar;
+    if (b.arm && wave >= TUNE.armFrom && !z.ghost) {
+      ar = z.boss ? TUNE.armBoss : (z.type === 'tank' ? TUNE.armTank : (z.type === 'armoured' ? TUNE.armArm : 0));
+      if (ar) { if (b.pel) ar *= TUNE.armPellet; dm = Math.max(dm - ar, dm * TUNE.armFloor); }
+    }
+    z.hp -= dm; z.flash = 0.08;
     var kb = (b.kind === 'fire' ? 20 : 90) * (10 / z.r); z.vx += b.dx * kb; z.vy += b.dy * kb;
     addBlood(b.x, b.y, b.dx, b.dy, b.kind === 'fire' ? 1 : 3, 160);
     if (b.crit) addFx(b.x, b.y, 5, 160, 0.25, 2, '255,255,255');
@@ -3177,7 +3182,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 114';
+  var updMsg = '', VERSION = 'Version 115';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3387,7 +3392,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
     { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
     { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
-    { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: from wave 25. 420 health and hits hard.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
+    { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 25. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a special weapon crate, lots of coins, and often a power-up.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
     { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock.', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
