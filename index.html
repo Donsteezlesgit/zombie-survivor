@@ -1765,7 +1765,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 
   // ---------- simulation ----------
   function hurtPlayer(P, dmg) {
-    if (P.inv > 0 || P.down || state !== 'play') return;
+    if (P.inv > 0 || P.down || state !== 'play' || (DEV.on && DEV.god)) return;
     dmg *= 1 - armVal(P, 'head');
     P.hp -= dmg; P.inv = 0.2;
     priv(P, ['H', dmg]);
@@ -2166,6 +2166,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     // zombies
     for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
+      if (DEV.on && DEV.zfreeze) { z.vx = z.vy = 0; continue; }
       T = nearestAlive(z.x, z.y) || players[0];
       var pdx = T.x - z.x, pdy = T.y - z.y, pdist = Math.hypot(pdx, pdy) || 1;
       var pi = pocketOf(z), bar = null, tx = T.x, ty = T.y;
@@ -2380,7 +2381,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var setupNext = 'main', hasPeer = typeof Peer !== 'undefined';
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function blocked() { return !!screen || shopOpen || !!(me && me.boxPrize); }
-  function frozen() { return net.mode === 'off' && (screen === 'pause' || shopOpen || !!(me && me.boxPrize)); }
+  function frozen() { return (net.mode === 'off' && (screen === 'pause' || shopOpen || !!(me && me.boxPrize))) || (DEV.on && DEV.open && DEV.pause && net.mode !== 'client'); }
 
   function rosterHtml() {
     var h = '<div class="roster">', i, r;
@@ -2486,8 +2487,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
       h += '<button class="chip" data-a="backup" type="button">Backup progress</button>';
       h += '<button class="chip" data-a="diag" type="button">Screen info</button>';
+      h += DEV.on ? '<button class="chip" data-a="devoff" type="button">Dev mode: on (turn off)</button>' : '<button class="chip" data-a="devpw" type="button">Dev mode</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
       h += '<button class="go" data-a="back" data-to="' + settingsFrom + '" type="button">Back</button>';
+    } else if (screen === 'devpw') {
+      h += '<h1>Dev mode</h1><p>Enter the password.</p><input class="bk" id="devPw" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" style="min-height:48px;text-align:center">';
+      h += '<div class="msg">' + esc(updMsg) + '</div><button class="go" data-a="devgo" type="button">Enter</button><button class="chip" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'backup') {
       h += '<h1>Backup</h1><p>Copy this code and keep it safe. After re-adding the app, paste it here and tap Restore.</p>';
       h += '<textarea class="bk" id="bkText" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off">' + backupCode() + '</textarea>';
@@ -2512,7 +2517,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 61';
+  var updMsg = '', VERSION = 'Version 62';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2644,6 +2649,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       game.style.height = ''; game.style.bottom = ''; setTimeout(fit, 50); setTimeout(fillDiag, 200);
     }
     else if (a === 'diag') { showScreen('diag'); fillDiag(); }
+    else if (a === 'devpw') { updMsg = ''; showScreen('devpw'); }
+    else if (a === 'devgo') {
+      var pw = document.getElementById('devPw');
+      if (pw && pw.value.trim().toLowerCase() === 'chongz') { DEV.on = true; try { localStorage.setItem('zs-dev', '1'); } catch (e) {} updMsg = 'Dev mode on. A DEV button now floats over the game.'; showScreen('settings'); }
+      else { updMsg = 'Wrong password.'; renderScreen(); }
+    }
+    else if (a === 'devoff') { DEV.on = false; DEV.god = DEV.kill1 = DEV.zfreeze = DEV.inf = false; DEV.ts = 1; try { localStorage.setItem('zs-dev', '0'); } catch (e) {} updMsg = 'Dev mode off.'; renderScreen(); }
     else if (a === 'settings') { updMsg = ''; if (screen === 'main' || screen === 'pause') settingsFrom = screen; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
@@ -4179,6 +4191,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function loop(now) {
     var dt = (now - last) / 1000; last = now;
     if (dt > 0.05) dt = 0.05;
+    if (DEV.on && net.mode !== 'client') { dt *= DEV.ts; devTick(); }
+    devUpdateBtn();
     if (me) gatherInput();
     if (net.mode === 'client') {
       clientTick(dt);
@@ -4202,6 +4216,151 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     hudT -= dt;
     if (hudT <= 0) { hudT = 0.1; updateHud(); }
     requestAnimationFrame(loop);
+  }
+
+
+  // ---------- dev mode (password in Settings, then a DEV button floats over the game) ----------
+  var DEV = { on: false, open: false, god: false, kill1: false, zfreeze: false, inf: false, ts: 1, pause: true, msg: '' };
+  try { DEV.on = localStorage.getItem('zs-dev') === '1'; } catch (e) {}
+  var devBtn = document.createElement('button'); devBtn.id = 'devBtn'; devBtn.type = 'button'; devBtn.textContent = 'DEV'; devBtn.hidden = true;
+  var devPanel = document.createElement('div'); devPanel.id = 'devPanel'; devPanel.hidden = true;
+  game.appendChild(devBtn); game.appendChild(devPanel);
+  (function () {
+    var st = document.createElement('style');
+    st.textContent = '#devBtn{position:absolute;z-index:60;top:calc(var(--insT,0px) + 56px);left:50%;transform:translateX(-50%);font:700 13px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:8px 12px;opacity:.85}' +
+      '#devPanel{position:absolute;z-index:61;top:0;right:0;bottom:0;width:min(360px,92%);background:rgba(10,8,7,.93);border-left:2px solid #78e0a0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(var(--insT,0px) + 8px) 10px 40px;color:#ebe3d4;font:600 14px/1.3 var(--face-ui);text-align:left}' +
+      '#devPanel h3{margin:14px 0 6px;font:700 13px/1 var(--face-ui);letter-spacing:.14em;text-transform:uppercase;color:#78e0a0}' +
+      '#devPanel .r{display:flex;flex-wrap:wrap;gap:6px}' +
+      '#devPanel button,#devPanel select,#devPanel input{font:600 13px/1 var(--face-ui);color:#ebe3d4;background:#2a221d;border:1px solid #5a4d44;border-radius:4px;min-height:36px;padding:0 10px}' +
+      '#devPanel button.on{background:#78e0a0;color:#1a0e08;border-color:#78e0a0}' +
+      '#devPanel input{width:64px}#devPanel .top{display:flex;justify-content:space-between;align-items:center}' +
+      '#devPanel .m{min-height:1.2em;color:#d2692a;margin-top:6px}';
+    document.head.appendChild(st);
+    ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (ev) {
+      devPanel.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+      devBtn.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    });
+  })();
+  function devUpdateBtn() { devBtn.hidden = !(DEV.on && !screen); if (!DEV.on || screen) { DEV.open = false; devPanel.hidden = true; } }
+  function devDoor(all, open) { for (var i = 0; i < DOORS.length; i++) { DOORS[i].open = open; DOORS[i].prog = 0; } if (typeof navInit === 'function' && MAPCFG.nav === true) navInit(); }
+  function devPos(P, d) { var a = P.aimAng !== null && P.aimAng !== undefined ? P.aimAng : P.ang; return { x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d }; }
+  function devSpawn(type, n) {
+    var i, q, z, P = me;
+    for (i = 0; i < n; i++) {
+      if (!TYPES[type]) return;
+      var before = zombies.length; if (!spawnZombie(type)) { z = null; }
+      z = zombies[zombies.length - 1]; if (!z || zombies.length === before) continue;
+      q = devPos(P, 140 + Math.random() * 90); var ang = Math.random() * 6.283; q.x += Math.cos(ang) * 40; q.y += Math.sin(ang) * 40;
+      if (!wallHit(q.x, q.y, z.r)) { z.x = q.x; z.y = q.y; z.pocket = -1; }
+    }
+  }
+  function devAct(a, v) {
+    var P = me, i, k, g;
+    if (net.mode === 'client') { DEV.msg = 'Dev actions only work for the host or offline.'; devRender(); return; }
+    DEV.msg = '';
+    if (a === 'close') { DEV.open = false; devPanel.hidden = true; return; }
+    else if (a === 'god') DEV.god = !DEV.god;
+    else if (a === 'kill1') DEV.kill1 = !DEV.kill1;
+    else if (a === 'zfreeze') DEV.zfreeze = !DEV.zfreeze;
+    else if (a === 'inf') DEV.inf = !DEV.inf;
+    else if (a === 'pause') DEV.pause = !DEV.pause;
+    else if (a === 'ts') DEV.ts = +v;
+    else if (a === 'coins') { P.wallet = Math.max(0, P.wallet + (+v)); }
+    else if (a === 'coins0') P.wallet = 0;
+    else if (a === 'heal') { P.hp = maxHpNow(P); }
+    else if (a === 'hp1') { P.hp = 1; }
+    else if (a === 'revive') { for (i = 0; i < players.length; i++) if (players[i].down) revivePlayer(players[i], 1); }
+    else if (a === 'down') { hurtPlayerForce(P); }
+    else if (a === 'killall') { while (zombies.length) killZombie(zombies.length - 1, P.id); }
+    else if (a === 'clearwave') { queue = []; while (zombies.length) killZombie(zombies.length - 1, P.id); }
+    else if (a === 'nextwave') { zombies = []; queue = []; if (phase === 'grace') graceT = 0.01; else startWave(wave + 1); }
+    else if (a === 'gotowave') { var n = Math.max(1, Math.min(999, parseInt(($('devWave') || {}).value, 10) || 1)); zombies = []; coins = []; pickups = []; startWave(n); showScreenSafe(); }
+    else if (a === 'spawn') devSpawn(v, 1);
+    else if (a === 'spawn10') devSpawn(v, 10);
+    else if (a === 'give') {
+      var id = ($('devGun') || {}).value; if (!id || !WEAPONS[id]) return;
+      var slot = -1; for (i = 0; i < P.unlocked && i < 3; i++) if (!P.slots[i]) { slot = i; break; }
+      if (slot < 0) slot = P.sel < 3 ? P.sel : P.lastSel;
+      P.slots[slot] = makeGun(id); setSel(P, slot);
+    }
+    else if (a === 'slots') { P.unlocked = 3; }
+    else if (a === 'gunmax') { for (i = 0; i < 3; i++) if (P.slots[i]) P.slots[i].tier = TUNE.maxTier; }
+    else if (a === 'gunup') { for (i = 0; i < 3; i++) if (P.slots[i]) P.slots[i].tier = Math.min(TUNE.maxTier, P.slots[i].tier + 1); }
+    else if (a === 'ammo') { maxAmmo(P); refillAllGuns(P); }
+    else if (a === 'special') equipSpecial(P, v, true);
+    else if (a === 'upg') { for (k in UPG) P.upg[k] += +v; P.hp = maxHpNow(P); }
+    else if (a === 'upg0') { for (k in UPG) P.upg[k] = 0; P.hp = Math.min(P.hp, maxHpNow(P)); }
+    else if (a === 'armor') { for (i = 0; i < ARM_PARTS.length; i++) P.armor[ARM_PARTS[i]] = +v; P.hp = Math.min(P.hp, maxHpNow(P)); }
+    else if (a === 'perk') { if (v === 'ma') maxAmmo(P); else P.perkT[v] = TUNE.perkDur * 6; }
+    else if (a === 'drop') { var q = devPos(P, 50); if (v === 'special') addPickup(q.x, q.y, 'special', SPECIAL_IDS[Math.floor(Math.random() * 3)], 30); else addPickup(q.x, q.y, v, v, 30); }
+    else if (a === 'coinrain') { for (i = 0; i < 40; i++) coins.push({ x: P.x + rnd(-80, 80), y: P.y + rnd(-80, 80), vx: rnd(-60, 60), vy: rnd(-60, 60), v: 5, to: -1 }); }
+    else if (a === 'bonus') { if (mapId === 'haunted') { bonusRoom = +v >= 0 ? +v : Math.floor(Math.random() * 9); } else DEV.msg = 'Bonus rooms are on the Haunted House map only.'; }
+    else if (a === 'bonusoff') bonusRoom = -1;
+    else if (a === 'doors') { if (DOORS.length) devDoor(true, v === 'open'); else DEV.msg = 'This map has no doors.'; }
+    else if (a === 'tp') { if (mapId === 'haunted') { var cx = HH.cols[+v % 3] + HH.Rm / 2, cy = HH.cols[Math.floor(+v / 3)] + HH.Rm / 2; P.x = cx; P.y = cy; } else DEV.msg = 'Room teleport is Haunted House only.'; }
+    else if (a === 'tpstart') { P.x = MAPCFG.sx; P.y = MAPCFG.sy; }
+    else if (a === 'box') { placeBoxes(); }
+    else if (a === 'boxhere') { var bq = devPos(P, 60); boxes = [{ x: bq.x, y: bq.y }]; }
+    else if (a === 'bars') { for (i = 0; i < BLD.length; i++) if (BLD[i].bar) BLD[i].bar.planks = v === 'full' ? BLD[i].bar.max : 0; }
+    else if (a === 'gameover') { downAll(); }
+    else if (a === 'off') { DEV.on = false; DEV.god = DEV.kill1 = DEV.zfreeze = DEV.inf = false; DEV.ts = 1; try { localStorage.setItem('zs-dev', '0'); } catch (e) {} devUpdateBtn(); return; }
+    devRender();
+  }
+  function showScreenSafe() { if (screen === 'intro') showScreen(''); }
+  function hurtPlayerForce(P) { P.hp = 0; downPlayer(P); }
+  function downAll() { for (var i = 0; i < players.length; i++) if (!players[i].down) hurtPlayerForce(players[i]); }
+  function devRender() {
+    var h = '<div class="top"><b style="font-size:16px;color:#78e0a0">DEV MODE</b><button data-d="close" type="button">Close</button></div>';
+    function t(name, key, on) { return '<button data-d="' + key + '" class="' + (on ? 'on' : '') + '" type="button">' + name + '</button>'; }
+    function b(name, a, v) { return '<button data-d="' + a + '"' + (v !== undefined ? ' data-v="' + v + '"' : '') + ' type="button">' + name + '</button>'; }
+    h += '<h3>Switches</h3><div class="r">' + t('God mode', 'god', DEV.god) + t('Instakill', 'kill1', DEV.kill1) + t('Freeze zombies', 'zfreeze', DEV.zfreeze) + t('Infinite ammo', 'inf', DEV.inf) + t('Pause while open', 'pause', DEV.pause) + '</div>';
+    h += '<h3>Game speed</h3><div class="r">';
+    [0.25, 0.5, 1, 2].forEach(function (x) { h += '<button data-d="ts" data-v="' + x + '" class="' + (DEV.ts === x ? 'on' : '') + '" type="button">' + x + 'x</button>'; });
+    h += '</div><h3>Coins</h3><div class="r">' + b('+100', 'coins', 100) + b('+1,000', 'coins', 1000) + b('+10,000', 'coins', 10000) + b('+100,000', 'coins', 100000) + b('Set to 0', 'coins0') + b('Coin rain', 'coinrain') + '</div>';
+    h += '<h3>Health</h3><div class="r">' + b('Full heal', 'heal') + b('1 HP', 'hp1') + b('Revive all', 'revive') + b('Go down', 'down') + b('Game over', 'gameover') + '</div>';
+    h += '<h3>Waves</h3><div class="r">' + b('Next wave', 'nextwave') + b('Clear wave', 'clearwave') + b('Kill all', 'killall') + '</div>';
+    h += '<div class="r" style="margin-top:6px"><input id="devWave" type="number" min="1" max="999" value="' + Math.max(1, wave) + '" inputmode="numeric">' + b('Jump to wave', 'gotowave') + '</div>';
+    h += '<h3>Spawn zombies (near you)</h3><div class="r">';
+    Object.keys(TYPES).forEach(function (k) { h += b(TYPES[k].name || k, 'spawn', k); });
+    h += '</div><div class="r" style="margin-top:6px">';
+    ['walker', 'runner', 'tank', 'armoured'].forEach(function (k) { h += b(k + ' x10', 'spawn10', k); });
+    h += '</div><h3>Guns</h3><div class="r"><select id="devGun">';
+    Object.keys(WEAPONS).forEach(function (k) { var d = WEAPONS[k]; if (!d.special) h += '<option value="' + k + '">' + d.name + ' (' + d.cls + ')</option>'; });
+    h += '</select>' + b('Give gun', 'give') + '</div><div class="r" style="margin-top:6px">' + b('Unlock all slots', 'slots') + b('Mk +1', 'gunup') + b('Mk X all', 'gunmax') + b('Max ammo', 'ammo') + '</div>';
+    h += '<h3>Special weapons</h3><div class="r">';
+    ['flame', 'rocket', 'mini', 'ray', 'zap'].forEach(function (k) { h += b(SPECIALS[k].name, 'special', k); });
+    h += '</div><h3>Upgrades and armour</h3><div class="r">' + b('All upgrades +1', 'upg', 1) + b('+5', 'upg', 5) + b('+10', 'upg', 10) + b('Reset upgrades', 'upg0') + '</div><div class="r" style="margin-top:6px">' + b('Armour tier 4', 'armor', 4) + b('Armour tier 1', 'armor', 1) + b('No armour', 'armor', 0) + '</div>';
+    h += '<h3>Power-ups (60s)</h3><div class="r">';
+    Object.keys(PERKS).forEach(function (k) { h += b(PERKS[k].name, 'perk', k); });
+    h += '</div><h3>Drops at your feet</h3><div class="r">' + b('Health', 'drop', 'health') + b('Ammo', 'drop', 'ammo') + b('Special crate', 'drop', 'special') + '</div>';
+    h += '<h3>Map</h3><div class="r">' + b('Barriers full', 'bars', 'full') + b('Barriers broken', 'bars', 'broken') + b('Re-roll boxes', 'box') + b('Box here', 'boxhere') + b('Go to start', 'tpstart') + '</div>';
+    if (mapId === 'haunted') {
+      h += '<h3>Haunted House</h3><div class="r">' + b('Open all doors', 'doors', 'open') + b('Close all doors', 'doors', 'close') + b('Random bonus room', 'bonus', -1) + b('Bonus off', 'bonusoff') + '</div>';
+      h += '<div class="r" style="margin-top:6px">'; HH_NAMES.forEach(function (n, i) { h += b('Go: ' + n[0], 'tp', i); }); h += '</div>';
+      h += '<div class="r" style="margin-top:6px">'; HH_NAMES.forEach(function (n, i) { h += b('Bonus: ' + n[0], 'bonus', i); }); h += '</div>';
+    }
+    h += '<h3>Dev mode</h3><div class="r">' + b('Turn dev mode off', 'off') + '</div><div class="m">' + esc(DEV.msg) + '</div>';
+    var sc = devPanel.scrollTop; devPanel.innerHTML = h; devPanel.scrollTop = sc;
+  }
+  devPanel.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-d]') : null; if (!el) return;
+    ensureAudio(); devAct(el.dataset.d, el.dataset.v);
+  });
+  devBtn.addEventListener('click', function () {
+    ensureAudio(); DEV.open = !DEV.open; devPanel.hidden = !DEV.open; if (DEV.open) devRender();
+  });
+  function devTick() {
+    if (!DEV.on || net.mode === 'client') return;
+    var i, P, j, g;
+    for (i = 0; i < players.length; i++) {
+      P = players[i];
+      if (DEV.god && !P.down) P.hp = maxHpNow(P);
+      if (DEV.inf) {
+        for (j = 0; j < 3; j++) { g = P.slots[j]; if (g) { g.mag = gunMag(WEAPONS[g.id]); g.reload = 0; if (WEAPONS[g.id].res !== Infinity) g.res = WEAPONS[g.id].res; } }
+        if (P.special) P.special.ammo = P.special.max;
+      }
+    }
+    if (DEV.kill1) for (i = 0; i < zombies.length; i++) zombies[i].hp = Math.min(zombies[i].hp, 1);
   }
 
   // ---------- start ----------
