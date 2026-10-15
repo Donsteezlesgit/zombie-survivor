@@ -2030,7 +2030,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     phase = 'grace'; graceT = graceFor(wave);
     if (net.mode === 'off' && wave >= 20) unlockNextMap();
-    bannerAll('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's · shop is open any time', 2.6);
+    bannerAll('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's' + (wave === 1 ? ' · shop is open any time' : ''), 2.6);
     stone(330, 330, 0.12, 'square', 0.06); stone(494, 494, 0.12, 'square', 0.06, 0.12); stone(659, 659, 0.2, 'square', 0.06, 0.24);
     saveGame();
   }
@@ -2111,7 +2111,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     introOn = false;
     rollCards(P);
     phase = 'grace'; graceT = graceFor(wave); state = 'play';
-    showBanner('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's · shop is open any time', 2.6);
+    showBanner('Wave ' + wave + ' cleared', 'Next wave in ' + graceFor(wave) + 's' + (wave === 1 ? ' · shop is open any time' : ''), 2.6);
     return true;
   }
 
@@ -3102,7 +3102,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 112';
+  var updMsg = '', VERSION = 'Version 113';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
