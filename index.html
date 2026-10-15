@@ -328,7 +328,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     baseDmg: 10, hpBase: 100, spdBase: 140,
     zHpScale: 0.07, zDmgScale: 0.04, cap: 70,
     coinWave: 0.06, magBase: 80,
-    dropTank: 0.35, crateLife: 15,
+    dropTank: 0.2, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
     dropAmmo: { walker: 0.12, runner: 0.12, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.4, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.33, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
@@ -2709,7 +2709,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 73';
+  var updMsg = '', VERSION = 'Version 74';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
