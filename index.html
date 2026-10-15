@@ -1299,7 +1299,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
     RECTS.length = 0; BLD.length = 0; ROOFS.length = 0; DOORS.length = 0; LIGHTS.length = 0; bats = [];
     MAPCFG = d.cfg;
-    d.build(); d.ground(); d.bld(); navInit();
+    d.build(); d.ground(); d.bld();
+    // buildings are baked into the ground picture once, so the game draws one big layer instead of two
+    groundL.x.save(); groundL.x.setTransform(1, 0, 0, 1, 0, 0); groundL.x.drawImage(bldL.c, 0, 0); groundL.x.restore();
+    bldL.c.width = bldL.c.height = 1; bloodOn = false;
+    navInit();
   }
   setMap('beginners');
 
@@ -1373,15 +1377,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return false;
   }
 
+  var bloodOn = false;
   function splat(x, y, r, a) {
-    var b = bloodL.x;
+    var b = bloodL.x; bloodOn = true;
     for (var k = 0; k < 6; k++) {
       b.fillStyle = 'rgba(' + ((70 + Math.random() * 45) | 0) + ',8,8,' + a + ')';
       b.beginPath(); b.arc(x + rnd(-0.7, 0.7) * r, y + rnd(-0.7, 0.7) * r, r * rnd(0.25, 0.65), 0, 6.283); b.fill();
     }
   }
   function scorch(x, y, r) {
-    var b = bloodL.x, g = b.createRadialGradient(x, y, 0, x, y, r);
+    var b = bloodL.x, g = b.createRadialGradient(x, y, 0, x, y, r); bloodOn = true;
     g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     b.fillStyle = g; b.fillRect(x - r, y - r, r * 2, r * 2);
   }
@@ -1860,7 +1865,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < DOORS.length; i++) { DOORS[i].open = false; DOORS[i].prog = 0; DOORS[i].zt = 0; DOORS[i].wait = false; }
     navT = 0;
     kills = 0; shake = 0; hurtFlash = 0; gen++;
-    bloodL.x.clearRect(0, 0, WORLD, WORLD);
+    bloodL.x.clearRect(0, 0, WORLD, WORLD); bloodOn = false;
     state = 'play';
     startWave(1);
     // a short briefing for this map, then the countdown runs out and wave 1 begins
@@ -2440,7 +2445,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       p.x += p.vx * dt; p.y += p.vy * dt;
       var pd = Math.pow(0.04, dt); p.vx *= pd; p.vy *= pd;
       p.life -= dt;
-      if (p.life <= 0) { if (Math.random() < 0.3) { bloodL.x.fillStyle = 'rgba(95,10,10,0.5)'; bloodL.x.fillRect(p.x, p.y, p.r, p.r); } parts.splice(i, 1); }
+      if (p.life <= 0) { if (Math.random() < 0.3) { bloodOn = true; bloodL.x.fillStyle = 'rgba(95,10,10,0.5)'; bloodL.x.fillRect(p.x, p.y, p.r, p.r); } parts.splice(i, 1); }
     }
     for (i = fx.length - 1; i >= 0; i--) {
       var f = fx[i];
@@ -2893,7 +2898,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 90';
+  var updMsg = '', VERSION = 'Version 91';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3797,13 +3802,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } catch (e) {}
     var r = game.getBoundingClientRect();
     W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     zoom = Math.min(W, H) / 400;
     zoom = Math.max(0.8, Math.min(2, zoom));
     zoom = Math.max(zoom, Math.max(W, H) / WORLD);
     K = dpr * zoom;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    lcv.width = cv.width; lcv.height = cv.height;
+    lcv.width = Math.ceil(cv.width / 2); lcv.height = Math.ceil(cv.height / 2); ZSP = {};
   }
   window.addEventListener('resize', fit);
   // iOS settles its window size a moment after load, so re-apply the full-screen layout a few times
@@ -3839,12 +3844,21 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function zFeet(z) { var s = ZSZ[z.type] || ZSZ.walker; return z.y + z.r * 0.5 + 8 * s[1]; }
   function zHeadY(z) { var s = ZSZ[z.type] || ZSZ.walker; return zFeet(z) - (z.boss ? 52 : z.type === 'ghost' ? 46 : 46) * s[1]; }
   function zRR(c, x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
+  var LSP = {};
+  function lightSpr(rgb, mid) {
+    var key = rgb + (mid ? 'm' : ''), sp = LSP[key];
+    if (sp) return sp;
+    sp = document.createElement('canvas'); sp.width = sp.height = 64;
+    var x = sp.getContext('2d'), g = x.createRadialGradient(32, 32, mid ? 2.56 : 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(' + rgb + ',1)'); if (mid) g.addColorStop(0.5, 'rgba(' + rgb + ',0.82)'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    return (LSP[key] = sp);
+  }
   function drawGhost(z, c) {
     var sc = ZSZ.ghost[0], fl = z.flash > 0, bob = Math.sin(time * 4 + z.seed) * 2.2, ang = z.ang, fx = Math.cos(ang), back = false, sx = fx >= 0 ? 1 : -1, side = Math.abs(fx) > 0.45, e;
     c.save(); c.translate(z.x, z.y + z.r * 0.9 + 6 + bob); c.scale(sc, sc);
     c.globalAlpha = fl ? 1 : 0.72 + 0.12 * Math.sin(time * 6 + z.seed);
-    var g = c.createRadialGradient(0, -22, 3, 0, -22, 30); g.addColorStop(0, 'rgba(191,230,255,0.33)'); g.addColorStop(1, 'rgba(191,230,255,0)');
-    c.fillStyle = g; c.fillRect(-34, -56, 68, 70);
+    var ga = c.globalAlpha; c.globalAlpha = ga * 0.33; c.drawImage(lightSpr('191,230,255'), -32, -54, 64, 64); c.globalAlpha = ga;
     c.fillStyle = fl ? '#ffffff' : '#b8d8ee'; c.strokeStyle = '#5a86a8'; c.lineWidth = 2;
     c.beginPath(); c.moveTo(-9, -8); c.lineTo(-10, -30); c.quadraticCurveTo(-10, -44, 0, -44); c.quadraticCurveTo(10, -44, 10, -30); c.lineTo(9, -8);
     var w1 = Math.sin(time * 6 + z.seed) * 1.5;
@@ -3854,13 +3868,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.beginPath(); c.moveTo(-9, -24); c.lineTo(-17, -14 + w1); c.lineTo(-12, -12 + w1); c.lineTo(-9, -18); c.moveTo(9, -24); c.lineTo(17, -14 - w1); c.lineTo(12, -12 - w1); c.lineTo(9, -18); c.fill(); c.stroke();
     c.restore();
   }
-  function drawZombie(z, c) {
-    c = c || ctx;
-    if (z.type === 'ghost') { drawGhost(z, c); return; }
-    var k = z.type, S = ZSZ[k] || ZSZ.walker, col = ZCOL[k] || ZCOL.walker, fl = z.flash > 0, OUT = '#0d0a08';
+  function zombieArt(c, k, ang, step, fl, seed) {
+    var S = ZSZ[k] || ZSZ.walker, col = ZCOL[k] || ZCOL.walker, OUT = '#0d0a08';
     var sk = fl ? '#f4ece0' : col.skin, cl = fl ? '#e8dccb' : col.cloth, pn = fl ? '#d8ccbb' : col.pants, hair = fl ? '#e8dccb' : '#2a2418';
-    var step = time * (3 + (TYPES[k].spd || 60) * 0.075) + z.seed * 3, sg = Math.sin(step) * 3.2;
-    var ang = z.ang, fx = Math.cos(ang), fy = Math.sin(ang) * 0.8, back = fy < -0.25, front = fy > 0.25, side = Math.abs(fx) > 0.45, sx = fx >= 0 ? 1 : -1;
+    var sg = Math.sin(step) * 3.2;
+    var fx = Math.cos(ang), fy = Math.sin(ang) * 0.8, back = fy < -0.25, front = fy > 0.25, side = Math.abs(fx) > 0.45, sx = fx >= 0 ? 1 : -1;
     var fast = (k === 'runner' || k === 'bossRun'), lean = fast ? 5 : 3.5;
     var bulk = k === 'tank' ? 1.3 : k === 'boss' ? 1.25 : fast ? 0.8 : 1;
     var hx = side ? sx * lean : 0, hy = -33 + (front && !side ? 1 : 0);
@@ -3874,8 +3886,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       part(function () { c.beginPath(); c.arc(hxp, hyp, k === 'boss' ? 4.6 : k === 'bossRun' ? 2.6 : 3.4, 0, 6.283); }, sk);
       if (k === 'bossRun') { c.strokeStyle = '#e8e0cc'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(hxp, hyp); c.lineTo(hxp + (hxp > shx ? 5 : -5) * (side ? 1 : 0.4), hyp + 3); c.stroke(); }
     }
-    c.save(); c.translate(z.x, zFeet(z)); c.scale(S[0], S[1]);
-    if (z.warn > 0) { c.strokeStyle = 'rgba(255,60,40,0.85)'; c.lineWidth = 3 / S[0]; c.beginPath(); c.ellipse(0, 1, 24, 10, 0, 0, 6.283); c.stroke(); }
+    c.save(); c.scale(S[0], S[1]);
     if (k === 'bossFire') { var gg = c.createRadialGradient(0, -20, 2, 0, -20, 44); gg.addColorStop(0, 'rgba(255,122,28,0.4)'); gg.addColorStop(1, 'rgba(255,122,28,0)'); c.fillStyle = gg; c.fillRect(-48, -70, 96, 90); }
     c.fillStyle = 'rgba(0,0,0,0.42)'; c.beginPath(); c.ellipse(0, 1, 13 * bulk, 5.5, 0, 0, 6.283); c.fill();
     var lw = 6 * bulk;
@@ -3895,7 +3906,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (k === 'bossFire') { part(function () { zRR(c, -6, -26, 12, 15, 3); }, '#7a2a14'); c.fillStyle = '#ff9a2a'; c.fillRect(-3, -23, 6, 4); c.fillStyle = '#ffd25a'; c.fillRect(-1.5, -22, 3, 2); }
     var hr = k === 'tank' ? 7 : k === 'boss' ? 8.5 : 8;
     part(function () { c.beginPath(); c.arc(hx, hy - 2, hr, 0, 6.283); }, sk);
-    if (k === 'bossFire') { var fw = 0.8 * Math.sin(time * 9 + z.seed); c.fillStyle = '#ff9a2a'; c.strokeStyle = OUT; c.lineWidth = 1.6; [-5, 0, 5].forEach(function (qq, i) { c.beginPath(); c.moveTo(hx + qq - 3, hy - 8); c.quadraticCurveTo(hx + qq, hy - 20 - (i % 2) * 4 - fw * 2, hx + qq + 3, hy - 8); c.fill(); c.stroke(); }); }
+    if (k === 'bossFire') { var fw = 0.8 * Math.sin(step * 3); c.fillStyle = '#ff9a2a'; c.strokeStyle = OUT; c.lineWidth = 1.6; [-5, 0, 5].forEach(function (qq, i) { c.beginPath(); c.moveTo(hx + qq - 3, hy - 8); c.quadraticCurveTo(hx + qq, hy - 20 - (i % 2) * 4 - fw * 2, hx + qq + 3, hy - 8); c.fill(); c.stroke(); }); }
     if (k === 'walker' || k === 'runner' || k === 'bossRun') {
       c.fillStyle = hair; c.strokeStyle = OUT; c.lineWidth = 1.6;
       { c.beginPath(); c.arc(hx, hy - 3.5, hr, Math.PI * 1.05, Math.PI * 1.95); c.lineTo(hx + hr * 0.5, hy - 6); c.lineTo(hx - hr * 0.2, hy - 4); c.lineTo(hx - hr * 0.7, hy - 6); c.closePath(); c.fill(); c.stroke(); }
@@ -3913,6 +3924,29 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (side) arm(-sx, -22, sx * (16 + bulk * 2), -17 - sg * 0.2, aw);
     if (k === 'bossThrow') { part(function () { c.beginPath(); c.arc(side ? sx * 13 : 9, -17, 5.2, 0, 6.283); }, '#8a8478'); c.fillStyle = '#5a564c'; c.fillRect((side ? sx * 13 : 9) - 1.5, -19, 3, 2); }
     c.restore();
+  }
+  // zombies are drawn once into small cached pictures (16 directions x 6 walk frames) and then just stamped each frame
+  var ZSP = {};
+  function zSprite(k, di, fr) {
+    var key = k + di + '_' + fr, sp = ZSP[key];
+    if (sp) return sp;
+    var S = ZSZ[k] || ZSZ.walker, q = K, top = 48 * S[1], bot = 8 * S[1], cvs = document.createElement('canvas'), cx;
+    cvs.width = Math.ceil(60 * S[0] * q); cvs.height = Math.ceil((top + bot) * q);
+    cx = cvs.getContext('2d');
+    cx.setTransform(q, 0, 0, q, cvs.width / 2, top * q);
+    zombieArt(cx, k, di * (6.283185 / 16), fr / 6 * 6.283185 + 0.5, false, 0);
+    sp = ZSP[key] = { c: cvs, ox: cvs.width / 2 / q, oy: top, w: cvs.width / q, h: cvs.height / q };
+    return sp;
+  }
+  function drawZombie(z, c) {
+    c = c || ctx;
+    if (z.type === 'ghost') { drawGhost(z, c); return; }
+    var k = z.type, S = ZSZ[k] || ZSZ.walker, fy = zFeet(z), step = time * (3 + (TYPES[k].spd || 60) * 0.075) + z.seed * 3, fl = z.flash > 0;
+    if (z.warn > 0) { c.save(); c.translate(z.x, fy); c.scale(S[0], S[1]); c.strokeStyle = 'rgba(255,60,40,0.85)'; c.lineWidth = 3 / S[0]; c.beginPath(); c.ellipse(0, 1, 24, 10, 0, 0, 6.283); c.stroke(); c.restore(); }
+    if (z.boss || fl || c !== ctx || !ZCOL[k]) { c.save(); c.translate(z.x, fy); zombieArt(c, k, z.ang, step, fl, z.seed); c.restore(); return; }
+    var di = Math.round((((z.ang % 6.283185) + 6.283185) % 6.283185) / (6.283185 / 16)) % 16, fr = Math.floor((((step % 6.283185) + 6.283185) % 6.283185) / 6.283185 * 6) % 6;
+    var sp = zSprite(k, di, fr);
+    c.drawImage(sp.c, z.x - sp.ox, fy - sp.oy, sp.w, sp.h);
   }
 
   // one player body. Works for the menu preview too (c is any 2d context)
@@ -4257,7 +4291,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.setTransform(bigDpr, 0, 0, bigDpr, 0, 0);
     c.clearRect(0, 0, S, S);
     c.drawImage(groundL.c, 0, 0, S, S);
-    c.drawImage(bldL.c, 0, 0, S, S);
     c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, S, S);
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
     function lab(t, tx, ty, col, sz) { c.font = '700 ' + (sz || fs) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.85)'; var hw = c.measureText(t).width / 2 + 2; tx = Math.max(hw, Math.min(S - hw, tx)); c.strokeText(t, tx, ty); c.fillStyle = col || '#ebe3d4'; c.fillText(t, tx, ty); }
@@ -4308,8 +4341,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ctx.fillStyle = '#0c0a08'; ctx.fillRect(0, 0, cv.width, cv.height);
     setCam();
     ctx.drawImage(groundL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
-    ctx.drawImage(bloodL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
-    ctx.drawImage(bldL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
+    if (bloodOn) ctx.drawImage(bloodL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
     drawBarriers();
     drawDoors();
     drawBonus();
@@ -4338,20 +4370,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
 
     // lighting
-    lctx.setTransform(1, 0, 0, 1, 0, 0);
+    lctx.setTransform(0.5, 0, 0, 0.5, 0, 0);
     lctx.globalCompositeOperation = 'source-over';
-    lctx.clearRect(0, 0, lcv.width, lcv.height);
+    lctx.clearRect(0, 0, cv.width, cv.height);
     lctx.fillStyle = 'rgba(5,4,4,' + (0.8 - 0.5 * lightF).toFixed(3) + ')';
-    lctx.fillRect(0, 0, lcv.width, lcv.height);
+    lctx.fillRect(0, 0, cv.width, cv.height);
     lctx.globalCompositeOperation = 'destination-out';
     for (i = 0; i < players.length; i++) {
       P = players[i];
       var mine = P === me, px = (P.x - cam.x) * K, py = (P.y - cam.y) * K;
       if (!mine && (P.down || px < -200 * K || px > cv.width + 200 * K || py < -200 * K || py > cv.height + 200 * K)) continue;
       var R = (mine ? 320 : 170) * K * (mine && !P.down ? (1 + (P.flash > 0 ? 0.12 : 0)) : (mine ? 0.55 : 1));
-      var lg = lctx.createRadialGradient(px, py, R * 0.08, px, py, R);
-      lg.addColorStop(0, 'rgba(0,0,0,1)'); lg.addColorStop(0.5, 'rgba(0,0,0,0.82)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
-      lctx.fillStyle = lg; lctx.fillRect(px - R, py - R, R * 2, R * 2);
+      lctx.drawImage(lightSpr('0,0,0', 1), px - R, py - R, R * 2, R * 2);
     }
     if (bonusRoom >= 0) {
       var bq = bonusRect(), bxc = (bq.x + bq.w / 2 - cam.x) * K, byc = (bq.y + bq.h / 2 - cam.y) * K, br0 = 230 * K;
@@ -4363,22 +4393,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var Lt = LIGHTS[i];
       if (Lt.x < cam.x - Lt.r || Lt.x > cam.x + vw + Lt.r || Lt.y < cam.y - Lt.r || Lt.y > cam.y + vh + Lt.r) continue;
       var lx0 = (Lt.x - cam.x) * K, ly0 = (Lt.y - cam.y) * K, lr0 = Lt.r * K * (Lt.st ? 1 : 0.88 + 0.12 * Math.sin(time * 7 + Lt.s));
-      var lg0 = lctx.createRadialGradient(lx0, ly0, 0, lx0, ly0, lr0);
-      lg0.addColorStop(0, 'rgba(0,0,0,' + Lt.a + ')'); lg0.addColorStop(1, 'rgba(0,0,0,0)');
-      lctx.fillStyle = lg0; lctx.fillRect(lx0 - lr0, ly0 - lr0, lr0 * 2, lr0 * 2);
+      lctx.globalAlpha = Lt.a; lctx.drawImage(lightSpr('0,0,0'), lx0 - lr0, ly0 - lr0, lr0 * 2, lr0 * 2); lctx.globalAlpha = 1;
     }
     for (i = 0; i < fx.length; i += 6) {
       var lf = fx[i];
       if (lf.life > lf.max * 0.6) {
         var lx = (lf.x - cam.x) * K, ly = (lf.y - cam.y) * K, lr = 70 * K;
-        var lg2 = lctx.createRadialGradient(lx, ly, 0, lx, ly, lr);
-        lg2.addColorStop(0, 'rgba(0,0,0,0.6)'); lg2.addColorStop(1, 'rgba(0,0,0,0)');
-        lctx.fillStyle = lg2; lctx.fillRect(lx - lr, ly - lr, lr * 2, lr * 2);
+        lctx.globalAlpha = 0.6; lctx.drawImage(lightSpr('0,0,0'), lx - lr, ly - lr, lr * 2, lr * 2); lctx.globalAlpha = 1;
       }
     }
     lctx.globalCompositeOperation = 'source-over';
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(lcv, 0, 0);
+    ctx.drawImage(lcv, 0, 0, cv.width, cv.height);
     if (lightF > 0.02) { ctx.fillStyle = 'rgba(170,190,255,' + (0.2 * lightF).toFixed(3) + ')'; ctx.fillRect(0, 0, cv.width, cv.height); }
 
     // glowing things over the dark
@@ -4388,10 +4414,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (i = 0; i < LIGHTS.length; i++) {
         var Lg = LIGHTS[i];
         if (Lg.x < cam.x - Lg.r || Lg.x > cam.x + vw + Lg.r || Lg.y < cam.y - Lg.r || Lg.y > cam.y + vh + Lg.r) continue;
-        var fa = (0.09 + (Lg.st ? 0 : 0.03) * Math.sin(time * 7 + Lg.s)) * Lg.a * 1.6, gg = ctx.createRadialGradient(Lg.x, Lg.y, 0, Lg.x, Lg.y, Lg.r * 0.8);
-        gg.addColorStop(0, 'rgba(' + Lg.col + ',' + fa.toFixed(3) + ')'); gg.addColorStop(1, 'rgba(' + Lg.col + ',0)');
-        ctx.fillStyle = gg; ctx.fillRect(Lg.x - Lg.r, Lg.y - Lg.r, Lg.r * 2, Lg.r * 2);
+        var fa = (0.09 + (Lg.st ? 0 : 0.03) * Math.sin(time * 7 + Lg.s)) * Lg.a * 1.6;
+        ctx.globalAlpha = Math.min(1, fa); ctx.drawImage(lightSpr(Lg.col), Lg.x - Lg.r * 0.8, Lg.y - Lg.r * 0.8, Lg.r * 1.6, Lg.r * 1.6);
       }
+      ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = 'source-over';
     }
     ctx.lineCap = 'round';
@@ -4822,7 +4848,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     me = pById(localId) || ensurePlayer(localId);
     zombies = []; bullets = []; parts = []; fx = []; coins = []; pickups = []; ebullets = []; bolts = []; boxes = [];
     snaps = []; clockOff = null; lastSnapAt = performance.now();
-    bloodL.x.clearRect(0, 0, WORLD, WORLD);
+    bloodL.x.clearRect(0, 0, WORLD, WORLD); bloodOn = false;
     wave = 1; phase = 'spawning'; kills = 0; shake = 0; hurtFlash = 0; gbW = []; gbSt = []; gbDone = 0; gbOn = false;
     state = 'play'; shopOpen = false; shop.hidden = true; boxUI.hidden = true;
     introOn = true; showScreen('intro');
@@ -4951,6 +4977,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function statFlush() { if (stDirty) { stDirty = false; saveStats(); } }
   function loop(now) {
+    // 120Hz phones: run at 60 so the phone does half the drawing and stays cooler
+    if (now - last < 14) { requestAnimationFrame(loop); return; }
     var dt = (now - last) / 1000; last = now;
     if (dt > 0.05) dt = 0.05;
     if (DEV.on && net.mode !== 'client') { dt *= DEV.ts; devTick(); }
