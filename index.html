@@ -1536,6 +1536,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ['h:1', 'k', 100, 'Get 100 kills in total', 'kills'], ['h:2', 'bwb', 8, 'Reach wave 8 on Beginners Ground', 'wave'], ['h:3', 'gp', 30, 'Get 30 pistol kills in one game', 'pistol kills'],
     ['k:1', 'gm', 10, 'Play 10 games', 'games']].forEach(function (u) { UNLOCKS[u[0]] = { s: u[1], n: u[2], t: u[3], u: u[4] }; });
   function isUnlocked(slot, v) { var u = UNLOCKS[slot + ':' + v]; return !u || DEV.on || STATS[u.s] >= u.n; }
+  // rough effort score for an unlock, so the lists can run easiest to hardest
+  var HARD = { k: 1 / 25, bw: 0, bwb: 0, bwh: 0, kb: 1 / 25, kh: 1.2 / 25, kg: 0.4, gp: 0.8, gs: 0.5, gsh: 1.2, gr: 0.8, gsn: 2.5, gl: 0.8, bk: 8, gm: 3, rl: 15, gh: 50, rv: 6, cg: 10 };
+  function unHard(slot, v) {
+    var u = UNLOCKS[slot + ':' + v];
+    if (!u) return 0;
+    if (u.s === 'bw') return Math.pow(u.n, 1.4);
+    if (u.s === 'bwb') return Math.pow(u.n, 1.4) * 0.9;
+    if (u.s === 'bwh') return Math.pow(u.n, 1.4) * 1.3;
+    return u.n * HARD[u.s];
+  }
   // what this game unlocked: snapshot at the start, compare at the end
   var unSnap = null, newUn = [];
   function unTake() { unSnap = {}; for (var k in UNLOCKS) unSnap[k] = STATS[UNLOCKS[k].s] >= UNLOCKS[k].n; newUn = []; }
@@ -1565,7 +1575,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function meTiles() {
     var t = ME_TABS[meTab], out = [], i;
     if (t[0] === 'x') return [{ s: 'n', v: 1, name: 'Team scarf', tog: true }, { s: 'a', v: 1, name: 'Ghost glow', tog: true }];
-    for (i = 0; i < t[2].length; i++) out.push({ s: t[0], v: i, name: t[2][i] });
+    for (i = 0; i < t[2].length; i++) out.push({ s: t[0], v: i, name: t[2][i], o: i });
+    // free items first, then the earned ones from easiest to hardest
+    out.sort(function (a, b) { return unHard(a.s, a.v) - unHard(b.s, b.v) || a.o - b.o; });
     return out;
   }
   function meLook() { var l = {}, k; for (k in myLook) l[k] = myLook[k]; if (mePrev) l[mePrev.s] = mePrev.v; return l; }
@@ -2961,7 +2973,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 100';
+  var updMsg = '', VERSION = 'Version 101';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
