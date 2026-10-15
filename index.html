@@ -3418,7 +3418,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 124';
+  var updMsg = '', VERSION = 'Version 125';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3477,7 +3477,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function drawMeFig(x, look, ang, sc, tx, ty) {
     var P = { x: 0, y: 0, ang: ang, look: look, armor: { head: 0, body: 0, legs: 0 }, inv: 0, step: 0, down: false };
     x.save(); x.translate(tx, ty); x.scale(sc, sc); drawPlayerBody(x, P, WEAPONS.glock, 1);
-    if (look.pt) drawPetSprite(x, look.pt, -18, 12, 0, 0.6, 0, 1);
+    if (look.pt) drawPetSprite(x, look.pt, -24, 13, 0, 0.6, 0, 1.9);
     x.restore();
   }
   function drawPreview() {
@@ -3492,7 +3492,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (t.dataset.s === 'hk' && !(l.h >= 1 && l.h <= 3)) l.h = 1;
       if (t.dataset.s === 'kc' && l.k !== 1) l.k = 1;
       var cx = t.getContext('2d'); cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, 128, 150);
-      if (t.dataset.s === 'pt') { if (+t.dataset.v) drawPetSprite(cx, +t.dataset.v, 64, 112, 0, 0.6, 0, 5.2); }
+      if (t.dataset.s === 'pt') { if (+t.dataset.v) drawPetSprite(cx, +t.dataset.v, 64, 112, 0, 0.6, 0, 3.6); }
       else drawMeFig(cx, l, 0.15, 2.3, 64, 110);
     }
   }
@@ -4538,6 +4538,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function drawPetSprite(c, pt, x, y, hd, ph, mv, sc) {
     // 3/4 top-down like the players: upright sprite, feet at (0,0). Side view when walking left/right, front or back when walking down/up.
     var OUT = '#0d0b09', cs = Math.cos(hd), sn = Math.sin(hd), vw = sn > 0.75 ? 'f' : sn < -0.75 ? 'b' : 's', s1 = mv ? Math.sin(ph) : 0, hop = mv ? Math.abs(Math.sin(ph)) * 0.9 : 0, br = mv ? 0 : Math.sin(ph * 0.4) * 0.25;
+    function LF(k) { return mv ? Math.max(0, Math.cos(ph + k)) * 1.5 : 0; }   // foot lift: a leg rises while it swings forward
     function E(cx, cy, rx, ry, col, rot) { c.fillStyle = col; c.strokeStyle = OUT; c.lineWidth = 0.8; c.beginPath(); c.ellipse(cx, cy, rx, ry, rot || 0, 0, 6.283); c.fill(); c.stroke(); }
     function T(ax, ay, bx, by, cx2, cy2, col) { c.fillStyle = col; c.strokeStyle = OUT; c.lineWidth = 0.8; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.lineTo(cx2, cy2); c.closePath(); c.fill(); c.stroke(); }
     function LN(pts, col, w) { c.strokeStyle = OUT; c.lineWidth = w + 1.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(pts[0], pts[1]); c.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]); c.stroke(); c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(pts[0], pts[1]); c.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]); c.stroke(); }
@@ -4558,14 +4559,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var ch = pt === 5, BB = ch ? '#f3efe6' : '#1a191e', WG = ch ? '#e1d9c6' : '#2d2d38', TL = ch ? '#dcd5c4' : '#121115', BK = ch ? '#e8a62b' : '#55524f', LG = ch ? '#e8a62b' : '#3b3a3f', by = -4.6 - hop;
       var rb = ch ? 4.4 : 4.7, rh = ch ? 4.2 : 3.3;
       if (vw === 's') {
-        LN([0.5, -2.5 - hop, 0.5 + s1 * 1.2, -1, 0.5 + s1 * 1.8, 0], LG, 0.9); LN([-0.5, -2.5 - hop, -0.5 - s1 * 1.2, -1, -0.5 - s1 * 1.8, 0], LG, 0.9);
+        LN([0.5, -2.5 - hop, 0.5 + s1 * 1.2, -1 - LF(0) * 0.4, 0.5 + s1 * 1.8, -LF(0)], LG, 0.9); LN([-0.5, -2.5 - hop, -0.5 - s1 * 1.2, -1 - LF(Math.PI) * 0.4, -0.5 - s1 * 1.8, -LF(Math.PI)], LG, 0.9);
         if (ch) E(-4.6, by - 2.2, 2.2, 3, TL, -0.5); else E(-5.6, by + 0.8, 3.4, 1.3, TL, 0.45);
         E(0, by + br, rb, rh, BB); E(-0.8, by + 0.4 + br, 3, 1.9, WG, 0.1);
         E(4.2, by - 3.4, 2.3, 2.3, BB);
         if (ch) { E(4.1, by - 5.5, 1.1, 0.9, '#d23a2e'); E(5.2, by - 1.9, 0.6, 0.9, '#d23a2e'); }
         T(6, by - 4.2, 8.8, by - 3.4, 6, by - 2.8, BK); E(5, by - 3.9, 0.5, 0.5, ch ? '#111' : '#d9d9e2');
       } else {
-        LN([-1.3, -2.5 - hop, -1.3 + s1, -1, -1.3 + s1, 0], LG, 0.9); LN([1.3, -2.5 - hop, 1.3 - s1, -1, 1.3 - s1, 0], LG, 0.9);
+        LN([-1.3, -2.5 - hop, -1.3, -1, -1.3, -LF(0)], LG, 0.9); LN([1.3, -2.5 - hop, 1.3, -1, 1.3, -LF(Math.PI)], LG, 0.9);
         if (vw === 'b') { if (ch) E(0, by - 3.6, 2.4, 3.2, TL); else E(0, by + 0.6, 2, 3.4, TL); }
         E(0, by + br, rb - 0.4, rh, BB);
         if (vw === 'f') { E(-3.3, by + 0.4, 1.3, 2.6, WG); E(3.3, by + 0.4, 1.3, 2.6, WG); }
@@ -4582,15 +4583,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       : pt === 4 ? { B: '#e6d3a7', L: '#f1e4c4', E: '#caae78', M: '#f6ecd2', ear: 'flop', tail: 'up', bl: 6.2, bh: 3.5, hr: 3.1 }
       : pt === 2 ? { B: '#c98a4b', L: '#a8703a', E: '#c98a4b', M: '#ecd0a8', ear: 'point', tail: 'cat', bl: 5.6, bh: 3.2, hr: 2.9, stripe: 1 }
       : { B: '#8a847a', L: '#6f6a62', E: '#d6a6a6', M: '#9a948a', ear: 'round', tail: 'thin', bl: 4.8, bh: 2.6, hr: 2.1, nose: '#d98c8c' };
-    var bl = V.bl, bh = V.bh, hr = V.hr, gy = -2.6 - hop, by2 = gy - bh + br, hy = by2 - hr * 0.9, sw = s1 * 1.5;
+    var bl = V.bl, bh = V.bh, hr = V.hr, gy = -2.6 - hop, by2 = gy - bh + br, hy = by2 - hr * 0.9, sw = s1 * 2.2;
     if (vw === 's') {
       if (V.tail === 'thin') LN([-bl + 0.5, by2 + 1, -bl - 3, by2 + 3 + s1, -bl - 6.5, by2 - 0.5 - s1 * 1.5], '#d9a0a0', 0.8);
       else if (V.tail === 'cat') LN([-bl + 0.8, by2 - 0.5, -bl - 2.5, by2 - 1.5, -bl - 3, by2 - 6 + s1], V.B, 1.6);
       else LN([-bl + 0.8, by2 - 0.8, -bl - 1.5, by2 - 3.4, -bl - 2.4 + s1 * 0.6, by2 - 5], V.B, 1.6);
-      E(bl * 0.55 - sw, gy + 1.2, 1.2, 1.6, V.L); E(-bl * 0.55 + sw, gy + 1.2, 1.2, 1.6, V.L);
+      E(bl * 0.55 - sw, gy + 1.2 - LF(Math.PI), 1.2, 1.6, V.L); E(-bl * 0.55 + sw, gy + 1.2 - LF(0), 1.2, 1.6, V.L);
       E(0, by2, bl, bh, V.B); if (V.chest) E(bl * 0.7, by2 + 0.6, 1.5, 2, V.chest);
       if (V.stripe) { c.strokeStyle = '#8a5a2a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-1.8, by2 - bh + 0.6); c.lineTo(-1.8, by2 - 1); c.moveTo(0.4, by2 - bh + 0.4); c.lineTo(0.4, by2 - 1); c.moveTo(2.4, by2 - bh + 0.8); c.lineTo(2.4, by2 - 1); c.stroke(); }
-      E(bl * 0.55 + sw, gy + 1.2, 1.3, 1.7, V.L); E(-bl * 0.55 - sw, gy + 1.2, 1.3, 1.7, V.L);
+      E(bl * 0.55 + sw, gy + 1.2 - LF(0), 1.3, 1.7, V.L); E(-bl * 0.55 - sw, gy + 1.2 - LF(Math.PI), 1.3, 1.7, V.L);
       var hx = bl + 0.6;
       if (V.ear === 'point') T(hx - 1.6, hy - hr + 0.8, hx - 0.6, hy - hr - 2.6, hx + 0.9, hy - hr + 0.6, V.E);
       E(hx, hy, hr, hr * 0.92, V.B);
@@ -4601,7 +4602,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } else {
       var fr = vw === 'f', hh = hy - 0.6;
       if (!fr) { if (V.tail === 'thin') LN([0, by2 + 1, 2.5, by2 + 2 + s1, 0.6, gy + 0.6], '#d9a0a0', 0.8); else LN([0, by2 - bh + 1, 1 + s1 * 0.8, by2 - bh - 2, 0.3, by2 - bh - 4.2], V.B, 1.5); }
-      E(-bl * 0.3 + sw * 0.6, gy + 1.2, 1.3, 1.6, V.L); E(bl * 0.3 - sw * 0.6, gy + 1.2, 1.3, 1.6, V.L);
+      E(-bl * 0.3, gy + 1.2 - LF(0), 1.3, 1.6, V.L); E(bl * 0.3, gy + 1.2 - LF(Math.PI), 1.3, 1.6, V.L);
       E(0, by2, bh + 0.9, bh, V.B); if (fr && V.chest) E(0, by2 + 0.8, 1.3, 2, V.chest);
       if (V.ear === 'point') { T(-hr + 0.2, hh - hr * 0.3, -hr * 0.6, hh - hr - 2.4, 0 - 0.4, hh - hr + 0.6, V.E); T(hr - 0.2, hh - hr * 0.3, hr * 0.6, hh - hr - 2.4, 0.4, hh - hr + 0.6, V.E); }
       E(0, hh, hr * 1.05, hr, V.B);
@@ -4618,25 +4619,25 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function petUpdate(P, now) {
     var pt = P.look ? (P.look.pt | 0) : 0, S = P.pet, i, d, px, py, tx, ty, seg, f, dx, dy, dist, dt, st, ta, da, last;
     if (!pt) { P.pet = null; return null; }
-    if (!S || S.pt !== pt) S = P.pet = { pt: pt, x: P.x - 14, y: P.y + 6, hd: 0, ph: 0, mv: 0, t: now, tr: [{ x: P.x - 14, y: P.y + 6 }, { x: P.x, y: P.y }] };
+    if (!S || S.pt !== pt) S = P.pet = { pt: pt, x: P.x - 26, y: P.y + 10, hd: 0, ph: 0, mv: 0, t: now, tr: [{ x: P.x - 26, y: P.y + 10 }, { x: P.x, y: P.y }] };
     dt = Math.min(0.05, Math.max(0, (now - S.t) / 1000)); S.t = now;
-    if (Math.hypot(P.x - S.x, P.y - S.y) > 260) { S.x = P.x - 10; S.y = P.y + 4; S.tr = [{ x: S.x, y: S.y }, { x: P.x, y: P.y }]; }
+    if (Math.hypot(P.x - S.x, P.y - S.y) > 260) { S.x = P.x - 18; S.y = P.y + 6; S.tr = [{ x: S.x, y: S.y }, { x: P.x, y: P.y }]; }
     last = S.tr[S.tr.length - 1];
     if (Math.hypot(P.x - last.x, P.y - last.y) > 6) { S.tr.push({ x: P.x, y: P.y }); if (S.tr.length > 40) S.tr.shift(); }
     d = 0; px = P.x; py = P.y; tx = P.x; ty = P.y;
     for (i = S.tr.length - 1; i >= 0; i--) {
       seg = Math.hypot(S.tr[i].x - px, S.tr[i].y - py);
-      if (seg > 0 && d + seg >= 22) { f = (22 - d) / seg; tx = px + (S.tr[i].x - px) * f; ty = py + (S.tr[i].y - py) * f; break; }
+      if (seg > 0 && d + seg >= 34) { f = (34 - d) / seg; tx = px + (S.tr[i].x - px) * f; ty = py + (S.tr[i].y - py) * f; break; }
       d += seg; px = S.tr[i].x; py = S.tr[i].y; tx = px; ty = py;
     }
     dx = tx - S.x; dy = ty - S.y; dist = Math.hypot(dx, dy);
-    if (dist > 2.5) {
-      st = Math.min(dist, Math.min(dist * 7, 230) * dt); S.x += dx / dist * st; S.y += dy / dist * st; S.mv = 1; S.ph += st * 0.55;
+    if (dist > (S.mv ? 1.5 : 4)) {
+      st = Math.min(dist, Math.min(dist * 7, 230) * dt); S.x += dx / dist * st; S.y += dy / dist * st; S.mv = 1; S.ph += st * 0.17;
       ta = Math.atan2(dy, dx); da = ta - S.hd; while (da > Math.PI) da -= 6.283; while (da < -Math.PI) da += 6.283; S.hd += da * Math.min(1, dt * 12);
     } else { S.mv = 0; S.ph += dt * 3; }
     return S;
   }
-  function petDraw(S) { drawPetSprite(ctx, S.pt, S.x, S.y, S.hd, S.ph, S.mv, 0.95); }
+  function petDraw(S) { drawPetSprite(ctx, S.pt, S.x, S.y, S.hd, S.ph, S.mv, 1.9); }
 
   function drawPlayerBody(c, P, d, tr) {
     var L = P.look || {}, ar = P.armor, jc = LOOK_COLS[L.c] || LOOK_COLS[0], ang = P.ang, skin = SKINS[L.sk] || SKINS[2], hair = HAIRC[L.hc] || HAIRC[1], hs = L.hs | 0, hat = L.h | 0;
