@@ -468,7 +468,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   // ---------- storage (optional) ----------
-  var introOn = false, INTRO_T = 18, settingsFrom = 'main', mapCtx = 'offline', hostMap = 'beginners', mapsOpen = 1;
+  var introOn = false, INTRO_T = 10, settingsFrom = 'main', mapCtx = 'offline', hostMap = 'beginners', mapsOpen = 1;
   var offWave = 0, offKills = 0, mapRec = {};
   try { offWave = parseInt(localStorage.getItem('zs-off-wave') || localStorage.getItem('zs-best-wave') || '0', 10) || 0; offKills = parseInt(localStorage.getItem('zs-off-kills') || '0', 10) || 0; } catch (e) {}
   try { mapRec = JSON.parse(localStorage.getItem('zs-maprec') || '{}') || {}; } catch (e) { mapRec = {}; }
@@ -2506,7 +2506,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 54';
+  var updMsg = '', VERSION = 'Version 55';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
