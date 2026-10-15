@@ -2506,7 +2506,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 59';
+  var updMsg = '', VERSION = 'Version 60';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2684,24 +2684,24 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   ];
 
   var GUIDE = [
-    { t: 'The goal', art: 'shoot', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
-    { t: 'Controls', art: 'aim', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
-    { t: 'Waves and breaks', art: 'shop', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
+    { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
+    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings): drag anywhere to walk. Auto-aim picks the closest zombie in range.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
+    { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 25 zombies keep getting tougher every wave, and armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: from wave 25. 420 health and hits hard.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a special weapon crate, lots of coins, and often a power-up.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
-    { t: 'Upgrades', art: 'shop', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock.', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
-    { t: 'Guns', art: 'gun', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. Empty magazines reload on their own, and guns top up after each wave.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
+    { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock.', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
+    { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. Empty magazines reload on their own, and guns top up after each wave.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with one slot.', 'Slot 2 costs 40 coins, slot 3 costs 260.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: you choose which gun to replace. The old gun and its upgrades are lost.', 'Tap the bottom-right button to cycle through your guns.'] },
-    { t: 'Gun upgrades', art: 'slots', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
+    { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
     { t: 'Armour and healing', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Healing, Gear tab: Bandage (+25), Medkit (+60), Full restore. Health drops also appear from zombies, but rarely.'] },
-    { t: 'Special weapons', art: 'box', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Bosses and tanks drop special crates. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
+    { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Bosses and tanks drop special crates. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 25, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
-    { t: 'Haunted House', art: 'shop', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops.'] },
+    { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
-    { t: 'Saving and settings', art: 'move', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
+    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
     list = list || HELP; title = title || 'How to play';
@@ -2721,12 +2721,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var ctl = ctrlMode === 'two' ? 'Left thumb walks, right thumb aims the yellow cone. Your gun fires by itself at zombies inside it.' : 'Drag anywhere to walk. Your gun aims and fires by itself.';
     var list = [{ t: 'Controls', x: ctl, art: 'move' }];
     if (mapId === 'haunted') {
-      list.push({ t: 'The Haunted House', art: 'bar', b: ['Zombies climb in through four windows. Stand next to broken planks to rebuild them.', 'Rooms are joined by long corridors with a door at each end.', 'Mystery boxes only appear inside the house.'] });
-      list.push({ t: 'Doors', art: 'shop', b: ['Stand next to a door for 3 seconds to open it. Do the same to close it again. A ring fills while you wait.', 'Zombies can open a shut door too, but it takes them 5 seconds (red ring). Use that time.', 'Walls and shut doors block bullets as well as zombies.'] });
-      list.push({ t: 'Bonus rooms', art: 'drops', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'A gold ring on the minimap points to it.'] });
+      list.push({ t: 'The Haunted House', art: 'haunted', b: ['Zombies climb in through four windows. Stand next to broken planks to rebuild them.', 'Rooms are joined by long corridors with a door at each end.', 'Mystery boxes only appear inside the house.'] });
+      list.push({ t: 'Doors', art: 'door', b: ['Stand next to a door for 3 seconds to open it. Do the same to close it again. A ring fills while you wait.', 'Zombies can open a shut door too, but it takes them 5 seconds (red ring). Use that time.', 'Walls and shut doors block bullets as well as zombies.'] });
+      list.push({ t: 'Bonus rooms', art: 'bonus', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'A gold ring on the minimap points to it.'] });
     } else {
       list.push({ t: 'Beginners Ground', art: 'bar', b: ['Zombies pour out of four buildings, each with a plank barrier.', 'Stand next to a broken barrier to rebuild it for coins.', 'Buildings block zombies and bullets. Use them to funnel the dead.'] });
-      list.push({ t: 'Stay alive', art: 'shop', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
+      list.push({ t: 'Stay alive', art: 'stay', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
     }
     return list;
   }
@@ -2770,6 +2770,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       pl(70, 56, 0, 0); zb(200, 62, 3.14, 'walker', 1.5); zb(170, 12, 3.14, 'runner', 1.3);
       txt('shoots', 200, 92, 14, '#f2c14e'); txt('ignored', 170, 36, 14, '#9c8f7e');
     } else if (k === 'shoot') {
+      c.fillStyle = 'rgba(242,193,78,0.14)'; c.beginPath(); c.moveTo(55, 75); c.arc(55, 75, 200, -0.3, 0.3); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(242,193,78,0.35)'; c.lineWidth = 1.5; c.stroke();
+      txt('yellow cone', 150, 128, 14, '#f2c14e');
       pl(55, 75, 0, 0); zb(215, 75, 3.14, 'walker');
       c.strokeStyle = '#ffd089'; c.lineWidth = 2.5;
       for (i = 0; i < 3; i++) { c.beginPath(); c.moveTo(105 + i * 32, 75); c.lineTo(120 + i * 32, 75); c.stroke(); }
@@ -2796,13 +2799,16 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       pl(190, 70, -1.57, 0);
       c.strokeStyle = '#f2c14e'; c.lineWidth = 3; c.beginPath(); c.arc(190, 70, 24, -1.57, 2.2); c.stroke();
     } else if (k === 'gun') {
-      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(120, 82, 140, 52); c.strokeStyle = '#8aa0b8'; c.lineWidth = 2; c.strokeRect(120, 82, 140, 52);
-      txt('GLOCK 17', 190, 99, 19, '#ebe3d4'); txt('11 | ∞', 190, 122, 17, '#9c8f7e');
-      pl(60, 50, 0, 0);
-      c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(46, 18, 28, 5); c.fillStyle = '#f2c14e'; c.fillRect(47, 19, 16, 3);
-      txt('reloading', 60, 8, 13, '#9c8f7e');
-      c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.beginPath(); c.arc(190, 108, 78, 0.2, 0.2); c.stroke();
-      txt('tap to swap ↓', 190, 68, 15, '#d2692a');
+      c.fillStyle = 'rgba(255,255,255,0.08)'; c.fillRect(8, 8, 52, 52); c.strokeStyle = '#6b6258'; c.lineWidth = 1.5; c.strokeRect(8, 8, 52, 52); txt('minimap', 34, 34, 12, '#9c8f7e');
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(8, 66, 96, 42); c.strokeStyle = '#8aa0b8'; c.lineWidth = 2; c.strokeRect(8, 66, 96, 42);
+      txt('GLOCK 17', 56, 80, 17, '#ebe3d4'); txt('11 | \u221e', 56, 98, 15, '#9c8f7e');
+      txt('gun + ammo', 56, 122, 13, '#9c8f7e');
+      pl(150, 60, 0, 0);
+      c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(136, 28, 28, 5); c.fillStyle = '#f2c14e'; c.fillRect(137, 29, 16, 3);
+      txt('reloading', 150, 18, 13, '#9c8f7e');
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.beginPath(); c.arc(246, 92, 22, 0, 6.283); c.fill(); c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.stroke();
+      c.beginPath(); c.arc(246, 92, 10, 0.4, 4.6); c.stroke(); c.fillStyle = '#d2692a'; c.beginPath(); c.moveTo(250, 76); c.lineTo(238, 78); c.lineTo(248, 86); c.fill();
+      txt('swap gun', 246, 126, 13, '#d2692a');
     } else if (k === 'slots') {
       var sx = [30, 108, 186], lab = ['Glock', 'Slot 2', 'Slot 3'], pr = ['', '40', '260'];
       for (i = 0; i < 3; i++) {
@@ -2838,6 +2844,113 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       zb(140, 68, 0, 'boss', 2);
       c.fillStyle = 'rgba(0,0,0,0.75)'; c.fillRect(80, 12, 120, 8); c.fillStyle = '#ff6a2a'; c.fillRect(81, 13, 84, 6);
       txt('every 5th wave', 140, 132, 16, '#d2692a');
+    } else if (k === 'hud') {
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(6, 6, 268, 26);
+      c.fillStyle = '#3a2a24'; c.fillRect(12, 14, 58, 10); c.fillStyle = '#78e0a0'; c.fillRect(12, 14, 44, 10);
+      txt('Wave 3', 100, 19, 15); txt('Zombies 12', 160, 19, 15);
+      c.strokeStyle = '#f2c14e'; c.lineWidth = 1.5; c.strokeRect(198, 10, 44, 18); txt('SHOP', 220, 19, 13, '#f2c14e'); txt('II', 258, 19, 15);
+      c.fillStyle = 'rgba(255,255,255,0.08)'; c.fillRect(6, 38, 44, 44); c.strokeStyle = '#6b6258'; c.lineWidth = 1.5; c.strokeRect(6, 38, 44, 44); txt('map', 28, 60, 12, '#9c8f7e');
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(6, 86, 84, 36); c.strokeStyle = '#8aa0b8'; c.lineWidth = 2; c.strokeRect(6, 86, 84, 36);
+      txt('GLOCK 17', 48, 98, 15); txt('11 | ∞', 48, 113, 13, '#9c8f7e');
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.beginPath(); c.arc(250, 98, 20, 0, 6.283); c.fill(); c.strokeStyle = '#d2692a'; c.lineWidth = 3; c.stroke();
+      c.beginPath(); c.arc(250, 98, 9, 0.4, 4.6); c.stroke(); txt('swap', 250, 128, 12, '#d2692a');
+      pl(150, 88, -0.3, 0); txt('health', 40, 44, 11, '#78e0a0');
+    } else if (k === 'swarm') {
+      var bx = [[8, 8], [214, 8], [8, 104], [214, 104]];
+      for (i = 0; i < 4; i++) { c.fillStyle = '#2b2520'; c.fillRect(bx[i][0], bx[i][1], 58, 38); c.strokeStyle = '#6b4a2c'; c.lineWidth = 3; c.strokeRect(bx[i][0] + 3, bx[i][1] + 3, 52, 32); }
+      zb(84, 46, 0.6, 'walker', 1.3); zb(196, 46, 2.5, 'runner', 1.2); zb(84, 108, -0.6, 'walker', 1.3); zb(196, 108, 3.6, 'tank', 1.2);
+      pl(140, 76, 0, 0); txt('survive', 140, 128, 15, '#d2692a');
+    } else if (k === 'wave') {
+      var wx = [46, 140, 234], wn = [1, 2, 4];
+      for (i = 0; i < 3; i++) { for (var q = 0; q < wn[i]; q++) zb(wx[i] - (wn[i] - 1) * 7 + q * 14, 30 + (q % 2) * 6, 0, 'walker', 0.8); txt('Wave ' + (i + 1), wx[i], 54, 14, '#9c8f7e'); }
+      txt('›', 93, 36, 22, '#d2692a'); txt('›', 187, 36, 22, '#d2692a');
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(50, 76, 180, 62); c.strokeStyle = '#f2c14e'; c.lineWidth = 2; c.strokeRect(50, 76, 180, 62);
+      txt('Break', 140, 90, 15, '#f2c14e'); txt('20', 140, 114, 30, '#ebe3d4');
+      c.fillStyle = '#3a2a24'; c.fillRect(62, 130, 156, 5); c.fillStyle = '#f2c14e'; c.fillRect(62, 130, 110, 5);
+    } else if (k === 'upgrade') {
+      var un = ['Damage', 'Speed', 'Crit chance'], up = ['25', '30', '40'];
+      for (i = 0; i < 3; i++) {
+        var ux = 14 + i * 88;
+        c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(ux, 30, 78, 100); c.strokeStyle = '#f2c14e'; c.lineWidth = 2; c.strokeRect(ux, 30, 78, 100);
+        txt(un[i], ux + 39, 48, 15); txt('+10%', ux + 39, 76, 24, '#78e0a0');
+        c.fillStyle = '#f2c14e'; c.fillRect(ux + 10, 100, 58, 22); txt(up[i], ux + 39, 111, 16, '#1a0e08');
+      }
+      txt('3 cards each wave', 140, 14, 15, '#f2c14e');
+    } else if (k === 'rarity') {
+      var rc = ['#8a8a8a', '#5cc46a', '#4a8fe0', '#a35cd6', '#d94a3a', '#f2c14e'], rn = ['grey', 'green', 'blue', 'purple', 'red', 'gold'];
+      for (i = 0; i < 6; i++) {
+        var rx = 8 + i * 45;
+        c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(rx, 40, 40, 40); c.strokeStyle = rc[i]; c.lineWidth = 3; c.strokeRect(rx, 40, 40, 40);
+        c.fillStyle = rc[i]; c.fillRect(rx + 8, 56, 24, 7); c.fillRect(rx + 8, 62, 7, 9);
+        txt(rn[i], rx + 20, 94, 13, rc[i]);
+      }
+      txt('rarer ›', 120, 20, 15, '#9c8f7e'); txt('special', 252, 20, 13, '#f2c14e');
+      txt('Pistol · SMG · Shotgun · Rifle · Sniper · LMG', 140, 124, 13, '#9c8f7e');
+    } else if (k === 'gunup') {
+      var mk = ['Mk I', 'Mk II', 'Mk III'], sc = ['#8a8a8a', '#5cc46a', '#4a8fe0'];
+      for (i = 0; i < 3; i++) {
+        var gx = 14 + i * 88;
+        c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(gx, 34, 70, 56); c.strokeStyle = '#8aa0b8'; c.lineWidth = 2; c.strokeRect(gx, 34, 70, 56);
+        c.fillStyle = '#ebe3d4'; c.fillRect(gx + 14, 54, 38, 8 + i * 2); c.fillRect(gx + 14, 60, 10, 14);
+        c.fillStyle = '#9c8f7e'; c.fillRect(gx, 84, 70, 3); c.fillStyle = sc[i]; c.fillRect(gx, 87, 70, 3);
+        txt(mk[i], gx + 35, 108, 15, sc[i]);
+        if (i < 2) txt('›', gx + 79, 62, 22, '#d2692a');
+      }
+      txt('Shop › Guns', 140, 14, 16, '#f2c14e'); txt('+ damage, + fire rate', 140, 134, 14, '#9c8f7e');
+    } else if (k === 'special') {
+      var sp = ['Flamethrower', 'Rocket', 'Minigun'];
+      for (i = 0; i < 3; i++) {
+        var spx = 14 + i * 88;
+        c.fillStyle = 'rgba(242,193,78,0.15)'; c.fillRect(spx, 28, 70, 70); c.strokeStyle = '#f2c14e'; c.lineWidth = 2.5; c.strokeRect(spx, 28, 70, 70);
+        if (i === 0) { c.fillStyle = '#ff7a2a'; c.beginPath(); c.moveTo(spx + 18, 78); c.quadraticCurveTo(spx + 28, 40, spx + 36, 52); c.quadraticCurveTo(spx + 42, 36, spx + 52, 78); c.closePath(); c.fill(); c.fillStyle = '#ffd089'; c.beginPath(); c.arc(spx + 35, 72, 8, 0, 6.283); c.fill(); }
+        else if (i === 1) { c.fillStyle = '#9aa0a6'; c.fillRect(spx + 14, 56, 36, 14); c.fillStyle = '#d94a3a'; c.beginPath(); c.moveTo(spx + 50, 56); c.lineTo(spx + 62, 63); c.lineTo(spx + 50, 70); c.fill(); c.fillStyle = '#ff7a2a'; c.fillRect(spx + 6, 60, 8, 6); }
+        else { c.fillStyle = '#9aa0a6'; for (var br = 0; br < 4; br++) c.fillRect(spx + 14, 48 + br * 9, 42, 5); c.fillStyle = '#4a4a4a'; c.fillRect(spx + 8, 44, 8, 40); }
+        txt(sp[i], spx + 35, 112, 14, '#f2c14e');
+      }
+      txt('crate = 4th weapon', 140, 14, 15, '#f2c14e'); txt('ammo runs out', 140, 134, 13, '#9c8f7e');
+    } else if (k === 'haunted') {
+      var hx = [22, 98, 174], hy = [24, 84];
+      for (var rr = 0; rr < 2; rr++) for (var cc = 0; cc < 3; cc++) {
+        c.fillStyle = '#251c2e'; c.fillRect(hx[cc], hy[rr], 62, 46); c.strokeStyle = '#6a5a7a'; c.lineWidth = 2; c.strokeRect(hx[cc], hy[rr], 62, 46);
+        if (cc < 2) { c.strokeStyle = '#6a5a7a'; c.lineWidth = 2; c.beginPath(); c.moveTo(hx[cc] + 62, hy[rr] + 23); c.lineTo(hx[cc + 1], hy[rr] + 23); c.stroke(); c.fillStyle = '#c9a050'; c.fillRect(hx[cc] + 62, hy[rr] + 18, 3, 10); c.fillRect(hx[cc + 1] - 3, hy[rr] + 18, 3, 10); }
+      }
+      c.strokeStyle = '#6a5a7a'; c.lineWidth = 2; c.beginPath(); c.moveTo(53, 70); c.lineTo(53, 84); c.moveTo(205, 70); c.lineTo(205, 84); c.stroke();
+      c.fillStyle = '#c9a050'; c.fillRect(48, 70, 10, 3); c.fillRect(48, 81, 10, 3);
+      c.fillStyle = '#d94a3a'; for (i = 0; i < 4; i++) { var wxp = [[13, 40], [13, 100], [250, 40], [250, 100]][i]; c.fillRect(wxp[0], wxp[1], 6, 14); }
+      c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.arc(129, 107, 4, 0, 6.283); c.fill();
+      txt('windows', 24, 12, 13, '#d94a3a'); txt('doors', 140, 140, 13, '#c9a050'); txt('windows', 256, 12, 13, '#d94a3a');
+    } else if (k === 'door') {
+      for (var dp = 0; dp < 2; dp++) {
+        var dx = dp * 140, dc = dp ? '#d94a3a' : '#f2c14e';
+        c.fillStyle = '#2b2520'; c.fillRect(dx + 6, 20, 128, 24); c.fillRect(dx + 6, 98, 128, 24);
+        c.fillStyle = '#7a5a34'; c.fillRect(dx + 64, 44, 12, 54); c.strokeStyle = '#2a1c10'; c.lineWidth = 2; c.strokeRect(dx + 64, 44, 12, 54);
+        if (!dp) pl(dx + 40, 71, 0, 0); else zb(dx + 100, 71, 3.14, 'walker', 1.5);
+        c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = 5; c.beginPath(); c.arc(dx + 70, 71, 32, 0, 6.283); c.stroke();
+        c.strokeStyle = dc; c.lineWidth = 3.5; c.beginPath(); c.arc(dx + 70, 71, 32, -1.57, dp ? 3.2 : 2.6); c.stroke();
+        txt(dp ? 'Zombie: 5s' : 'You: 3s', dx + 70, 138, 16, dc);
+      }
+    } else if (k === 'bonus') {
+      c.fillStyle = '#251c2e'; c.fillRect(20, 20, 100, 110); c.strokeStyle = '#6a5a7a'; c.lineWidth = 2; c.strokeRect(20, 20, 100, 110);
+      var bg = c.createRadialGradient(70, 75, 0, 70, 75, 70); bg.addColorStop(0, 'rgba(242,193,78,0.5)'); bg.addColorStop(1, 'rgba(242,193,78,0.08)'); c.fillStyle = bg; c.fillRect(21, 21, 98, 108);
+      c.strokeStyle = '#f2c14e'; c.lineWidth = 3; c.strokeRect(20, 20, 100, 110);
+      pl(60, 80, 0, 0); zb(98, 60, 3.14, 'walker', 1.2); coin(92, 100); coin(76, 108);
+      txt('2X coins', 195, 40, 20, '#f2c14e'); txt('more ammo', 195, 66, 17, '#d6aa46');
+      c.fillStyle = 'rgba(255,255,255,0.08)'; c.fillRect(168, 86, 54, 40); c.strokeStyle = '#6b6258'; c.lineWidth = 1.5; c.strokeRect(168, 86, 54, 40);
+      c.strokeStyle = '#f2c14e'; c.lineWidth = 2.5; c.beginPath(); c.arc(185, 106, 9, 0, 6.283); c.stroke();
+      txt('minimap ring', 195, 138, 12, '#9c8f7e');
+    } else if (k === 'stay') {
+      coin(50, 50); coin(66, 58); coin(54, 66);
+      txt('Shop', 58, 100, 16, '#f2c14e');
+      c.fillStyle = '#4a3320'; c.fillRect(120, 38, 40, 30); c.strokeStyle = '#f2c14e'; c.lineWidth = 2.5; c.strokeRect(120, 38, 40, 30); c.fillStyle = '#f2c14e'; c.fillRect(138, 38, 5, 30); txt('?', 140, 22, 22, '#f2c14e');
+      txt('120 coins', 140, 100, 16, '#f2c14e');
+      zb(224, 56, 0, 'boss', 1.1); txt('Boss every 5th', 224, 100, 14, '#d2692a');
+    } else if (k === 'save') {
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(10, 20, 124, 100); c.strokeStyle = '#8aa0b8'; c.lineWidth = 2; c.strokeRect(10, 20, 124, 100);
+      txt('Offline', 72, 36, 16, '#ebe3d4'); txt('Wave 7 saved', 72, 58, 15, '#78e0a0');
+      btn(26, 76, 92, 30, '#f2c14e', 'Continue');
+      c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(146, 20, 124, 100); c.strokeStyle = '#8aa0b8'; c.strokeRect(146, 20, 124, 100);
+      txt('Settings', 208, 34, 15, '#9c8f7e'); txt('Sound', 158, 52, 14, '#ebe3d4', 'left'); txt('Controls', 158, 70, 14, '#ebe3d4', 'left'); txt('Game guide', 158, 88, 14, '#ebe3d4', 'left');
+      c.fillStyle = '#f2c14e'; c.fillRect(152, 98, 112, 18); txt('Update game', 208, 107, 14, '#1a0e08');
     } else if (k === 'team') {
       pl(70, 78, 0, 0); pl(120, 70, 0.3, 2);
       c.font = '700 13px "Barlow Condensed", Arial, sans-serif';
