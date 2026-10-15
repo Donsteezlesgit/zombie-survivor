@@ -403,8 +403,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   SPECIALS.ray = { id: 'ray', name: 'Ray gun', dmg: 4.2, rate: 3.4, pellets: 1, spread: 0.01, range: 420, speed: 620, pierce: 0, len: 13, gw: 7, ammo: 36, kind: 'ray', blast: 46 };
   SPECIALS.zap = { id: 'zap', name: 'Lightning gun', dmg: 2.4, rate: 5, pellets: 1, spread: 0, range: 300, speed: 0, pierce: 0, len: 16, gw: 6, ammo: 70, kind: 'zap' };
   var BOX_SPECIALS = ['flame', 'rocket', 'mini', 'ray', 'zap'];
-  // the Ghostbuster: green goo slows zombies, then they burst. Infinite ammo, overheats after 10s of fire, 25s cooldown
-  SPECIALS.ghost = { id: 'ghost', name: 'Ghostbuster', dmg: 0.6, rate: 14, pellets: 1, spread: 0.3, range: 235, speed: 300, pierce: 0, len: 17, gw: 9, ammo: 1, kind: 'goo', special: true };
+  // the Ghostbuster: green goo slows zombies, then they burst. Infinite ammo, overheats after 6s of fire, 25s cooldown
+  SPECIALS.ghost = { id: 'ghost', name: 'Ghostbuster', dmg: 0.5, rate: 14, pellets: 1, spread: 0.3, range: 235, speed: 300, pierce: 0, len: 17, gw: 9, ammo: 1, kind: 'goo', special: true };
   (function () {
     var k, d, w;
     for (k in SPECIALS) SPECIALS[k].special = true;
@@ -1989,7 +1989,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (id === 'ghost') { addFx(mx, my, 1, 70, 0.3, 4, '120,255,140'); if (shotN % 2 === 0) snoise(0.06, 700, 0.05); }
 
     if (isGhost(P)) {
-      var GH2 = P.ghost; GH2.idle = 0; GH2.heat += 1 / (st.rate * 10);
+      var GH2 = P.ghost; GH2.idle = 0; GH2.heat += 1 / (st.rate * 6);
       if (GH2.heat >= 1) {
         GH2.heat = 1; GH2.cool = 25;
         bannerTo(P, 'Overheated', 'Ghostbuster cools down for 25 seconds. Back to your other gun.', 2.4);
@@ -2011,7 +2011,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   function gooBurst(z) {
     var j = zombies.indexOf(z), k, o, dd, R = 78;
     if (j < 0) return;
-    var dmg = (z.gooDmg || 6) * 14 + z.maxhp * 0.4, owner = z.gooOwner;
+    var dmg = (z.gooDmg || 5) * 12 + z.maxhp * 0.35, owner = z.gooOwner;
     for (k = 0; k < zombies.length; k++) {
       o = zombies[k]; if (o === z) continue;
       dd = Math.hypot(o.x - z.x, o.y - z.y);
@@ -2659,7 +2659,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 67';
+  var updMsg = '', VERSION = 'Version 68';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2861,7 +2861,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
-    { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then they burst. The burst hurts nearby zombies and covers them in goo too.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 10 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the round button to swap to it. The gun box shows the heat.'] },
+    { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then they burst. The burst hurts nearby zombies and covers them in goo too.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the round button to swap to it. The gun box shows the heat.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
@@ -2886,7 +2886,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       list.push({ t: 'The Haunted House', art: 'haunted', b: ['Zombies climb in through four windows. Stand next to broken planks to rebuild them.', 'Rooms are joined by long corridors with a door at each end.', 'Mystery boxes only appear inside the house.'] });
       list.push({ t: 'Doors', art: 'door', b: ['Stand next to a door for 3 seconds to open it. Do the same to close it again. A ring fills while you wait.', 'Zombies can open a shut door too, but it takes them 5 seconds (red ring). Use that time.', 'Walls and shut doors block bullets as well as zombies.'] });
       list.push({ t: 'Relics', art: 'relic', b: ['8 relics hide in the house, one in every room except the Great Hall. They show up on different waves.', 'Walk over one to pick it up. You carry one at a time, and it drops where you fall.', 'Carry it to the green cauldron in the Great Hall. Relics stay put until someone takes them.'] });
-      list.push({ t: 'The Ghostbuster', art: 'ghost', b: ['Put all 8 relics in the cauldron and everyone gets a new gun, the Ghostbuster.', 'Its goo slows zombies, then they burst and splash the ones next to them. No ammo needed. It never hurts your team.', 'Fire for 10 seconds and it overheats, then needs 25 seconds to cool down.'] });
+      list.push({ t: 'The Ghostbuster', art: 'ghost', b: ['Put all 8 relics in the cauldron and everyone gets a new gun, the Ghostbuster.', 'Its goo slows zombies, then they burst and splash the ones next to them. No ammo needed. It never hurts your team.', 'Fire for 6 seconds and it overheats, then needs 25 seconds to cool down.'] });
       list.push({ t: 'Bonus rooms', art: 'bonus', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'Coins and ammo from your kills there fly straight to you.', 'A gold ring on the minimap points to it.'] });
     } else {
       list.push({ t: 'Beginners Ground', art: 'bar', b: ['Zombies pour out of four buildings, each with a plank barrier.', 'Stand next to a broken barrier to rebuild it for coins.', 'Buildings block zombies and bullets. Use them to funnel the dead.'] });
@@ -3107,8 +3107,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       c.fillStyle = 'rgba(80,255,120,0.45)'; c.beginPath(); c.arc(215, 60, 22, 0, 6.283); c.fill();
       c.strokeStyle = 'rgba(210,255,220,0.8)'; c.lineWidth = 2; c.beginPath(); c.arc(215, 60, 30, 0, 6.283); c.stroke();
       txt('slow, then burst', 215, 20, 14, '#78e0a0');
-      c.fillStyle = '#3a2a24'; c.fillRect(30, 104, 220, 12); c.fillStyle = '#5dff8a'; c.fillRect(30, 104, 110, 12); c.fillStyle = '#e0453a'; c.fillRect(140, 104, 40, 12);
-      txt('10s fire', 70, 128, 13, '#5dff8a'); txt('overheat: 25s cooldown', 190, 128, 13, '#e0453a');
+      c.fillStyle = '#3a2a24'; c.fillRect(30, 104, 220, 12); c.fillStyle = '#5dff8a'; c.fillRect(30, 104, 70, 12); c.fillStyle = '#e0453a'; c.fillRect(100, 104, 90, 12);
+      txt('6s fire', 65, 128, 13, '#5dff8a'); txt('overheat: 25s cooldown', 175, 128, 13, '#e0453a');
     } else if (k === 'door') {
       for (var dp = 0; dp < 2; dp++) {
         var dx = dp * 140, dc = dp ? '#d94a3a' : '#f2c14e';
