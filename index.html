@@ -701,7 +701,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     cand(1640, 378); sconce(1524, 252, 'w');
     // Kitchen
     furn(150, 834, 100, 28, 'counter'); furn(440, 1120, 28, 28, 'barrel'); furn(150, 1128, 30, 26, 'crate');
-    deco('tiles', 156, 880, 170, 150); deco('chair', 232, 1012, 3.1); deco('chair', 384, 1002, 0.2); deco('rat', 300, 1104); deco('puddle', 330, 1100, 26, 16, 'rgba(110,30,30,0.4)');
+    deco('chair', 232, 1012, 3.1); deco('chair', 384, 1002, 0.2); deco('rat', 300, 1104); deco('puddle', 330, 1100, 26, 16, 'rgba(110,30,30,0.4)');
     cand(200, 838); sconce(146, 1060, 'w');
     // Great Hall
     furn(860, 860, 26, 26, 'pillar'); furn(1114, 860, 26, 26, 'pillar'); furn(860, 1114, 26, 26, 'pillar'); furn(1114, 1114, 26, 26, 'pillar');
@@ -713,7 +713,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     deco('pot', 1560, 1062); deco('pot', 1830, 1090); scatter('glass', 1620, 960, 160, 90, 9); light(1690, 990, 170, 0.35, '130,160,255');
     // Crypt
     furn(380, 1560, 70, 100, 'sarcophagus');
-    scatter('bones', 160, 1540, 300, 280, 5); deco('tiles', 160, 1540, 200, 120); deco('chains', 148, 1600);
+    scatter('bones', 160, 1540, 300, 280, 5); deco('chains', 148, 1600);
     sconce(146, 1580, 'w', '140,170,255'); cand(414, 1566);
     // Dining hall
     furn(850, 1832, 90, 24, 'sideboard'); furn(1130, 1826, 26, 26, 'barrel'); furn(1106, 1838, 22, 22, 'barrel');
@@ -2506,7 +2506,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 56';
+  var updMsg = '', VERSION = 'Version 57';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -2722,7 +2722,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var list = [{ t: 'Controls', x: ctl, art: 'move' }];
     if (mapId === 'haunted') {
       list.push({ t: 'The Haunted House', art: 'bar', b: ['Zombies climb in through four windows. Stand next to broken planks to rebuild them.', 'Rooms are joined by long corridors with a door at each end.', 'Mystery boxes only appear inside the house.'] });
-      list.push({ t: 'Doors', art: 'shop', b: ['Stand next to a door for 3 seconds to open or close it.', 'Zombies take 5 seconds to open a shut door. Use that time.', 'Walls and shut doors block bullets as well as zombies.'] });
+      list.push({ t: 'Doors', art: 'shop', b: ['Stand next to a door for 3 seconds to open it. Do the same to close it again. A ring fills while you wait.', 'Zombies can open a shut door too, but it takes them 5 seconds (red ring). Use that time.', 'Walls and shut doors block bullets as well as zombies.'] });
+      list.push({ t: 'Bonus rooms', art: 'drops', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'A gold ring on the minimap points to it.'] });
     } else {
       list.push({ t: 'Beginners Ground', art: 'bar', b: ['Zombies pour out of four buildings, each with a plank barrier.', 'Stand next to a broken barrier to rebuild it for coins.', 'Buildings block zombies and bullets. Use them to funnel the dead.'] });
       list.push({ t: 'Stay alive', art: 'shop', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
