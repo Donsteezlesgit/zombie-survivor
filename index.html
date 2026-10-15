@@ -500,7 +500,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.2, crateLife: 15,
     dropHealth: 0.015, healAmount: 30, healLife: 18,
-    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -3418,7 +3418,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 125';
+  var updMsg = '', VERSION = 'Version 126';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5301,7 +5301,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- online play (phone to phone, the host runs the game) ----------
   var PEER_PREFIX = 'zsurvivor-', BK = ['bullet', 'fire', 'ray', 'rocket', 'goo'], PK = ['special', 'health', 'ammo', 'perk', 'item'];
   var peer = null, seats = [], myConn = null, evBase = 0;
-  var snaps = [], clockOff = null, lastSnapAt = 0, joinTimer = 0;
+  var snaps = [], clockOff = null, lastSnapAt = 0, joinTimer = 0, snapGap = 0.03;
+  function interpNow() { return Math.min(0.3, Math.max(TUNE.interp, snapGap * 2.2)); }
 
   function mkCode() {
     var a = 'ABCDEFGHJKMNPQRSTUVWXYZ', s = '', i;
@@ -5464,8 +5465,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < seats.length; i++) {
       c = seats[i].conn; if (!c || !c.open || !c.seat) continue;
       any = true;
-      if (now - c.lastMsg > 8000) { hostLeave(c); i--; continue; }
+      if (now - c.lastMsg > TUNE.hostWait) { hostLeave(c); i--; continue; }
       if (c.dataChannel && c.dataChannel.bufferedAmount > TUNE.sendCap) { minPos = Math.min(minPos, c.evPos); continue; }
+      // a struggling connection gets fewer updates (every 2nd or 3rd) instead of a growing queue; it speeds back up after 3 calm seconds
+      var buf = c.dataChannel ? c.dataChannel.bufferedAmount : 0, want = buf > 40000 ? 3 : (buf > 12000 || (c.seat && c.seat.ping > 220) ? 2 : 1);
+      if (!c.lvl) { c.lvl = 1; c.tick = 0; c.lvT = now; }
+      if (want > c.lvl) { c.lvl = want; c.lvT = now; } else if (want < c.lvl) { if (now - c.lvT > 3000) { c.lvl--; c.lvT = now; } } else c.lvT = now;
+      c.tick++;
+      if (c.lvl > 1 && c.tick % c.lvl) { minPos = Math.min(minPos, c.evPos); continue; }
       if (!base) base = JSON.stringify(buildCommon());
       var P = pById(seats[i].id);
       ev = evq.slice(Math.max(0, c.evPos - evBase));
@@ -5573,6 +5580,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     lastSnapAt = performance.now();
     m.Zm = {}; for (i = 0; i < m.Z.length; i++) m.Zm[m.Z[i][0]] = m.Z[i];
     m.Pm = {}; for (i = 0; i < m.P.length; i++) m.Pm[m.P[i][0]] = m.P[i];
+    if (snaps.length) { var gp = m.ht - snaps[snaps.length - 1].ht; if (gp > 0 && gp < 1) snapGap = snapGap * 0.9 + gp * 0.1; }
     snaps.push(m); if (snaps.length > 6) snaps.shift();
     introOn = !!m.in; bonusRoom = m.br === undefined ? -1 : m.br;
     if (m.G) { gbDone = m.G[0]; gbOn = !!m.G[1]; }
@@ -5628,7 +5636,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // each frame on a client: walk, smooth everything else between the last two snapshots
   function clientTick(dt) {
     if (!snaps.length || !me) return;
-    var nowS = performance.now() / 1000, rt = nowS - clockOff - TUNE.interp, i, s0 = snaps[0], s1 = snaps[snaps.length - 1], a = 1, r0, r1_, z, P, t;
+    var nowS = performance.now() / 1000, rt = nowS - clockOff - interpNow(), i, s0 = snaps[0], s1 = snaps[snaps.length - 1], a = 1, r0, r1_, z, P, t;
     for (i = 0; i < snaps.length; i++) if (snaps[i].ht >= rt) { s1 = snaps[i]; s0 = i > 0 ? snaps[i - 1] : snaps[i]; break; }
     if (s1.ht > s0.ht) a = Math.max(0, Math.min(1, (rt - s0.ht) / (s1.ht - s0.ht)));
     // own movement is predicted, then eased toward what the host says
@@ -5668,7 +5676,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     });
     for (i = 0; i < players.length; i++) { P = players[i]; if (P.flash > 0) P.flash -= dt; if (P.inv > 0) P.inv -= dt; }
     updateFx(dt);
-    if (state === 'play' && performance.now() - lastSnapAt > 5000) clientLost('Lost contact with the host.');
+    if (state === 'play' && performance.now() - lastSnapAt > TUNE.clientWait) clientLost('Lost contact with the host.');
   }
 
   // ---------- main loop ----------
@@ -5705,11 +5713,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     pingTag.hidden = !on; if (!on) { if (net.mode === 'off') pingMs = null; return; }
     if (net.mode === 'client') {
       pingT -= dtm; if (pingT <= 0) { pingT = 2; netSend({ k: 'png', t: performance.now(), p: pingMs === null ? 0 : Math.round(pingMs) }); }
+      if (performance.now() - lastSnapAt > TUNE.weakAt) { pingTag.textContent = 'Weak connection'; pingTag.style.color = '#e0675c'; pingTag.style.fontSize = '15px'; return; }
+      pingTag.style.fontSize = '';
       if (pingMs === null) { pingTag.textContent = 'Ping ...'; return; }
       pingTag.textContent = 'Ping ' + Math.round(pingMs) + ' ms'; pingTag.style.color = pingMs > 160 ? '#e0675c' : (pingMs > 90 ? '#f2c14e' : '#9cb883');
     } else {
-      for (i = 0; i < seats.length; i++) { c = seats[i]; if (c.conn && c.ping) t.push(Math.round(c.ping)); }
-      pingTag.textContent = t.length ? 'Ping ' + t.join(' / ') + ' ms' : 'Host'; pingTag.style.color = t.length && Math.max.apply(null, t) > 160 ? '#e0675c' : '#9b9086';
+      var weak = [], nw = performance.now();
+      for (i = 0; i < seats.length; i++) { c = seats[i]; if (c.conn && c.ping) t.push(Math.round(c.ping)); if (c.conn && c.conn.seat && nw - c.conn.lastMsg > TUNE.weakAt + 1500) weak.push(c.name || 'Player'); }
+      pingTag.textContent = (weak.length ? 'Weak: ' + weak.join(', ') + ' · ' : '') + (t.length ? 'Ping ' + t.join(' / ') + ' ms' : 'Host');
+      pingTag.style.fontSize = weak.length ? '15px' : '';
+      pingTag.style.color = weak.length || (t.length && Math.max.apply(null, t) > 160) ? '#e0675c' : '#9b9086';
     }
   }
   function loop(now) {
