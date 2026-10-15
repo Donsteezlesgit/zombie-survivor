@@ -156,6 +156,9 @@ body {
 .roster { width: min(280px, 100%); display: flex; flex-direction: column; gap: 6px; }
 .rrow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(0, 0, 0, 0.45); border: 1px solid #3a322d; border-radius: 4px; font: 700 18px/1 var(--face-ui); text-align: left; }
 .rrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unl { max-height: 84px; overflow-y: auto; -webkit-overflow-scrolling: touch; width: min(100%, 320px); margin: 6px auto; padding: 6px 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid #3a322d; border-radius: 4px; font: 600 13px/1.5 var(--face-ui); text-align: left; }
+.unl b { display: block; color: var(--dim); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.unl i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid #0008; }
 .rrow small { color: var(--dim); font: 600 13px/1 var(--face-ui); letter-spacing: 0.1em; text-transform: uppercase; }
 .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 .msg { min-height: 1.2em; font: 600 15px/1.3 var(--face-ui); color: var(--rust); max-width: 30ch; }
@@ -1551,7 +1554,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       nm = unName(k);
       if (/^(Hat colour|Pack colour|Pants): /.test(nm)) nm = 'Colour: ' + nm.split(': ')[1];   // one entry per colour, it unlocks for hat, pack and pants
       if (seen[nm]) continue; seen[nm] = 1;
-      newUn.push({ n: nm, t: UNLOCKS[k].t });
+      var kv = +k.split(':')[1], ks = k.split(':')[0];
+      newUn.push({ n: nm, t: UNLOCKS[k].t, c: ks === 'c' ? LOOK_COLS[kv] : (ks === 'hk' || ks === 'kc') ? ACOLS[kv - 1][1] : ks === 'pn' && kv > 3 ? ACOLS[kv - 4][1] : '' });
     }
     unSnap = null;
   }
@@ -2899,9 +2903,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         h += '</div>';
       } else h += '<p><b>' + (me ? me.kills : 0) + '</b> kills.</p>';
       if (newUn.length) {
-        h += '<div class="roster"><div class="rrow"><b>Unlocked this game</b></div>';
-        for (i = 0; i < newUn.length && i < 8; i++) h += '<div class="rrow"><span>' + esc(newUn[i].n) + '</span><small>' + esc(newUn[i].t) + '</small></div>';
-        if (newUn.length > 8) h += '<div class="rrow"><small>+' + (newUn.length - 8) + ' more in Customise</small></div>';
+        h += '<div class="unl"><b>Unlocked this game</b>';
+        for (i = 0; i < newUn.length; i++) h += '<div>' + (newUn[i].c ? '<i style="background:' + newUn[i].c + '"></i>' : '') + esc(newUn[i].n) + '</div>';
         h += '</div>';
       }
       if (net.mode === 'client') h += '<p>Waiting for the host to start again.</p><button class="chip" data-a="leave" type="button">Leave</button>';
@@ -2958,7 +2961,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 95';
+  var updMsg = '', VERSION = 'Version 96';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
