@@ -257,6 +257,13 @@ body {
 .buy:disabled { opacity: 0.38; cursor: default; }
 .coin { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; background: #8a5d10; box-shadow: inset 0 0 0 2px #1a0e08; vertical-align: -1px; }
 .tier0 { color: var(--dim); } .tier1 { color: var(--bone); } .tier2 { color: var(--sick); } .tier3 { color: var(--steel); } .tier4 { color: var(--rust); }
+.gpick { position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.72); }
+.gpick[hidden] { display: none; }
+.gcard { width: min(440px, 100%); max-height: 100%; overflow: auto; padding: 16px; background: #1a1411; border: 2px solid var(--rust); color: var(--bone); font: 500 16px/1.3 var(--face-ui); }
+.gcard h3 { margin: 0 0 6px; font: 900 22px/1.1 var(--face-stencil); text-transform: uppercase; letter-spacing: 0.03em; }
+.gcard p { margin: 0 0 12px; color: var(--dim); }
+.gcard .gopts { display: flex; flex-direction: column; gap: 8px; }
+.gcard .gopts .buy { width: 100%; min-height: 46px; justify-content: center; }
 .warn { padding: 10px 12px; border: 1px solid var(--rust); border-radius: 4px; font: 500 15px/1.3 var(--face-ui); color: var(--bone); flex-shrink: 0; }
 .warn .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .note { font: 500 15px/1.3 var(--face-ui); color: var(--dim); flex-shrink: 0; }
@@ -437,10 +444,10 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 .swapgo { border: 2px solid #6a5a4c; }
 .boxbtn { border-radius: 0; }
 /* banners: hazard tape */
-.banner { left: 0; right: 0; padding: 8px 16px; background: var(--gold); color: #15110e; border-top: 4px solid #15110e; border-bottom: 4px solid #15110e; box-shadow: 0 0 0 3px var(--gold); }
+.banner { left: 0; right: 0; padding: 8px 16px; background: rgba(242, 193, 78, 0.7); background: color-mix(in srgb, var(--gold) 70%, transparent); color: #15110e; border-top: 4px solid rgba(21, 17, 14, 0.72); border-bottom: 4px solid rgba(21, 17, 14, 0.72); box-shadow: 0 0 0 3px rgba(242, 193, 78, 0.7); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 70%, transparent); }
 .banner h2 { font-size: 44px; letter-spacing: 0.1em; color: #15110e; text-shadow: none; }
 .banner p { margin-top: 2px; color: #15110e; text-shadow: none; max-width: none; letter-spacing: 0.18em; }
-.banner.danger { background: var(--hp); color: #ebe3d4; box-shadow: 0 0 0 3px var(--hp); }
+.banner.danger { background: rgba(150, 30, 24, 0.72); background: color-mix(in srgb, var(--hp) 72%, transparent); color: #ebe3d4; box-shadow: 0 0 0 3px rgba(150, 30, 24, 0.72); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hp) 72%, transparent); }
 .banner.danger h2, .banner.danger p { color: #ebe3d4; }
 /* game over */
 .overlay[data-scr="over"] { background: var(--hzr) top / 100% 12px no-repeat, var(--hzr) bottom / 100% 12px no-repeat, radial-gradient(ellipse at center, rgba(60, 10, 10, 0.55) 0%, rgba(8, 4, 4, 0.92) 75%); }
@@ -483,6 +490,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   <div class="banner" id="banner" hidden><h2 id="bnTitle"></h2><p id="bnText"></p></div>
 
   <div class="shop" id="shop" hidden>
+    <div class="gpick" id="gpick" hidden></div>
     <div class="shead">
       <h2 id="shopTitle">Wave 1 cleared</h2>
       <div class="purse"><span id="purse">0</span><small>Coins</small></div>
@@ -512,7 +520,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     dropTank: 0.015, rareSpec: 0.04, crateLife: 15,
     stim: { cd: 120, heal: 0.5, boost: 3 },
     dropHealth: 0.005, healAmount: 30, bossHeal: 50, healLife: 18, dropBossSpecial: 0.15, bossCrate: 0.25, bossCrateLife: 25,
-    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.3, frac: 0.45 }, rifle: { refill: 0.33, frac: 0.52 }, lmg: { refill: 0.33, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.35, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.15, runner: 0.15, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.3, frac: 0.35 }, rifle: { refill: 0.33, frac: 0.4 }, lmg: { refill: 0.33, frac: 0.4 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.35, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.015, runner: 0.015, tank: 0.06, armoured: 0.05, ghost: 0.05, boss: 0.3 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -2219,6 +2227,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function startWave(n) {
     introOn = false;
+    // health and ammo left on the floor vanish when the next wave begins
+    pickups = pickups.filter(function (q) { return q.kind !== 'health' && q.kind !== 'ammo'; });
     wave = n; queue = buildQueue(n);
     phase = 'spawning'; spawnTimer = 1.2;
     var boss = n % 5 === 0 && !isGhostWave(n), bi, i;
@@ -2658,6 +2668,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       w = P.pendingGun ? WEAPONS[P.pendingGun] : null; i = +id;
       if (w && i < P.unlocked && P.slots[i] && P.wallet >= w.price) { P.wallet -= w.price; P.slots[i] = makeGun(P.pendingGun); if (P.sel === i) P.fireCd = 0.12; }
       P.pendingGun = null;
+    } else if (a === 'slotgun') {
+      w = P.pendingGun ? WEAPONS[P.pendingGun] : null;
+      if (!w || P.unlocked >= 3 || P.wallet < SLOT_COST[P.unlocked] + w.price || ownsGun(P, P.pendingGun)) return false;
+      P.wallet -= SLOT_COST[P.unlocked] + w.price; P.slots[P.unlocked] = makeGun(P.pendingGun); P.unlocked++; P.pendingGun = null;
     } else if (a === 'cancel') {
       P.pendingGun = null;
     } else if (a === 'armour') {
@@ -2794,9 +2808,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (coins.length >= 400) { var nn = coins[Math.floor(Math.random() * coins.length)]; nn.v += nc.v; } else coins.push(nc); }
     // drops
     if ((z.boss && Math.random() < TUNE.dropBossSpecial) || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', rollSpecialId(), TUNE.crateLife);
-    if (z.boss) addPickup(z.x, z.y, 'health', 'big', TUNE.healLife + 6);
-    else if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', TUNE.healLife);
-    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife).to = autoTo;
+    if (z.boss) addPickup(z.x, z.y, 'health', 'big', 1e9);
+    else if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', 1e9);
+    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', 1e9).to = autoTo;
     if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
     if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
     if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
@@ -3688,7 +3702,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 145';
+  var updMsg = '', VERSION = 'Version 146';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3928,12 +3942,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
     { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock (+5% ammo from every ammo pickup).', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
     { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. An empty magazine reloads itself. Top up a part-empty one with the round button. Guns do not refill between waves.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
-    { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 1,500 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: you choose which gun to replace. The old gun and its upgrades are lost.', 'Tap the gun box under the minimap to swap guns.'] },
+    { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 1,500 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: a pop-up asks which gun to replace, and offers a new slot if you can afford it. The replaced gun and its upgrades are lost.', 'Tap the gun box under the minimap to swap guns.'] },
     { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
     { t: 'Armour and stim', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Stim: tap the syringe button above the reload button to heal half your max health and get a short speed boost. It takes 2 minutes to recharge, and it does nothing at full health. Health drops also appear from zombies, but rarely.'] },
     { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: very rare. They can drop from zombies or come from the Mystery box.', 'Specials are lucky finds. Tanks very rarely drop a crate, and bosses sometimes do. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot, and you can only keep one at a time. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
-    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
+    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'Health and ammo drops stay on the floor until the next wave starts. They blink during the break, as a warning that they are about to go.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.', 'Tap the minimap for a big map. The game keeps running: your left thumb still walks, and a tap on the right half of the screen (or Close) shuts it.'] },
     { t: 'The Hangar', art: 'hangar', b: ['A third map, and it is pitch dark. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time.', 'You only see by your torch: a beam that points where you aim. It stops at walls, containers and crates, so corners hide the dead.', 'Zombies come in through four windows, one on each wall. A dim red lamp by each window shows where. Rebuild the planks like usual.', 'Shipping containers, crates and a low-walled deck in the middle block walking and the torch. Barrels and the catwalk rails do not.', 'Mystery boxes work as normal, but you have to find them in the dark. Teammates only show as a small glow. In PvP, opponents have no glow at all.', 'It is also the PvP map. Offline and online zombie games both work.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
@@ -4349,11 +4363,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         h += card('Gun slot ' + (P.unlocked + 1), '', 'Carry one more gun. Swap with the gun box under the minimap.', buyBtn('slot', P.unlocked, SLOT_COST[P.unlocked], wallet >= SLOT_COST[P.unlocked]));
       }
       h += '<div class="sec">Guns for sale</div>';
-      if (P.pendingGun) {
-        h += '<div class="warn">No free slot. Replace which gun with the ' + WEAPONS[P.pendingGun].name + '? The old gun and its tier are lost.<div class="acts">';
-        for (i = 0; i < P.unlocked; i++) if (P.slots[i]) h += '<button class="buy alt" type="button" data-act="replace" data-id="' + i + '">' + WEAPONS[P.slots[i].id].name + '</button>';
-        h += '<button class="buy alt" type="button" data-act="cancel" data-id="0">Cancel</button></div></div>';
-      }
       var any = false, ck, ch;
       for (ck in CLS) {
         ch = '';
@@ -4377,16 +4386,27 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     }
     panel.innerHTML = h;
+    // buying a gun with no free slot: a pop-up asks which gun to replace (or offers a new slot)
+    if (P.pendingGun && WEAPONS[P.pendingGun]) {
+      var pw = WEAPONS[P.pendingGun], gh = '<div class="gcard"><h3>Replace which gun?</h3><p>Buying the ' + pw.name + ' for ' + pw.price + '. The gun you replace and its upgrades are lost.</p><div class="gopts">';
+      if (P.unlocked < 3 && wallet >= SLOT_COST[P.unlocked] + pw.price) gh += '<button class="buy" type="button" data-act="slotgun" data-id="' + P.unlocked + '"><i class="coin"></i>New slot ' + SLOT_COST[P.unlocked] + ' + gun ' + pw.price + '</button>';
+      for (i = 0; i < P.unlocked; i++) if (P.slots[i]) gh += '<button class="buy alt" type="button" data-act="replace" data-id="' + i + '">Replace ' + WEAPONS[P.slots[i].id].name + '</button>';
+      gh += '<button class="buy alt" type="button" data-act="cancel" data-id="0">Cancel</button></div></div>';
+      gpick.innerHTML = gh; gpick.hidden = false;
+    } else if (!gpick.hidden) { gpick.hidden = true; gpick.innerHTML = ''; }
     panel.scrollTop = keep;
   }
 
-  panel.addEventListener('click', function (e) {
+  var gpick = $('gpick');
+  gpick.addEventListener('click', function (e) { if (e.target === gpick) { cmd('shop', 'cancel', 0); if (net.mode !== 'client') renderShop(); } });
+  function shopTap(e) {
     var b = e.target.closest ? e.target.closest('[data-act]') : null;
     if (!b || b.disabled) return;
     ensureAudio();
     cmd('shop', b.dataset.act, b.dataset.id);
     if (net.mode !== 'client') renderShop();
-  });
+  }
+  panel.addEventListener('click', shopTap); gpick.addEventListener('click', shopTap);
   tabs.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-tab]') : null;
     if (!b) return;
@@ -4745,7 +4765,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   [60, 250, 600, 1200, 2500].forEach(function (t) { setTimeout(pulse, t); });
   window.addEventListener('load', function () { setTimeout(pulse, 30); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { pulse(); setTimeout(pulse, 400); } });
-  window.addEventListener('orientationchange', function () { setTimeout(pulse, 250); setTimeout(pulse, 800); });
+  // turning the phone: run the same settle-and-refit routine as at load, every time (iOS can leave a gap at the bottom otherwise)
+  var lastLand = window.innerWidth > window.innerHeight;
+  function turnReset() { [0, 60, 250, 600, 1200, 2500].forEach(function (t) { setTimeout(pulse, t); }); }
+  window.addEventListener('orientationchange', function () { lastLand = !lastLand; turnReset(); });
+  window.addEventListener('resize', function () { var l = window.innerWidth > window.innerHeight; if (l !== lastLand) { lastLand = l; turnReset(); } });
   window.addEventListener('pageshow', function () { fit(); setTimeout(fit, 300); });
   setTimeout(fit, 400);
   setInterval(function () { var r = game.getBoundingClientRect(); if (Math.round(r.width) !== W || Math.round(r.height) !== H) fit(); }, 500);
@@ -5169,7 +5193,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
 
   function drawPickup(pu) {
-    var blink = pu.t < 4 && Math.floor(time * 6) % 2 === 0;
+    var blink = (pu.t < 4 || (phase === 'grace' && !pvp && !introOn && (pu.kind === 'health' || pu.kind === 'ammo'))) && Math.floor(time * 6) % 2 === 0;
     if (blink) return;
     var pulse = 0.55 + 0.45 * Math.sin(time * 6 + pu.x), x = pu.x, y = pu.y, col;
     if (pu.kind === 'special') {
