@@ -514,7 +514,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
     specStep: 10, specDmg: 0.6, specAmmo: 0.2,
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
-    throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
+    throwGap: 3.6, grace: 15, graceFlat: 7, graceMid: 10, graceMidWave: 20, graceMin: 8, graceMinWave: 30, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45,
     pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9 } }
   };
@@ -1961,7 +1961,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function maxHpNow(P) { return pvp ? TUNE.pvp.hp : TUNE.hpBase * (1 + 0.1 * P.upg.hp) + armVal(P, 'body'); }
   function spdNow(P) { return TUNE.spdBase * (1 + 0.1 * P.upg.spd + armVal(P, 'legs')) * (P.perkT.spd > 0 ? 1.6 : 1) * (P.sb > 0 ? TUNE.pvp.stimSpd : 1); }
 
-  function graceFor(w) { return Math.round(Math.max(TUNE.graceMin, TUNE.grace - (TUNE.grace - TUNE.graceMin) * (w - 1) / (TUNE.graceWave - 1))); }
+  // 15s flat through wave 7, easing to 10s by wave 20, then down to the 8s floor by wave 30
+  function graceFor(w) {
+    var g;
+    if (w <= TUNE.graceFlat) g = TUNE.grace;
+    else if (w <= TUNE.graceMidWave) g = TUNE.grace - (TUNE.grace - TUNE.graceMid) * (w - TUNE.graceFlat) / (TUNE.graceMidWave - TUNE.graceFlat);
+    else g = TUNE.graceMid - (TUNE.graceMid - TUNE.graceMin) * (w - TUNE.graceMidWave) / (TUNE.graceMinWave - TUNE.graceMidWave);
+    return Math.round(Math.max(TUNE.graceMin, g));
+  }
   function lateN(w) { return Math.max(0, w - TUNE.lateStart); }
   function rampN(w) { return Math.max(0, w - (TUNE.rampFrom - 1)); }
   function perkFactor(w) { return w <= TUNE.lateStart ? 1 : Math.max(TUNE.perkFloor, 1 - (1 - TUNE.perkFloor) * (w - TUNE.lateStart) / (TUNE.perkFadeEnd - TUNE.lateStart)); }
@@ -3656,7 +3663,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 136';
+  var updMsg = '', VERSION = 'Version 137';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3889,7 +3896,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var GUIDE = [
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
     { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
-    { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
+    { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 15 seconds early on. From wave 8 it shrinks to 10 seconds by wave 20, then to 8 seconds by wave 30.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a big med kit and lots of coins. Sometimes a special weapon crate lands near you at the start of a boss wave, and bosses sometimes drop one too.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
