@@ -288,7 +288,7 @@ body {
   .card .d { font-size: 14px; }
 }
 /* main menu */
-.inmenu .hud, .inmenu .rcol, .inmenu .swapgo, .inmenu .stimgo { visibility: hidden; }
+.inmenu .hud, .inmenu .rcol, .inmenu .swapgo, .inmenu .stimgo, .inmenu .boxbtn, .inmenu .pausetag { visibility: hidden; }
 textarea.bk, input.bk { width: min(340px, 100%); box-sizing: border-box; padding: 10px 12px; font: 600 16px/1.4 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #5a4d44; border-radius: 6px; word-break: break-all; resize: none; -webkit-user-select: text; user-select: text; }
 pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: border-box; text-align: left; font: 600 14px/1.5 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #3a322d; border-radius: 6px; white-space: pre-wrap; }
 .game.diagon::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: #f0f; pointer-events: none; z-index: 98; }
@@ -3727,7 +3727,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 148';
+  var updMsg = '', VERSION = 'Version 149';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3777,7 +3777,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   setInterval(function () { if (screen === 'diag') fillDiag(); else { var f = document.getElementById('diagIH'); if (f) f.remove(); } }, 400);
   function showScreen(name) {
     screen = name;
-    game.classList.toggle('inmenu', ['main', 'offline', 'maps', 'online', 'me', 'host', 'join', 'wait'].indexOf(name) >= 0); game.classList.toggle('diagon', name === 'diag');
+    game.classList.toggle('inmenu', !!name);   // any menu screen hides the game HUD behind it game.classList.toggle('diagon', name === 'diag');
     if (name) {
       joy.active = false; joy.x = joy.y = 0; aim.active = false;
       renderScreen(); ov.hidden = false;
