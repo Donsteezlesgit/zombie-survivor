@@ -74,6 +74,10 @@ body {
 .swap.dry { border-color: var(--blood); }
 .swap.dry small { color: #e0614f; }
 .swapgo { position: absolute; right: max(8px, env(safe-area-inset-right, 0px)); top: 54%; width: 50px; height: 50px; padding: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: var(--bone); border: 1px solid #5a4d44; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.stimgo { top: calc(54% - 58px); --p: 100; background: conic-gradient(rgba(120, 224, 160, 0.95) calc(var(--p) * 1%), rgba(0, 0, 0, 0.55) 0); }
+.stimgo svg { background: rgba(0, 0, 0, 0.78); border-radius: 50%; padding: 8px; width: 40px; height: 40px; box-sizing: border-box; }
+.stimgo.rdy { border-color: #78e0a0; color: #78e0a0; box-shadow: 0 0 10px rgba(120, 224, 160, 0.5); }
+.stimgo.rdy:active svg { background: #78e0a0; color: #0e1a12; }
 .swapgo b { font: 400 26px/1 var(--face-ui); letter-spacing: 0; margin-top: -2px; }
 .swapgo:active { background: var(--rust); color: #1a0e08; border-color: var(--rust); }
 .boxbtn { position: absolute; right: 16px; bottom: 16px; min-height: 48px; padding: 8px 14px; background: var(--gold); color: #1a0e08; border: 0; border-radius: 6px; font: 700 16px/1.1 var(--face-ui); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
@@ -94,6 +98,8 @@ body {
   .swap { padding: 5px 6px 6px; font-size: 13px; }
   .swap small { margin-top: 3px; font-size: 14px; }
   .swapgo { width: 42px; height: 42px; top: 58%; }
+  .stimgo { top: calc(58% - 50px); }
+  .stimgo svg { width: 32px; height: 32px; padding: 6px; }
   .swapgo b { font-size: 21px; }
   .swap small { font-size: 13px; margin-top: 2px; }
   .boxbtn { bottom: 12px; min-height: 40px; padding: 6px 12px; font-size: 14px; }
@@ -271,7 +277,7 @@ body {
   .card .d { font-size: 14px; }
 }
 /* main menu */
-.inmenu .hud, .inmenu .rcol, .inmenu .swapgo { visibility: hidden; }
+.inmenu .hud, .inmenu .rcol, .inmenu .swapgo, .inmenu .stimgo { visibility: hidden; }
 textarea.bk, input.bk { width: min(340px, 100%); box-sizing: border-box; padding: 10px 12px; font: 600 16px/1.4 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #5a4d44; border-radius: 6px; word-break: break-all; resize: none; -webkit-user-select: text; user-select: text; }
 pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: border-box; text-align: left; font: 600 14px/1.5 ui-monospace, Menlo, monospace; color: var(--bone); background: rgba(0, 0, 0, 0.5); border: 1px solid #3a322d; border-radius: 6px; white-space: pre-wrap; }
 .game.diagon::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: #f0f; pointer-events: none; z-index: 98; }
@@ -467,6 +473,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   <div class="rcol"><canvas class="mm" id="mm" width="104" height="104" aria-hidden="true"></canvas>
   <div class="swap" id="swapBtn" aria-hidden="true"></div></div>
   <button class="swapgo" id="swapGo" type="button" aria-label="Swap weapon"><b>&#8644;</b></button>
+  <button class="swapgo stimgo" id="stimGo" type="button" aria-label="Use stim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3l3 3"/><path d="M19.5 4.5l-9 9"/><path d="M16.5 7.5l-9 9L6 18l-2 2 1-3.5"/><path d="M13 5l6 6"/><path d="M9 15l-3 3"/></g></svg></button>
   <button class="boxbtn" id="boxBtn" type="button" hidden>Mystery box · 120</button>
   <div class="boxui" id="boxUI" hidden><div class="boxcard"><h2>Mystery box</h2><div id="boxBody"></div></div></div>
   <div class="banner" id="banner" hidden><h2 id="bnTitle"></h2><p id="bnText"></p></div>
@@ -508,7 +515,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
     throwGap: 3.6, grace: 20, graceMin: 10, graceWave: 20, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45,
-    pvp: { hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9 } }
+    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9 } }
   };
   var PV_TAG = { mp5: 'Fast, close range', ak47: 'All-rounder', m4a1: 'Accurate and quick', python: 'Slow, hits hard', deagle: 'Heavy, 8 shots', benelli: 'Shotgun, close range' };
   var TYPES = {
@@ -634,7 +641,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var game = $('game'), cv = $('c'), ctx = cv.getContext('2d');
   var lcv = document.createElement('canvas'), lctx = lcv.getContext('2d');
   var ov = $('ov');
-  var mm = $('mm'), mmx = mm.getContext('2d'), boxBtn = $('boxBtn'), boxUI = $('boxUI'), boxBody = $('boxBody'), pauseBtn = $('pauseBtn'), swapBtn = $('swapBtn'), swapGo = $('swapGo');
+  var mm = $('mm'), mmx = mm.getContext('2d'), boxBtn = $('boxBtn'), boxUI = $('boxUI'), boxBody = $('boxBody'), pauseBtn = $('pauseBtn'), swapBtn = $('swapBtn'), swapGo = $('swapGo'), stimGo = $('stimGo');
   var hpfill = $('hpfill'), hptxt = $('hptxt'), waveN = $('waveN'), leftEl = $('left'), statsEl = $('stats'), perksEl = $('perks'), teamEl = $('team');
   var banner = $('banner'), bnTitle = $('bnTitle'), bnText = $('bnText');
   var shop = $('shop'), shopTitle = $('shopTitle'), purseEl = $('purse'), sstats = $('sstats'), panel = $('panel'), nextBtn = $('nextBtn');
@@ -1946,7 +1953,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function armVal(P, part) { var t = P.armor[part]; return t > 0 ? ARM[part].val[t - 1] : 0; }
   function maxHpNow(P) { return pvp ? TUNE.pvp.hp : TUNE.hpBase * (1 + 0.1 * P.upg.hp) + armVal(P, 'body'); }
-  function spdNow(P) { return TUNE.spdBase * (1 + 0.1 * P.upg.spd + armVal(P, 'legs')) * (P.perkT.spd > 0 ? 1.6 : 1); }
+  function spdNow(P) { return TUNE.spdBase * (1 + 0.1 * P.upg.spd + armVal(P, 'legs')) * (P.perkT.spd > 0 ? 1.6 : 1) * (P.sb > 0 ? TUNE.pvp.stimSpd : 1); }
 
   function graceFor(w) { return Math.round(Math.max(TUNE.graceMin, TUNE.grace - (TUNE.grace - TUNE.graceMin) * (w - 1) / (TUNE.graceWave - 1))); }
   function lateN(w) { return Math.max(0, w - TUNE.lateStart); }
@@ -2319,10 +2326,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (P.lo[o] === id) P.lo[o] = P.lo[s];
     P.lo[s] = id;
   }
-  // put the picked guns in the two slots, with endless reserve ammo (you still reload)
+  // put the picked guns in the two slots with one full magazine each
   function pvpEquip(P) {
     P.slots = [makeGun(P.lo[0]), makeGun(P.lo[1]), null];
-    P.slots[0].res = Infinity; P.slots[1].res = Infinity;
+    P.slots[0].res = 0; P.slots[1].res = 0;   // one magazine each; more comes from the ammo crates
+    P.stimCd = 0; P.sb = 0;   // the stim is ready again every time you come back
     P.unlocked = 2; P.sel = 0; P.lastSel = 0; P.special = null; P.ghost = null; P.carry = -1;
   }
   // every spot a player can really walk to (so nobody spawns walled in), found once when the round starts
@@ -2369,7 +2377,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < BLD.length; i++) { BLD[i].bar.planks = BLD[i].bar.max; BLD[i].bar.acc = 0; BLD[i].bar.rt = 0; }
     for (i = 0; i < DOORS.length; i++) { DOORS[i].open = true; DOORS[i].prog = 0; DOORS[i].zt = 0; DOORS[i].wait = false; }
     pvSpots = pvpSpots();
-    pvPhase = 'pick'; pvT = TUNE.pvp.pick;
+    pvPhase = 'pick'; pvT = TUNE.pvp.pick; pvCrT = TUNE.pvp.crateEvery;
     for (i = 0; i < players.length; i++) {
       P = players[i]; P.kills = 0; P.deaths = 0; P.go = !!P.bot; P.rt = 0; P.dn = 0; P.inv = 0;
       pvpEquip(P); P.hp = maxHpNow(P); P.down = true;
@@ -2399,12 +2407,52 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       return;
     }
     if (pvPhase !== 'play') return;
+    for (i = 0; i < players.length; i++) { P = players[i]; if (P.stimCd > 0) P.stimCd = Math.max(0, P.stimCd - dt); }
+    pvpCrates(dt);
     for (i = 0; i < players.length; i++) {
       P = players[i];
       if (!P.down) continue;
       P.dn += dt;
       if (P.rt > 0) P.rt = Math.max(0, P.rt - dt);
       if (P.rt <= 0 && (P.go || P.bot || P.dn >= TUNE.pvp.auto)) pvpDeploy(P);
+    }
+  }
+  // stim: back to full health at once, then a minute to recharge; a short speed boost
+  function pvpStim(P) {
+    if (!pvp || pvPhase !== 'play' || P.down || P.stimCd > 0 || P.hp >= maxHpNow(P) - 0.5) return;
+    P.hp = maxHpNow(P); P.stimCd = TUNE.pvp.stimCd; P.sb = TUNE.pvp.stimBoost;
+    ptone(P, 300, 900, 0.18, 'sine', 0.07); ptone(P, 600, 1200, 0.12, 'square', 0.04, 0.12);
+  }
+  // ammo crates turn up around the map every so often
+  var pvCrT = 0;
+  function pvpCrates(dt) {
+    var i, j, n = 0, P, pu, ok, sp, k, g, d, cap, gain;
+    pvCrT -= dt;
+    if (pvCrT <= 0) {
+      pvCrT = TUNE.pvp.crateEvery;
+      for (i = 0; i < pickups.length; i++) if (pickups[i].kind === 'ammo') n++;
+      if (n < TUNE.pvp.crateMax && pvSpots.length) {
+        for (k = 0; k < 24; k++) {
+          sp = pvSpots[Math.floor(Math.random() * pvSpots.length)]; ok = true;
+          for (j = 0; j < players.length; j++) if (!players[j].down && Math.hypot(players[j].x - sp.x, players[j].y - sp.y) < 220) ok = false;
+          for (j = 0; ok && j < pickups.length; j++) if (Math.hypot(pickups[j].x - sp.x, pickups[j].y - sp.y) < 200) ok = false;
+          if (ok) { pickups.push({ x: sp.x, y: sp.y, kind: 'ammo', id: 'ammo', t: 1e9 }); break; }
+        }
+      }
+    }
+    for (i = pickups.length - 1; i >= 0; i--) {
+      pu = pickups[i];
+      for (j = 0; j < players.length; j++) {
+        P = players[j]; if (P.down || Math.hypot(P.x - pu.x, P.y - pu.y) > 24) continue;
+        gain = false;
+        for (k = 0; k < 2; k++) {
+          g = P.slots[k]; if (!g) continue;
+          d = WEAPONS[g.id]; cap = gunMag(d) * TUNE.pvp.spareMags;
+          if (g.res < cap) { g.res = Math.min(cap, g.res + gunMag(d)); gain = true; }
+        }
+        if (gain) { pickups.splice(i, 1); ptone(P, 240, 360, 0.08, 'square', 0.05); ptone(P, 360, 480, 0.06, 'square', 0.05, 0.07); }
+        break;
+      }
     }
   }
   function pvpHit(Q, b) {
@@ -2620,6 +2668,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (m.c === 'shop') { if (shopAct(P, m.a, m.id)) { if (m.a !== 'cancel') ptone(P, 700, 1100, 0.07, 'square', 0.05); if (P === me) saveGame(); } }
     else if (m.c === 'box') { if (m.a === 'open') openBox(P); else boxAct(P, m.a, m.id); }
     else if (m.c === 'lo') pvpCmd(P, String(m.a || ''), String(m.id || ''));
+    else if (m.c === 'stim') pvpStim(P);
   }
 
   // ---------- simulation ----------
@@ -2964,6 +3013,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (P.inv > 0) P.inv -= dt;
     if (P.hcd > 0) P.hcd -= dt;
     if (P.flash > 0) P.flash -= dt;
+    if (P.sb > 0) P.sb -= dt;
     if (P.ghost) {
       var GH = P.ghost; GH.idle = (GH.idle || 0) + dt;
       if (GH.cool > 0) { GH.cool -= dt; if (GH.cool <= 0) { GH.cool = 0; GH.heat = 0; bannerTo(P, 'Ghostbuster cooled', 'Ready to fire again.', 1.6); } }
@@ -3571,7 +3621,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 131';
+  var updMsg = '', VERSION = 'Version 132';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3810,7 +3860,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
     { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then the ones hit by goo burst. The burst hurts nearby zombies, but only zombies hit by goo burst.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the round button to swap to it. The gun box shows the heat.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
-    { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). You have endless spare ammo but still reload.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
+    { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
     { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
@@ -4126,6 +4176,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     el.addEventListener('click', function () { if (performance.now() - last < 600) return; fn(); });
   }
   fastTap(swapGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('swap'); });
+  fastTap(stimGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('stim'); });
 
   // ---------- shop ----------
   var shopBtn = $('shopBtn'), lastShopKey = '';
@@ -4342,6 +4393,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var showShop = playing && !blocked() && !pvp;
     if (hudCache.shopShow !== showShop) { hudCache.shopShow = showShop; shopBtn.hidden = !showShop; }
 
+    // PvP stim button: green ring fills while it recharges
+    var showStim = pvp && playing && !me.down && pvPhase === 'play', sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / TUNE.pvp.stimCd)) : 100;
+    if (hudCache.stimShow !== showStim) { hudCache.stimShow = showStim; stimGo.hidden = !showStim; }
+    if (showStim) {
+      if (hudCache.stimP !== sc) { hudCache.stimP = sc; stimGo.style.setProperty('--p', sc); stimGo.classList.toggle('rdy', sc >= 100); }
+    }
     // ammo / swap button
     var showSwap = playing && !shopOpen;
     if (hudCache.swapShow !== showSwap) { hudCache.swapShow = showSwap; swapBtn.hidden = !showSwap; swapGo.hidden = !showSwap; }
@@ -5265,6 +5322,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var lx0 = (Lt.x - cam.x) * K, ly0 = (Lt.y - cam.y) * K, lr0 = Lt.r * K * (Lt.st ? 1 : 0.88 + 0.12 * Math.sin(time * 7 + Lt.s));
       lctx.globalAlpha = Lt.a; lctx.drawImage(lightSpr('0,0,0'), lx0 - lr0, ly0 - lr0, lr0 * 2, lr0 * 2); lctx.globalAlpha = 1;
     }
+    if (pvp) for (i = 0; i < pickups.length; i++) {   // ammo crates glow a little so they can be found in the dark
+      var ap = pickups[i];
+      if (ap.kind !== 'ammo' || ap.x < cam.x - 60 || ap.x > cam.x + vw + 60 || ap.y < cam.y - 60 || ap.y > cam.y + vh + 60) continue;
+      var alr = 52 * K; lctx.globalAlpha = 0.85; lctx.drawImage(lightSpr('0,0,0'), (ap.x - cam.x) * K - alr, (ap.y - cam.y) * K - alr, alr * 2, alr * 2); lctx.globalAlpha = 1;
+    }
     for (i = 0; i < fx.length; i += 6) {
       var lf = fx[i];
       if (lf.life > lf.max * 0.6) {
@@ -5632,7 +5694,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       sl: P.slots.map(function (g) { return g ? [g.id, g.tier, g.mag, g.res === Infinity ? -1 : g.res, r2(g.reload)] : 0; }),
       gh: P.ghost ? [r2(P.ghost.heat), r1(P.ghost.cool)] : 0, un: P.unlocked, se: P.sel, sp: P.special ? [P.special.id, P.special.ammo, P.special.max] : 0,
       ca: P.cards.map(function (c) { return [c.id, c.bought ? 1 : 0]; }), pg: P.pendingGun || 0, bx: P.boxPrize || 0,
-      pv: pvp ? [P.lo[0], P.lo[1], P.by || ''] : 0
+      pv: pvp ? [P.lo[0], P.lo[1], P.by || '', r1(P.stimCd || 0)] : 0
     };
   }
   function buildCommon() {
@@ -5827,7 +5889,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     me.special = a.sp ? { id: a.sp[0], ammo: a.sp[1], max: a.sp[2] } : null;
     me.cards = a.ca.map(function (r) { return { id: r[0], bought: !!r[1] }; });
     me.pendingGun = a.pg || null; me.boxPrize = a.bx || null;
-    if (a.pv) { me.by = a.pv[2] || ''; if (!(me.loT && performance.now() < me.loT)) me.lo = [a.pv[0], a.pv[1]]; }
+    if (a.pv) { me.by = a.pv[2] || ''; me.stimCd = a.pv[3] || 0; if (!(me.loT && performance.now() < me.loT)) me.lo = [a.pv[0], a.pv[1]]; }
   }
 
   // each frame on a client: walk, smooth everything else between the last two snapshots
