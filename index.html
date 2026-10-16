@@ -2843,6 +2843,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var ddx = z.x - P.x, ddy = z.y - P.y, dd = ddx * ddx + ddy * ddy;
       if (dd < bd && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF) && shotClear(P.x, P.y, z.x, z.y)) { bd = dd; tgt = z; }
     }
+    // two-thumb zombies: the gun only fires while the right thumb is held, still at zombies inside the cone
+    if (!pvp && useCone && !P.fr) tgt = null;
     P.tgt = tgt;
     // PvP: no auto aim at all. The gun fires straight along the aim stick while it is held
     var pvFire = pvp && !!P.fr && useCone;
@@ -3418,7 +3420,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 126';
+  var updMsg = '', VERSION = 'Version 127';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3623,8 +3625,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var helpFrom = 'main', helpIdx = 0;
   var HELP = [
     { t: 'Move', x: 'Left thumb walks. Put it on the left half of the screen and drag. Drag further to go faster.', art: 'move' },
-    { t: 'Shooting is automatic', x: 'Your gun fires by itself, but only at zombies inside the faint yellow cone. Point the cone and stay alive.', art: 'shoot' },
-    { t: 'Aiming', x: 'Right thumb aims the yellow cone. Put it on the right half and drag. Lift it and the cone stays where you left it. Prefer one finger with auto-aim? Switch in Settings.', art: 'aim' },
+    { t: 'Hold to shoot', x: 'Hold your right thumb down and your gun fires at zombies inside the faint yellow cone. Let go and it stops. Point the cone and stay alive.', art: 'shoot' },
+    { t: 'Aiming', x: 'Right thumb aims the yellow cone. Put it on the right half and drag. Hold it to shoot. Lift it and the gun stops, and the cone stays where you left it. Prefer one finger with auto-aim? Switch in Settings.', art: 'aim' },
     { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
     { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
@@ -3638,7 +3640,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   var GUIDE = [
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
-    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
+    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. The round button on the right edge swaps guns.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
     { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 20 seconds early on, shrinking to 10 seconds by wave 20.', 'The break is for shopping and rebuilding barriers. At the end of every wave your mags are topped up and each gun gets a third of its reserve back. The Ammo restock upgrade adds 7% more per level.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a special weapon crate, lots of coins, and often a power-up.', 'Later waves bring more than one boss.'] },
@@ -3675,7 +3677,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return h;
   }
   function introSlides() {
-    var ctl = ctrlEff() === 'two' ? 'Left thumb walks, right thumb aims the yellow cone. Your gun fires by itself at zombies inside it.' : 'Drag anywhere to walk. Your gun aims and fires by itself.';
+    var ctl = ctrlEff() === 'two' ? 'Left thumb walks. Hold the right thumb to aim the yellow cone and shoot zombies inside it.' : 'Drag anywhere to walk. Your gun aims and fires by itself.';
     var list = [{ t: 'Controls', x: ctl, art: 'move' }];
     if (mapId === 'haunted') {
       list.push({ t: 'The Haunted House', art: 'haunted', b: ['Zombies climb in through four windows. Stand next to broken planks to rebuild them.', 'Rooms are joined by long corridors with a door at each end.', 'Mystery boxes only appear inside the house.'] });
@@ -4343,7 +4345,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     me.inx = mx; me.iny = my;
     me.cone = ctrlEff() === 'two';
     if (me.cone) { if (aim.ang !== null) me.aimAng = aim.ang; else if (me.aimAng === null) me.aimAng = me.ang; }
-    me.fr = !!(pvp && me.cone && aim.active && aim.ang !== null && Math.hypot(aim.x, aim.y) > 0.18 && !blocked() && state === 'play');
+    me.fr = !!(me.cone && aim.active && aim.ang !== null && Math.hypot(aim.x, aim.y) > 0.18 && !blocked() && state === 'play');
   }
 
   // ---------- sizing ----------
@@ -5210,7 +5212,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } else if (me && me.cone && !me.down && state === 'play' && me.aimAng !== null) {
       var cd0 = defOf(viewRef(me)), cr = Math.min(420, cd0.range), cm = (cd0.len + 11) * 0.9, cxx = me.x + Math.cos(me.aimAng) * cm, cyy = me.y - 1.5 + Math.sin(me.aimAng) * cm;
       var cg = ctx.createRadialGradient(cxx, cyy, 6, cxx, cyy, cr);
-      cg.addColorStop(0, 'rgba(242,193,78,0.16)'); cg.addColorStop(1, 'rgba(242,193,78,0.02)');
+      cg.addColorStop(0, me.fr ? 'rgba(242,193,78,0.26)' : 'rgba(242,193,78,0.12)'); cg.addColorStop(1, me.fr ? 'rgba(242,193,78,0.04)' : 'rgba(242,193,78,0.02)');
       ctx.fillStyle = cg; ctx.strokeStyle = 'rgba(242,193,78,0.14)'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(cxx, cyy); ctx.arc(cxx, cyy, cr, me.aimAng - CONE_HALF, me.aimAng + CONE_HALF); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
