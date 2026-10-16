@@ -2424,7 +2424,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       P = players[i]; P.kills = 0; P.deaths = 0; P.go = !!P.bot; P.rt = 0; P.dn = 0; P.inv = 0;
       pvpEquip(P); P.hp = maxHpNow(P); P.down = true;
     }
-    showScreen('loadout');
+    showScreen('pvpintro');
   }
   function pvpDeploy(P) {
     var sp = pvpSpawnPoint(P);
@@ -2437,13 +2437,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var i;
     pvPhase = 'play'; pvT = 0;
     for (i = 0; i < players.length; i++) { players[i].kills = 0; players[i].deaths = 0; pvpDeploy(players[i]); }
-    if (screen === 'loadout') showScreen('');
+    if (screen === 'loadout' || screen === 'pvpintro') showScreen('');
     bannerAll('Fight!', 'First to ' + TUNE.pvp.target + ' kills', 2);
   }
   function pvpTick(dt) {
     var i, P, all = true;
     if (pvPhase === 'pick') {
-      pvT -= dt;
+      if (screen !== 'pvpintro') pvT -= dt;   // the clock waits while the host reads the PvP tips
       for (i = 0; i < players.length; i++) { if (players[i].bot) players[i].go = true; if (!players[i].go) all = false; }
       if (all || pvT <= 0) pvpStart();
       return;
@@ -3663,6 +3663,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'intro') {
       h += introHtml();
+    } else if (screen === 'pvpintro') {
+      h += pvpIntroHtml();
     } else if (screen === 'help') {
       h += helpHtml();
     } else if (screen === 'guide') {
@@ -3682,9 +3684,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     meGridReset = false;
     if (screen === 'me') drawPreview();
-    if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
+    if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 141';
+  var updMsg = '', VERSION = 'Version 142';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3861,6 +3863,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
     else if (a === 'introdone') showScreen('');
+    else if (a === 'pvpintrodone') { loKey = ''; showScreen(pvp && pvPhase === 'pick' ? 'loadout' : ''); }
     else if (a === 'guide') { helpFrom = screen; helpIdx = 0; showScreen('guide'); }
     else if (a === 'leave') leaveGame();
     else if (a === 'again') { if (net.mode === 'host') hostStart(); else startOffline(mapId); }
@@ -3974,6 +3977,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function introHtml() {
     return helpHtml(introSlides(), mapDef(mapId).name, '<div class="swipe" id="introMsg">Swipe for tips · wave 1 starts in <b id="introT">' + Math.max(0, Math.ceil(graceT)) + '</b>s</div><button class="go" data-a="introdone" id="introBtn" type="button">Got it</button>');
+  }
+  function pvpIntroHtml() {
+    var T = TUNE.pvp, list = [
+      { t: 'PvP: the goal', art: 'team', b: ['No zombies. Everyone is against everyone.', 'First to ' + T.target + ' kills wins. Kills show at the top left.', 'Everyone has the same health, and other players do not show on the minimap.'] },
+      { t: 'Pick your guns', art: 'slots', b: ['Pick 2 different guns from 6: MP5, AK-47, M4A1, Python, Desert Eagle, Benelli.', 'Tap Ready when you are done. The round starts when everyone is ready, or after ' + T.pick + ' seconds.', 'You start with one magazine per gun. Ammo crates appear around the map: walk over one to get a magazine for each gun (' + T.spareMags + ' spare at most).'] },
+      { t: 'Aiming', art: 'move', b: ['There is no auto aim. Left thumb walks.', 'Hold the right thumb and point the thin line at someone. Your gun fires only while a player is on the line.', 'Let go and you stop firing.'] },
+      { t: 'Down and back up', art: 'stay', b: ['Die and you respawn after ' + T.respawn + ' seconds, far from the others, with ' + T.prot + ' seconds of protection. Firing ends it.', 'While you wait you can change your guns.', 'Stim button: full health and a short speed boost. It takes ' + T.stimCd + ' seconds to recharge, and is ready again when you respawn.'] }
+    ];
+    return helpHtml(list, 'PvP', '<div class="swipe">Swipe for tips · then pick your guns</div><button class="go" data-a="pvpintrodone" type="button">Got it</button>');
   }
   function helpDots() {
     var s = $('slides'), d = $('dots'); if (!s || !d) return;
@@ -4554,7 +4566,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (pvp && playing) {
       var needLo = pvPhase === 'pick' || me.down;
       if (needLo && !screen) showScreen('loadout');
-      else if (!needLo && screen === 'loadout') showScreen('');
+      else if (!needLo && (screen === 'loadout' || screen === 'pvpintro')) showScreen('');
       if (screen === 'loadout') pvpLoTick();
     }
   }
@@ -5963,7 +5975,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (pvp) {
       wave = 0; phase = 'grace'; introOn = false; banner.hidden = true; bannerTimer = 0;
       for (var pi = 0; pi < players.length; pi++) { players[pi].down = true; players[pi].lo = ['ak47', 'deagle']; pvpEquip(players[pi]); }
-      showScreen('loadout');
+      showScreen('pvpintro');
       return;
     }
     introOn = true; showScreen('intro');
