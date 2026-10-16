@@ -434,7 +434,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 .hp { border-radius: 0; border-color: #6a5a4c; }
 .hpfill { background: var(--hp); }
 .hp::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 3px), #0b0908 calc(10% - 3px) 10%); }
-.hptxt { z-index: 0; }
+.hp { isolation: isolate; }   /* keeps the number above the black segment lines, but still under the menus */
+.hp::after { z-index: 1; }
+.hptxt { z-index: 2; }
 .wave { font-family: var(--face-stencil); font-weight: 900; }
 .wave > span { display: inline-block; background: var(--gold); color: #15110e; padding: 2px 12px 1px; text-shadow: none; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 8px 100%); }
 .pause { border-radius: 0; border: 2px solid #6a5a4c; }
@@ -3725,7 +3727,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 147';
+  var updMsg = '', VERSION = 'Version 148';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
