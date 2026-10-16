@@ -3621,7 +3621,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 132';
+  var updMsg = '', VERSION = 'Version 133';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4396,6 +4396,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // PvP stim button: green ring fills while it recharges
     var showStim = pvp && playing && !me.down && pvPhase === 'play', sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / TUNE.pvp.stimCd)) : 100;
     if (hudCache.stimShow !== showStim) { hudCache.stimShow = showStim; stimGo.hidden = !showStim; }
+    // line the two buttons up under the ammo box, whatever the screen size
+    var nowT = performance.now();
+    if (nowT - (hudCache.lay || 0) > 400) {
+      hudCache.lay = nowT;
+      if (showStim) {
+        var sr = swapBtn.getBoundingClientRect(), bh = swapGo.offsetHeight || 50, st0 = Math.round(sr.bottom + 6), maxT = window.innerHeight - 2 * bh - 22;
+        st0 = Math.max(4, Math.min(st0, maxT));
+        stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px';
+      } else { stimGo.style.top = ''; swapGo.style.top = ''; }
+    }
     if (showStim) {
       if (hudCache.stimP !== sc) { hudCache.stimP = sc; stimGo.style.setProperty('--p', sc); stimGo.classList.toggle('rdy', sc >= 100); }
     }
@@ -5644,7 +5654,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     } else if (m.k === 'cmd' && seat) {
       P = pById(seat.id);
-      if (P && (m.c === 'swap' || m.c === 'shop' || m.c === 'box' || m.c === 'lo')) hostCmd(P, { c: m.c, a: String(m.a || ''), id: m.id });
+      if (P && (m.c === 'swap' || m.c === 'shop' || m.c === 'box' || m.c === 'lo' || m.c === 'stim')) hostCmd(P, { c: m.c, a: String(m.a || ''), id: m.id });
     } else if (m.k === 'png') { sendTo(c, { k: 'pong', t: m.t }); if (seat) seat.ping = Math.round(+m.p || 0);
     } else if (m.k === 'bye') hostLeave(c);
   }
