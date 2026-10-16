@@ -3684,7 +3684,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 140';
+  var updMsg = '', VERSION = 'Version 141';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3930,6 +3930,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot, and you can only keep one at a time. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.', 'Tap the minimap for a big map. The game keeps running: your left thumb still walks, and a tap on the right half of the screen (or Close) shuts it.'] },
+    { t: 'The Hangar', art: 'hangar', b: ['A third map, and it is pitch dark. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time.', 'You only see by your torch: a beam that points where you aim. It stops at walls, containers and crates, so corners hide the dead.', 'Zombies come in through four windows, one on each wall. A dim red lamp by each window shows where. Rebuild the planks like usual.', 'Shipping containers, crates and a low-walled deck in the middle block walking and the torch. Barrels and the catwalk rails do not.', 'Mystery boxes work as normal, but you have to find them in the dark. Your teammates only show as a small glow.', 'It is also the PvP map. Offline and online zombie games both work.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
     { t: 'Ghost rounds', art: 'ghosts', b: ['Haunted House only. Every 10th wave (10, 20, 30...) is a ghost round.', 'No zombies spawn and the usual boss is skipped. Only small ghosts come.', 'Ghosts are fast and have lots of health, but barely hurt you.', 'They fly through walls and shut doors. Your bullets still stop at walls.', 'Each ghost drops a lot of coins when it dies.'] },
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
@@ -3962,6 +3963,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       list.push({ t: 'The Ghostbuster', art: 'ghost', b: ['Put all 8 relics in the cauldron and everyone gets a new gun, the Ghostbuster.', 'Its goo slows zombies, then they burst. The blast hurts nearby zombies but does not make them burst. No ammo needed. It never hurts your team.', 'Fire for 6 seconds and it overheats, then needs 25 seconds to cool down.'] });
       list.push({ t: 'Ghost rounds', art: 'ghosts', b: ['Every 10th wave is a ghost round. No zombies and no normal boss.', 'Ghosts are quick, tough and fly straight through walls and doors. Their hits are weak.', 'Each ghost drops lots of coins. Walls only stop your bullets, so shoot them when you can see them.'] });
       list.push({ t: 'Bonus rooms', art: 'bonus', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'Coins and ammo from your kills there fly straight to you.', 'A gold ring on the minimap points to it.'] });
+    } else if (mapId === 'hangar') {
+      list.push({ t: 'The Hangar', art: 'hangar', b: ['It is pitch dark. You only see by your torch, which points where you aim.', 'The beam stops at containers, crates and walls. Use corners to hide.', 'Zombies come through four windows, one on each wall. A dim red lamp marks each one. Stand next to broken planks to rebuild them.'] });
+      list.push({ t: 'Stay alive', art: 'stay', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins. Find them in the dark.', 'Every 5th wave brings a boss.'] });
     } else {
       list.push({ t: 'Beginners Ground', art: 'bar', b: ['Zombies pour out of four buildings, each with a plank barrier.', 'Stand next to a broken barrier to rebuild it for coins.', 'Buildings block zombies and bullets. Use them to funnel the dead.'] });
       list.push({ t: 'Stay alive', art: 'stay', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
@@ -4146,6 +4150,21 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         txt(sp[i], spx + 35, 112, 14, '#f2c14e');
       }
       txt('crate = 4th weapon', 140, 14, 15, '#f2c14e'); txt('ammo runs out', 140, 134, 13, '#9c8f7e');
+    } else if (k === 'hangar') {
+      // dark room: torch beam, container, red window lamp
+      c.save(); c.translate(0, 8);
+      c.fillStyle = '#05070a'; c.fillRect(10, 10, 260, 120);
+      c.fillStyle = '#2a3340'; c.fillRect(10, 10, 260, 6); c.fillRect(10, 124, 260, 6); c.fillRect(10, 10, 6, 120);
+      c.fillStyle = '#000'; c.fillRect(228, 52, 42, 40);
+      c.fillStyle = 'rgba(255,60,40,0.35)'; c.beginPath(); c.arc(246, 72, 26, 0, 6.283); c.fill();
+      c.fillStyle = '#d94a3a'; c.beginPath(); c.arc(256, 72, 4, 0, 6.283); c.fill();
+      var tg = c.createRadialGradient(70, 76, 4, 70, 76, 120); tg.addColorStop(0, 'rgba(255,240,190,0.55)'); tg.addColorStop(1, 'rgba(255,240,190,0)');
+      c.fillStyle = tg; c.beginPath(); c.moveTo(70, 76); c.arc(70, 76, 120, -0.4, 0.4); c.closePath(); c.fill();
+      c.fillStyle = '#245a7a'; c.fillRect(138, 44, 34, 60); c.strokeStyle = '#10304a'; c.lineWidth = 2; c.strokeRect(138, 44, 34, 60);
+      c.fillStyle = 'rgba(0,0,0,0.85)'; c.fillRect(172, 44, 40, 60);
+      pl(70, 76, 0, 0, 1.4);
+      c.restore();
+      txt('torch', 100, 28, 14, '#f2c14e'); txt('WINDOW', 246, 36, 13, '#d94a3a'); txt('the beam stops at containers', 140, 142, 12, '#9c8f7e');
     } else if (k === 'haunted') {
       // a room seen close up: window with planks (top), door (right), player rebuilding
       c.save(); c.translate(0, 16);
