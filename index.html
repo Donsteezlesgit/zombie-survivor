@@ -670,11 +670,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var o = bestOverall(); offWave = o.w; offKills = o.k;
     try { localStorage.setItem('zs-maprec', JSON.stringify(mapRec)); localStorage.setItem('zs-off-wave', String(offWave)); localStorage.setItem('zs-off-kills', String(offKills)); } catch (e) {}
   }
+  function mapOpen(i) { var m = MAPS[i]; return m.need ? recOf(m.need.map).w >= m.need.wave : i < mapsOpen; }
   function unlockNextMap() {
     if (DEV.on) return;
     var idx = 0, i;
     for (i = 0; i < MAPS.length; i++) if (MAPS[i].id === mapId) idx = i;
-    if (idx + 1 >= MAPS.length || mapsOpen >= idx + 2) return;
+    if (idx + 1 >= MAPS.length || MAPS[idx + 1].need || mapsOpen >= idx + 2) return;
     mapsOpen = idx + 2;
     try { localStorage.setItem('zs-maps-open', String(mapsOpen)); } catch (e) {}
     bannerAll('New map unlocked', MAPS[idx + 1].name, 3);
@@ -1165,6 +1166,144 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     });
   }
 
+  // ---------- The Hangar (dark map: torch light only) ----------
+  var HG_CONT = [[130, 300, 270, 350, 0], [130, 350, 180, 490, 2], [300, 200, 440, 250, 1], [820, 230, 870, 370, 3], [950, 120, 1090, 170, 2], [250, 560, 390, 610, 1]];
+  var HG_CRATE = [[210, 640, 270, 700], [560, 250, 620, 310], [390, 340, 510, 400], [1000, 380, 1060, 440], [520, 520, 570, 570]];
+  var HG_BARREL = [[320, 500], [700, 300], [500, 850]];
+  var HG_RAIL = [[30, 100, 160, 108], [220, 100, 420, 108], [480, 100, 640, 108], [700, 100, 780, 108]];
+  var HG_CAT = [30, 30, 780, 100];
+  var HG_COLS = [['#7a2c20', '#4a160e'], ['#245a7a', '#10304a'], ['#3a6a3a', '#1a381c'], ['#9a7a20', '#58420c']];
+  function buildHangar() {
+    var T = WALL_T, i;
+    function wall(x, y, w, h) { var q = { x: x, y: y, w: w, h: h, wall: true }; RECTS.push(q); return q; }
+    // outer wall with a gap for each zombie window (N at x970, S at x430, W and E at y700)
+    wall(100, 100, 818 - 0, T); wall(1022, 100, 278, T);
+    wall(100, 1288, 278, T); wall(482, 1288, 818, T);
+    wall(100, 100, T, 548); wall(100, 752, T, 548);
+    wall(1288, 100, T, 548); wall(1288, 752, T, 548);
+    // the deck in the middle: low walls with a gap in each side
+    wall(570, 570, 90, 14); wall(740, 570, 90, 14); wall(570, 816, 90, 14); wall(740, 816, 90, 14);
+    wall(570, 570, 14, 90); wall(570, 740, 14, 90); wall(816, 570, 14, 90); wall(816, 740, 14, 90);
+    function add(x1, y1, x2, y2, kind, col) {
+      var a = { x: x1 + 100, y: y1 + 100, w: x2 - x1, h: y2 - y1, hg: kind, col: col || 0 };
+      var b = { x: 1300 - x2, y: 1300 - y2, w: x2 - x1, h: y2 - y1, hg: kind, col: col || 0 };
+      if (kind === 'rail') { a.furn = 'deco'; b.furn = 'deco'; }
+      RECTS.push(a); RECTS.push(b);
+    }
+    HG_CONT.forEach(function (c) { add(c[0], c[1], c[2], c[3], 'cont', c[4]); });
+    HG_CRATE.forEach(function (c) { add(c[0], c[1], c[2], c[3], 'crate'); });
+    HG_RAIL.forEach(function (c) { add(c[0], c[1], c[2], c[3], 'rail'); });
+    HG_BARREL.forEach(function (b) {
+      RECTS.push({ x: b[0] + 100 - 13, y: b[1] + 100 - 13, w: 26, h: 26, hg: 'barrel', furn: 'deco' });
+      RECTS.push({ x: 1300 - b[0] - 13, y: 1300 - b[1] - 13, w: 26, h: 26, hg: 'barrel', furn: 'deco' });
+    });
+    // zombie windows: same build as the Haunted House, pocket outside the wall
+    [{ ex: 970, ey: 46, nx: 0, ny: 1 }, { ex: 430, ey: 1354, nx: 0, ny: -1 }, { ex: 46, ey: 700, nx: 1, ny: 0 }, { ex: 1354, ey: 700, nx: -1, ny: 0 }].forEach(function (d) {
+      var hz = Math.abs(d.nx) > 0.5, tx = -d.ny, ty = d.nx, s2, q;
+      for (s2 = -1; s2 <= 1; s2 += 2) {
+        q = mkRect(d.ex + d.nx * (POCKET_D / 2 + WALL_T / 2) + tx * s2 * (POCKET_HW + WALL_T / 2), d.ey + d.ny * (POCKET_D / 2 + WALL_T / 2) + ty * s2 * (POCKET_HW + WALL_T / 2), POCKET_D + WALL_T, WALL_T, hz);
+        q.wall = true; RECTS.push(q);
+      }
+      q = mkRect(d.ex - d.nx * WALL_T / 2, d.ey - d.ny * WALL_T / 2, WALL_T, POCKET_HW * 2 + WALL_T * 2, hz); q.wall = true; RECTS.push(q);
+      var bar = mkRect(d.ex + d.nx * (POCKET_D + WALL_T / 2), d.ey + d.ny * (POCKET_D + WALL_T / 2), WALL_T, POCKET_HW * 2, hz);
+      bar.bar = true; bar.max = TUNE.barPlanks; bar.planks = bar.max; bar.acc = 0; bar.rt = 0; bar.hz = hz;
+      bar.cx = bar.x + bar.w / 2; bar.cy = bar.y + bar.h / 2;
+      RECTS.push(bar);
+      var pk = mkRect(d.ex + d.nx * POCKET_D / 2, d.ey + d.ny * POCKET_D / 2, POCKET_D, POCKET_HW * 2, hz);
+      BLD.push({ roof: bar, bar: bar, pocket: pk, sx: d.ex + d.nx * POCKET_D * 0.5, sy: d.ey + d.ny * POCKET_D * 0.5, tx: tx, ty: ty, nx: d.nx, ny: d.ny, ex: d.ex, ey: d.ey, win: true });
+      // a dim red lamp just inside each window, so you can tell where the dead will come from
+      LIGHTS.push({ x: d.ex + d.nx * (POCKET_D + 40), y: d.ey + d.ny * (POCKET_D + 40), r: 95, a: 0.5, col: '255,60,40', s: Math.random() * 10 });
+    });
+    function light(x, y, r, a, col) { LIGHTS.push({ x: x, y: y, r: r, a: a, col: col, s: Math.random() * 10 }); }
+    light(700, 700, 130, 0.7, '255,200,120');
+    [[400, 430], [1060, 400], [1000, 970], [240, 1000]].forEach(function (p) { light(p[0], p[1], 90, 0.55, '170,200,255'); });
+    light(280, 165, 110, 0.6, '255,230,170'); light(1120, 1235, 110, 0.6, '255,230,170');
+  }
+  function paintHangarGround() {
+    var g = groundL.x, W = WORLD, sd = 777, i, k;
+    function R() { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff; }
+    g.fillStyle = '#08090a'; g.fillRect(0, 0, W, W);
+    for (i = 0; i < 700; i++) { g.fillStyle = 'rgba(60,60,60,' + (0.05 + R() * 0.1).toFixed(2) + ')'; g.fillRect(R() * W, R() * W, 2 + R() * 4, 2 + R() * 3); }
+    // concrete floor
+    g.fillStyle = '#25282c'; g.fillRect(100, 100, 1200, 1200);
+    for (i = 0; i < 5000; i++) { g.fillStyle = R() < 0.5 ? 'rgba(0,0,0,' + (0.1 + R() * 0.2).toFixed(2) + ')' : 'rgba(255,255,255,0.03)'; g.fillRect(100 + R() * 1200, 100 + R() * 1200, 1 + R() * 3, 1 + R() * 3); }
+    g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 1.5;
+    for (k = 100; k <= 1300; k += 100) { g.beginPath(); g.moveTo(k, 100); g.lineTo(k, 1300); g.moveTo(100, k); g.lineTo(1300, k); g.stroke(); }
+    // oil stains
+    for (i = 0; i < 14; i++) { g.fillStyle = 'rgba(0,0,0,' + (0.25 + R() * 0.2).toFixed(2) + ')'; g.beginPath(); g.ellipse(160 + R() * 1080, 160 + R() * 1080, 14 + R() * 34, 9 + R() * 22, R() * 3, 0, 6.283); g.fill(); }
+    // painted bay lines and hazard stripes round the deck
+    g.strokeStyle = 'rgba(210,170,40,0.55)'; g.lineWidth = 4; g.setLineDash([26, 18]); g.strokeRect(540, 540, 320, 320); g.setLineDash([]);
+    g.strokeStyle = 'rgba(230,230,230,0.22)'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(700, 112); g.lineTo(700, 540); g.moveTo(700, 860); g.lineTo(700, 1288); g.moveTo(112, 700); g.lineTo(540, 700); g.moveTo(860, 700); g.lineTo(1288, 700); g.stroke();
+    // window floor marks (red/black)
+    [[970, 112, 104, 8], [430, 1280, 104, 8], [112, 700, 8, 104], [1280, 700, 8, 104]].forEach(function (m) {
+      var x0 = m[2] > m[3] ? m[0] - m[2] / 2 : m[0], y0 = m[2] > m[3] ? m[1] : m[1] - m[3] / 2, n;
+      for (n = 0; n < 13; n++) { g.fillStyle = n % 2 ? '#111' : 'rgba(190,40,30,0.8)'; if (m[2] > m[3]) g.fillRect(x0 + n * 8, y0, 8, 8); else g.fillRect(x0, y0 + n * 8, 8, 8); }
+    });
+    // deck floor (steel plate)
+    g.fillStyle = '#34383d'; g.fillRect(570, 570, 260, 260);
+    g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1.5;
+    for (k = 570; k <= 830; k += 65) { g.beginPath(); g.moveTo(k, 570); g.lineTo(k, 830); g.moveTo(570, k); g.lineTo(830, k); g.stroke(); }
+    g.fillStyle = 'rgba(255,255,255,0.12)';
+    for (i = 0; i < 4; i++) for (k = 0; k < 4; k++) { g.fillRect(578 + i * 65, 578 + k * 65, 3, 3); g.fillRect(618 + i * 65, 618 + k * 65, 3, 3); }
+    // catwalks (metal grating) along the north and south walls
+    [[130, 130, 750, 70], [520, 1200, 750, 70]].forEach(function (c) {
+      g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(c[0] + 5, c[1] + 7, c[2], c[3]);
+      g.fillStyle = '#3b3f45'; g.fillRect(c[0], c[1], c[2], c[3]);
+      g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1;
+      for (k = c[0]; k < c[0] + c[2]; k += 10) { g.beginPath(); g.moveTo(k, c[1]); g.lineTo(k, c[1] + c[3]); g.stroke(); }
+      for (k = c[1]; k < c[1] + c[3]; k += 10) { g.beginPath(); g.moveTo(c[0], k); g.lineTo(c[0] + c[2], k); g.stroke(); }
+      g.strokeStyle = '#555a62'; g.lineWidth = 3; g.strokeRect(c[0] + 1.5, c[1] + 1.5, c[2] - 3, c[3] - 3);
+    });
+  }
+  function paintHangarBld() {
+    var g = bldL.x, i, q, k, n, hz, col;
+    for (i = 0; i < RECTS.length; i++) {
+      q = RECTS[i];
+      if (q.wall) {
+        g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(q.x + 4, q.y + 6, q.w, q.h);
+        g.fillStyle = '#4a4f56'; g.fillRect(q.x, q.y, q.w, q.h);
+        g.strokeStyle = '#2a2d32'; g.lineWidth = 1;
+        if (q.w > q.h) for (k = q.x + 6; k < q.x + q.w; k += 8) { g.beginPath(); g.moveTo(k, q.y); g.lineTo(k, q.y + q.h); g.stroke(); }
+        else for (k = q.y + 6; k < q.y + q.h; k += 8) { g.beginPath(); g.moveTo(q.x, k); g.lineTo(q.x + q.w, k); g.stroke(); }
+        g.strokeStyle = '#6a7078'; g.lineWidth = 2; g.strokeRect(q.x + 1, q.y + 1, q.w - 2, q.h - 2);
+      } else if (q.hg === 'cont') {
+        col = HG_COLS[q.col]; hz = q.w > q.h;
+        g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(q.x + 5, q.y + 7, q.w, q.h);
+        g.fillStyle = col[0]; g.fillRect(q.x, q.y, q.w, q.h);
+        g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1.5;
+        if (hz) for (k = q.x + 7; k < q.x + q.w - 3; k += 9) { g.beginPath(); g.moveTo(k, q.y + 3); g.lineTo(k, q.y + q.h - 3); g.stroke(); }
+        else for (k = q.y + 7; k < q.y + q.h - 3; k += 9) { g.beginPath(); g.moveTo(q.x + 3, k); g.lineTo(q.x + q.w - 3, k); g.stroke(); }
+        g.fillStyle = 'rgba(255,255,255,0.1)'; if (hz) g.fillRect(q.x, q.y, q.w, 5); else g.fillRect(q.x, q.y, 5, q.h);
+        g.strokeStyle = col[1]; g.lineWidth = 3; g.strokeRect(q.x + 1.5, q.y + 1.5, q.w - 3, q.h - 3);
+        g.fillStyle = col[1]; if (hz) g.fillRect(q.x + q.w - 14, q.y + 6, 4, q.h - 12); else g.fillRect(q.x + 6, q.y + q.h - 14, q.w - 12, 4);
+      } else if (q.hg === 'crate') {
+        g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(q.x + 4, q.y + 6, q.w, q.h);
+        g.fillStyle = '#6a5030'; g.fillRect(q.x, q.y, q.w, q.h);
+        g.strokeStyle = '#2a1d0e'; g.lineWidth = 3; g.strokeRect(q.x + 1.5, q.y + 1.5, q.w - 3, q.h - 3);
+        g.lineWidth = 2; g.beginPath(); g.moveTo(q.x + 3, q.y + 3); g.lineTo(q.x + q.w - 3, q.y + q.h - 3); g.moveTo(q.x + q.w - 3, q.y + 3); g.lineTo(q.x + 3, q.y + q.h - 3); g.stroke();
+      } else if (q.hg === 'barrel') {
+        n = q.x + q.w / 2; k = q.y + q.h / 2;
+        g.fillStyle = 'rgba(0,0,0,0.5)'; g.beginPath(); g.arc(n + 3, k + 4, 13, 0, 6.283); g.fill();
+        g.fillStyle = '#7a2a22'; g.beginPath(); g.arc(n, k, 13, 0, 6.283); g.fill();
+        g.strokeStyle = '#2a0e0a'; g.lineWidth = 2; g.stroke(); g.beginPath(); g.arc(n, k, 7, 0, 6.283); g.stroke();
+        g.fillStyle = 'rgba(255,255,255,0.12)'; g.beginPath(); g.arc(n - 4, k - 4, 4, 0, 6.283); g.fill();
+      } else if (q.hg === 'rail') {
+        g.fillStyle = '#c9a227'; g.fillRect(q.x, q.y, q.w, q.h);
+        g.fillStyle = '#17120a'; for (k = q.x; k < q.x + q.w; k += 16) g.fillRect(k, q.y, 8, q.h);
+        g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 1; g.strokeRect(q.x + 0.5, q.y + 0.5, q.w - 1, q.h - 1);
+      }
+    }
+    // shutters: steel frame with glass behind the planks
+    BLD.forEach(function (b) {
+      var q2 = b.bar; g.fillStyle = 'rgba(90,120,150,0.4)'; g.fillRect(q2.x, q2.y, q2.w, q2.h);
+      g.strokeStyle = '#1a1c20'; g.lineWidth = 2; g.strokeRect(q2.x - 1, q2.y - 1, q2.w + 2, q2.h + 2);
+      g.beginPath();
+      if (q2.hz) { g.moveTo(q2.x, q2.y + q2.h / 2); g.lineTo(q2.x + q2.w, q2.y + q2.h / 2); } else { g.moveTo(q2.x + q2.w / 2, q2.y); g.lineTo(q2.x + q2.w / 2, q2.y + q2.h); }
+      g.stroke();
+    });
+  }
+
   // ---------- doors and zombie pathfinding (Haunted House) ----------
   var NC = 20, NN = 0, navOn = false, navBase = null, navCost = null, navDist = null, navPar = null, navT = 0, navHeapK = [], navHeapV = [];
   function navInit() {
@@ -1388,7 +1527,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   var lightF = 0, lightT = 6, bats = [];
   function tickAtmos(dt) {
-    if (MAPCFG.nav !== true) { lightF = 0; return; }
+    if (mapId !== 'haunted') { lightF = 0; return; }
     lightT -= dt;
     if (lightT <= 0) { lightF = 1; lightT = 9 + Math.random() * 14; setTimeout(function () { if (!muted) noise(1.1, 260, 0.1); }, 350 + Math.random() * 500); }
     if (lightF > 0) lightF = Math.max(0, lightF - dt * (lightF > 0.55 ? 3 : 1.4)); 
@@ -1423,7 +1562,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- maps ----------
   var MAPS = [
     { id: 'beginners', name: 'Beginners Ground', blurb: 'Open ground, four spawn buildings. Learn the ropes.', world: 1500, gs: 1.5, build: buildBeginners, ground: paintGround, bld: paintBuildings, cfg: { sx: 750, sy: 750, nav: false } },
-    { id: 'haunted', name: 'Haunted House', blurb: 'Rooms, corridors and doors. Something is stirring in the cauldron.', world: 2000, gs: 1, build: buildHaunted, ground: paintHauntedGround, bld: paintHauntedBld, cfg: { sx: 1000, sy: 960, nav: true } }
+    { id: 'haunted', name: 'Haunted House', blurb: 'Rooms, corridors and doors. Something is stirring in the cauldron.', world: 2000, gs: 1, build: buildHaunted, ground: paintHauntedGround, bld: paintHauntedBld, cfg: { sx: 1000, sy: 960, nav: true } },
+    { id: 'hangar', name: 'The Hangar', blurb: 'Pitch dark. You only see by your torch. Built for PvP, great for zombies too.', world: 1400, gs: 1.5, build: buildHangar, ground: paintHangarGround, bld: paintHangarBld, cfg: { sx: 700, sy: 700, nav: true }, need: { map: 'beginners', wave: 10 } }
   ];
   function mapDef(id) { for (var i = 0; i < MAPS.length; i++) if (MAPS[i].id === id) return MAPS[i]; return MAPS[0]; }
   var mapId = '';
@@ -2016,7 +2156,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       x = rnd(WALL + 70, WORLD - WALL - 70); y = rnd(WALL + 70, WORLD - WALL - 70);
       ok = true;
       for (i = 0; ok && i < players.length; i++) if (Math.hypot(x - players[i].x, y - players[i].y) < 180) ok = false;
-      if (navOn && (x < 150 || x > 1850 || y < 150 || y > 1850)) ok = false;
+      if (navOn && (x < 150 || x > WORLD - 150 || y < 150 || y > WORLD - 150)) ok = false;
       for (i = 0; ok && i < RECTS.length; i++) if (RECTS[i].door ? distRect(x, y, RECTS[i]) < 30 : distRect(x, y, RECTS[i]) < 50) ok = false;
       for (i = 0; ok && i < boxes.length; i++) if (Math.hypot(x - boxes[i].x, y - boxes[i].y) < 350) ok = false;
       if (ok) { boxes.push({ x: x, y: y }); n++; }
@@ -3271,10 +3411,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var onl = mapCtx === 'online';
       h += '<h1>Choose a map</h1><div class="maps">';
       for (i = 0; i < MAPS.length; i++) {
-        var mp = MAPS[i], open = onl || DEV.on || i < mapsOpen, rc = recOf(mp.id), dis = !open || mp.soon;
+        var mp = MAPS[i], open = onl || DEV.on || mapOpen(i), rc = recOf(mp.id), dis = !open || mp.soon;
         h += '<button class="mapcard" type="button" data-a="pickmap" data-id="' + mp.id + '"' + (dis ? ' disabled' : '') + '><b>' + esc(mp.name) + '</b><span>' + esc(mp.blurb) + '</span>';
         if (mp.soon) h += '<em>Coming soon</em>';
-        else if (!open) h += '<em>Clear wave 20 on ' + esc(MAPS[i - 1].name) + ' to unlock</em>';
+        else if (!open) h += '<em>' + (mp.need ? 'Reach wave ' + mp.need.wave + ' on ' + esc(mapDef(mp.need.map).name) + ' to unlock' : 'Clear wave 20 on ' + esc(MAPS[i - 1].name) + ' to unlock') + '</em>';
         else if (!onl) h += '<em>' + (rc.w ? 'Best: wave ' + rc.w + ' · ' + rc.k + ' kills' : 'No score yet') + '</em>';
         h += '</button>';
       }
@@ -3420,7 +3560,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 127';
+  var updMsg = '', VERSION = 'Version 128';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4949,7 +5089,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     bigS = Math.floor(Math.max(200, Math.min(window.innerWidth - 24, window.innerHeight - 130, 640)));
     bigCv.style.width = bigCv.style.height = bigS + 'px';
     bigCv.width = bigCv.height = Math.round(bigS * bigDpr);
-    document.getElementById('bmTitle').textContent = mapId === 'haunted' ? 'Haunted House' : 'Beginners Ground';
+    document.getElementById('bmTitle').textContent = mapDef(mapId).name;
     bigOpen = true; bigAt = performance.now(); bigEl.hidden = false; drawBig();
   }
   function closeBig() { bigOpen = false; bigEl.hidden = true; }
@@ -5000,6 +5140,25 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (mapId === 'haunted') for (i = 0; i < HH_NAMES.length; i++) lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), (HH.cols[i % 3] + HH.Rm / 2) * k, (HH.cols[Math.floor(i / 3)] + HH.Rm / 2) * k, '#e6d9c0', fs + 1);
   }
 
+  // torch beam: a cone that stops at walls, containers and crates
+  function hgTorch(P, px, py, K, mine) {
+    var len = mine ? 440 : 300, half = 0.4, a0 = P.ang || 0, n = mine ? 18 : 10, step = 12, pass, i, a, d, cs, sn, g, h2, pts;
+    for (pass = 0; pass < 2; pass++) {
+      h2 = pass ? half * 1.6 : half; pts = [];
+      for (i = 0; i <= n; i++) {
+        a = a0 - h2 + 2 * h2 * i / n; cs = Math.cos(a); sn = Math.sin(a);
+        for (d = step; d < len; d += step) if (solidAt(P.x + cs * d, P.y + sn * d)) break;
+        d = Math.min(d + 4, len);
+        pts.push((P.x + cs * d - cam.x) * K, (P.y + sn * d - cam.y) * K);
+      }
+      g = lctx.createRadialGradient(px, py, 0, px, py, len * K);
+      if (pass) { g.addColorStop(0, 'rgba(0,0,0,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)'); }
+      else { g.addColorStop(0, 'rgba(0,0,0,0.98)'); g.addColorStop(0.6, 'rgba(0,0,0,0.75)'); g.addColorStop(1, 'rgba(0,0,0,0)'); }
+      lctx.fillStyle = g; lctx.beginPath(); lctx.moveTo(px, py);
+      for (i = 0; i < pts.length; i += 2) lctx.lineTo(pts[i], pts[i + 1]);
+      lctx.closePath(); lctx.fill();
+    }
+  }
   function render() {
     var vw = W / zoom, vh = H / zoom;
     var sx = shake && !reduceMotion ? rnd(-shake, shake) : 0, sy = shake && !reduceMotion ? rnd(-shake, shake) : 0;
@@ -5048,7 +5207,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     lctx.setTransform(0.5, 0, 0, 0.5, 0, 0);
     lctx.globalCompositeOperation = 'source-over';
     lctx.clearRect(0, 0, cv.width, cv.height);
-    lctx.fillStyle = 'rgba(5,4,4,' + (0.8 - 0.5 * lightF).toFixed(3) + ')';
+    var hgOn = mapId === 'hangar';
+    lctx.fillStyle = hgOn ? 'rgba(2,3,5,0.96)' : 'rgba(5,4,4,' + (0.8 - 0.5 * lightF).toFixed(3) + ')';
     lctx.fillRect(0, 0, cv.width, cv.height);
     lctx.globalCompositeOperation = 'destination-out';
     for (i = 0; i < players.length; i++) {
@@ -5056,7 +5216,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var mine = P === me, px = (P.x - cam.x) * K, py = (P.y - cam.y) * K;
       if (!mine && (P.down || px < -200 * K || px > cv.width + 200 * K || py < -200 * K || py > cv.height + 200 * K)) continue;
       var R = (mine ? 320 : 170) * K * (mine && !P.down ? (1 + (P.flash > 0 ? 0.12 : 0)) : (mine ? 0.55 : 1));
+      if (hgOn) R = (mine ? 105 : 80) * K * (mine && !P.down && P.flash > 0 ? 1.12 : 1);
       lctx.drawImage(lightSpr('0,0,0', 1), px - R, py - R, R * 2, R * 2);
+      if (hgOn && !P.down && (mine || !pvp)) hgTorch(P, px, py, K, mine);
     }
     if (bonusRoom >= 0) {
       var bq = bonusRect(), bxc = (bq.x + bq.w / 2 - cam.x) * K, byc = (bq.y + bq.h / 2 - cam.y) * K, br0 = 230 * K;
@@ -5693,12 +5855,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (!stIn) { stIn = true; unTake(); statAdd('gm', 1); for (var gq in gk) gk[gq] = 0; }
     var kk = me.kills | 0;
     if (kk < stK) stK = 0;
-    if (kk > stK) { statAdd('k', kk - stK); statAdd(mapId === 'haunted' ? 'kh' : 'kb', kk - stK); stK = kk; }
+    if (kk > stK) { statAdd('k', kk - stK); if (mapId === 'haunted') statAdd('kh', kk - stK); else if (mapId === 'beginners') statAdd('kb', kk - stK); stK = kk; }
     statMax('kg', kk);
     if (wave < stW) stW = 0;
     if (stW && wave > stW && mapId === 'haunted' && isGhostWave(stW)) statAdd('gh', 1);
     stW = wave;
-    statMax('bw', wave); statMax(mapId === 'haunted' ? 'bwh' : 'bwb', wave);
+    statMax('bw', wave); if (mapId === 'haunted') statMax('bwh', wave); else if (mapId === 'beginners') statMax('bwb', wave);
     if (mapId === 'haunted') statMax('rl', gbDone);
     stSaveT -= dt;
     if (stSaveT <= 0) { stSaveT = 4; if (stDirty) { stDirty = false; saveStats(); } }
