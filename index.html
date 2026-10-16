@@ -506,6 +506,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     zHpScale: 0.07, zDmgScale: 0.04, cap: 70,
     coinWave: 0.06, magBase: 80,
     dropTank: 0.2, crateLife: 15,
+    stim: { cd: 120, heal: 0.5, boost: 3 },
     dropHealth: 0.015, healAmount: 30, healLife: 18,
     dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.035, runner: 0.035, tank: 0.12, armoured: 0.1, ghost: 0.1, boss: 0.5 }, perkLife: 14, perkDur: 10,
@@ -1995,7 +1996,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var P = {
       id: id, name: name, look: look,
       x: MAPCFG.sx + Math.cos(a) * 26, y: MAPCFG.sy + Math.sin(a) * 26, ang: -Math.PI / 2, r: PR - 1,
-      hp: 0, fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0,
+      hp: 0, fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0, stimCd: 0, sb: 0,
       wallet: 0, waveCoins: 0, kills: 0,
       armor: { head: 0, body: 0, legs: 0 },
       upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0, rest: 0 },
@@ -2259,7 +2260,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function healPlayer(P, n) { if (P.down) return; P.hp = Math.min(maxHpNow(P), P.hp + n); ptone(P, 520, 780, 0.15, 'sine', 0.07); }
 
   function revivePlayer(P, frac) {
-    P.down = false; P.rev = 0; P.hp = Math.max(1, maxHpNow(P) * frac); P.inv = 2;
+    P.down = false; P.rev = 0; P.hp = Math.max(1, maxHpNow(P) * frac); P.inv = 2; P.stimCd = 0;
     ptone(P, 400, 900, 0.3, 'sine', 0.08);
     bannerTo(P, 'Back up', 'Stay close to your team.', 1.6);
   }
@@ -2417,10 +2418,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (P.rt <= 0 && (P.go || P.bot || P.dn >= TUNE.pvp.auto)) pvpDeploy(P);
     }
   }
-  // stim: back to full health at once, then a minute to recharge; a short speed boost
-  function pvpStim(P) {
-    if (!pvp || pvPhase !== 'play' || P.down || P.stimCd > 0 || P.hp >= maxHpNow(P) - 0.5) return;
-    P.hp = maxHpNow(P); P.stimCd = TUNE.pvp.stimCd; P.sb = TUNE.pvp.stimBoost;
+  // stim: PvP = back to full health, 60s to recharge. Zombies = half your max health, 2 minutes to recharge. Both give a short speed boost.
+  function stimUse(P) {
+    if (!P || P.down || state !== 'play' || P.stimCd > 0 || P.hp >= maxHpNow(P) - 0.5) return;
+    if (pvp) {
+      if (pvPhase !== 'play') return;
+      P.hp = maxHpNow(P); P.stimCd = TUNE.pvp.stimCd; P.sb = TUNE.pvp.stimBoost;
+    } else {
+      P.hp = Math.min(maxHpNow(P), P.hp + maxHpNow(P) * TUNE.stim.heal); P.stimCd = TUNE.stim.cd; P.sb = TUNE.stim.boost;
+    }
     ptone(P, 300, 900, 0.18, 'sine', 0.07); ptone(P, 600, 1200, 0.12, 'square', 0.04, 0.12);
   }
   // ammo crates turn up around the map every so often
@@ -2668,7 +2674,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (m.c === 'shop') { if (shopAct(P, m.a, m.id)) { if (m.a !== 'cancel') ptone(P, 700, 1100, 0.07, 'square', 0.05); if (P === me) saveGame(); } }
     else if (m.c === 'box') { if (m.a === 'open') openBox(P); else boxAct(P, m.a, m.id); }
     else if (m.c === 'lo') pvpCmd(P, String(m.a || ''), String(m.id || ''));
-    else if (m.c === 'stim') pvpStim(P);
+    else if (m.c === 'stim') stimUse(P);
   }
 
   // ---------- simulation ----------
@@ -2768,7 +2774,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var d = Math.hypot(z.x - x, z.y - y);
       if (d < R + z.r) {
         var f = Math.max(0.35, 1 - d / (R + z.r));
-        z.hp -= dmg * f; z.flash = 0.1;
+        z.hp -= dmg * f; z.flash = 0.1; z.cf = false;
         var nx = (z.x - x) / (d || 1), ny = (z.y - y) / (d || 1), kb = (small ? 120 : 260) * (kbm == null ? 1 : kbm) * (10 / z.r);
         z.vx += nx * kb; z.vy += ny * kb;
         if (z.hp <= 0) killZombie(j, owner);
@@ -2844,7 +2850,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ssplat(z.x, z.y, z.r * 1.6, 0.5);
     z.fuse = 0; z.gooT = 0;
     j = zombies.indexOf(z);
-    if (j >= 0) { z.hp -= dmg; z.flash = 0.1; if (z.hp <= 0) killZombie(j, owner); }
+    if (j >= 0) { z.hp -= dmg; z.flash = 0.1; z.cf = false; if (z.hp <= 0) killZombie(j, owner); }
   }
   function zapHit(z, dmg, owner) {
     var j = zombies.indexOf(z);
@@ -2890,7 +2896,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function damageZombie(j, b) {
     var z = zombies[j];
     if (b.kind === 'goo') {
-      z.hp -= b.dmg * 0.5; z.flash = 0.08;
+      z.hp -= b.dmg * 0.5; z.flash = 0.08; z.cf = false;
       z.gooT = 2.6; z.gooDmg = Math.max(z.gooDmg || 0, b.dmg); z.gooOwner = b.owner;
       if (!(z.fuse > 0)) z.fuse = 1.1;
       addFx(b.x, b.y, 3, 70, 0.3, 3, '120,255,140');
@@ -2902,7 +2908,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       ar = z.boss ? TUNE.armBoss : (z.type === 'tank' ? TUNE.armTank : (z.type === 'armoured' ? TUNE.armArm : 0));
       if (ar) { if (b.pel) ar *= TUNE.armPellet; dm = Math.max(dm - ar, dm * TUNE.armFloor); }
     }
-    z.hp -= dm; z.flash = 0.08;
+    z.hp -= dm; z.flash = b.crit ? 0.16 : 0.08; z.cf = !!b.crit;
     var kb = (b.kind === 'fire' ? 20 : 90) * (b.kbm == null ? 1 : b.kbm) * (10 / z.r); z.vx += b.dx * kb; z.vy += b.dy * kb;
     addBlood(b.x, b.y, b.dx, b.dy, b.kind === 'fire' ? 1 : 3, 160);
     if (b.crit) addFx(b.x, b.y, 5, 160, 0.25, 2, '255,255,255');
@@ -3014,6 +3020,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (P.hcd > 0) P.hcd -= dt;
     if (P.flash > 0) P.flash -= dt;
     if (P.sb > 0) P.sb -= dt;
+    if (!pvp && P.stimCd > 0) P.stimCd = Math.max(0, P.stimCd - dt);
     if (P.ghost) {
       var GH = P.ghost; GH.idle = (GH.idle || 0) + dt;
       if (GH.cool > 0) { GH.cool -= dt; if (GH.cool <= 0) { GH.cool = 0; GH.heat = 0; bannerTo(P, 'Ghostbuster cooled', 'Ready to fire again.', 1.6); } }
@@ -3621,7 +3628,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 133';
+  var updMsg = '', VERSION = 'Version 134';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3850,7 +3857,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. Empty magazines reload on their own, and guns top up after each wave.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with one slot.', 'Slot 2 costs 40 coins, slot 3 costs 260.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: you choose which gun to replace. The old gun and its upgrades are lost.', 'Tap the bottom-right button to cycle through your guns.'] },
     { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
-    { t: 'Armour and healing', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Healing, Gear tab: Bandage (+25), Medkit (+60), Full restore. Health drops also appear from zombies, but rarely.'] },
+    { t: 'Armour and stim', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Stim: tap the syringe button above the swap button to heal half your max health and get a short speed boost. It takes 2 minutes to recharge, and it does nothing at full health. Health drops also appear from zombies, but rarely.'] },
     { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Bosses and tanks drop special crates. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
@@ -4268,10 +4275,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         h += card(d.label + ': ' + worn, '<span class="lv tier' + t + '">Tier ' + t + '/4</span>', now + '.' + nextTxt,
           t >= 4 ? doneBtn('Max') : '<button class="buy" type="button" data-act="armour" data-id="' + p + '"' + (wallet >= d.cost[t] ? '' : ' disabled') + '>' + d.names[t] + ' · ' + d.cost[t] + '</button>');
       }
-      h += '<div class="sec">Healing</div>';
-      for (i = 0; i < HEALS.length; i++) {
-        h += card(HEALS[i].name, '', HEALS[i].desc, buyBtn('heal', i, HEALS[i].price, wallet >= HEALS[i].price && !P.down && P.hp < maxHpNow(P) - 0.5));
-      }
     }
     panel.innerHTML = h;
     panel.scrollTop = keep;
@@ -4394,7 +4397,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (hudCache.shopShow !== showShop) { hudCache.shopShow = showShop; shopBtn.hidden = !showShop; }
 
     // PvP stim button: green ring fills while it recharges
-    var showStim = pvp && playing && !me.down && pvPhase === 'play', sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / TUNE.pvp.stimCd)) : 100;
+    var showStim = playing && !shopOpen && !me.down && (!pvp || pvPhase === 'play'), stTot = pvp ? TUNE.pvp.stimCd : TUNE.stim.cd, sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / stTot)) : 100;
     if (hudCache.stimShow !== showStim) { hudCache.stimShow = showStim; stimGo.hidden = !showStim; }
     // line the two buttons up under the ammo box, whatever the screen size
     var nowT = performance.now();
@@ -4656,7 +4659,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function zombieArt(c, k, ang, step, fl, seed) {
     var S = ZSZ[k] || ZSZ.walker, col = ZCOL[k] || ZCOL.walker, OUT = '#0d0a08';
-    var sk = fl ? '#f4ece0' : col.skin, cl = fl ? '#e8dccb' : col.cloth, pn = fl ? '#d8ccbb' : col.pants, hair = fl ? '#e8dccb' : '#2a2418';
+    var sk = fl === 2 ? '#e8403a' : fl ? '#f4ece0' : col.skin, cl = fl === 2 ? '#c4302a' : fl ? '#e8dccb' : col.cloth, pn = fl === 2 ? '#9a2420' : fl ? '#d8ccbb' : col.pants, hair = fl === 2 ? '#6a1612' : fl ? '#e8dccb' : '#2a2418';
     var sg = Math.sin(step) * 3.2;
     var fx = Math.cos(ang), fy = Math.sin(ang) * 0.8, back = fy < -0.25, front = fy > 0.25, side = Math.abs(fx) > 0.45, sx = fx >= 0 ? 1 : -1;
     var fast = (k === 'runner' || k === 'bossRun'), lean = fast ? 5 : 3.5;
@@ -4727,7 +4730,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function drawZombie(z, c) {
     c = c || ctx;
     if (z.type === 'ghost') { drawGhost(z, c); return; }
-    var k = z.type, S = ZSZ[k] || ZSZ.walker, fy = zFeet(z), step = time * (3 + (TYPES[k].spd || 60) * 0.075) + z.seed * 3, fl = z.flash > 0;
+    var k = z.type, S = ZSZ[k] || ZSZ.walker, fy = zFeet(z), step = time * (3 + (TYPES[k].spd || 60) * 0.075) + z.seed * 3, fl = z.flash > 0 ? (z.cf ? 2 : 1) : 0;
     if (z.warn > 0) { c.save(); c.translate(z.x, fy); c.scale(S[0], S[1]); c.strokeStyle = 'rgba(255,60,40,0.85)'; c.lineWidth = 3 / S[0]; c.beginPath(); c.ellipse(0, 1, 24, 10, 0, 0, 6.283); c.stroke(); c.restore(); }
     if (z.boss || fl || c !== ctx || !ZCOL[k]) { c.save(); c.translate(z.x, fy); zombieArt(c, k, z.ang, step, fl, z.seed); c.restore(); return; }
     var di = Math.round((((z.ang % 6.283185) + 6.283185) % 6.283185) / (6.283185 / 16)) % 16, fr = Math.floor((((step % 6.283185) + 6.283185) % 6.283185) / 6.283185 * 6) % 6;
@@ -4911,6 +4914,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (ar.body > 0 || L.j === 3) {
       part(function () { rr(-7.5, -26, 15, 14, 3); }, ar.body > 0 ? TIERCOL[ar.body] : '#5d6670');
       c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(-5, -22, 10, 2); c.fillRect(-5, -18, 10, 2);
+    }
+    var bhp = P.hp > 0 ? (P.mhp || (P.upg && P.armor ? maxHpNow(P) : 0)) : 0;
+    if (!P.down && bhp > 0 && P.hp < bhp * 0.5) {   // blood on the shirt once you are under half health
+      var bf = 1 - P.hp / (bhp * 0.5), bn = 3 + Math.round(bf * 5), bi;
+      c.save(); rr(-9, -28, 18, 19, 5); c.clip();
+      for (bi = 0; bi < bn; bi++) {
+        c.fillStyle = bi % 2 ? 'rgba(120,8,12,0.85)' : 'rgba(170,16,20,0.8)';
+        c.beginPath(); c.ellipse(-6 + ((bi * 7) % 13), -25 + ((bi * 5) % 15), 1.8 + (bi % 3) * 0.9, 1.5 + (bi % 2) * 1.3, bi, 0, 6.283); c.fill();
+      }
+      c.restore();
     }
     if (L.n) part(function () { rr(-8, -30, 16, 5, 2); }, '#d6452e');
     if ((L.k === 1 || L.k === 2) && back) { a = L.k === 2 ? 1.25 : 1; part(function () { rr(-8 * a, -27, 16 * a, 15 * a, 3); }, L.k === 2 ? '#5a4a2a' : packC); c.fillStyle = '#c9a24a'; c.fillRect(-1, -27, 2, 6); }
@@ -5700,11 +5713,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function mFor(P) {
     return {
-      w: r1(P.wallet), kl: P.kills, up: P.upg, ar: [P.armor.head, P.armor.body, P.armor.legs], pt: P.perkT,
+      st: r1(P.stimCd || 0), w: r1(P.wallet), kl: P.kills, up: P.upg, ar: [P.armor.head, P.armor.body, P.armor.legs], pt: P.perkT,
       sl: P.slots.map(function (g) { return g ? [g.id, g.tier, g.mag, g.res === Infinity ? -1 : g.res, r2(g.reload)] : 0; }),
       gh: P.ghost ? [r2(P.ghost.heat), r1(P.ghost.cool)] : 0, un: P.unlocked, se: P.sel, sp: P.special ? [P.special.id, P.special.ammo, P.special.max] : 0,
       ca: P.cards.map(function (c) { return [c.id, c.bought ? 1 : 0]; }), pg: P.pendingGun || 0, bx: P.boxPrize || 0,
-      pv: pvp ? [P.lo[0], P.lo[1], P.by || '', r1(P.stimCd || 0)] : 0
+      pv: pvp ? [P.lo[0], P.lo[1], P.by || ''] : 0
     };
   }
   function buildCommon() {
@@ -5716,7 +5729,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     });
     o.G = [gbDone, gbOn ? 1 : 0];
     o.Z = zombies.map(function (z) {
-      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? 1 : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA), z.gooT > 0 ? (z.fuse > 0 && z.fuse < 0.35 ? 2 : 1) : 0];
+      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? (z.cf ? 2 : 1) : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA), z.gooT > 0 ? (z.fuse > 0 && z.fuse < 0.35 ? 2 : 1) : 0];
     });
     o.B = bullets.slice(0, 140).map(function (b) {
       return [BK.indexOf(b.kind), r1(b.x), r1(b.y), r2(b.dx), r2(b.dy), (b.crit ? 1 : 0) | (b.long ? 2 : 0) | (b.explosive ? 4 : 0), r2(Math.min(1, b.dist / b.max)), Math.round(b.speed)];
@@ -5892,14 +5905,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
   }
   function applyMine(a) {
-    me.wallet = a.w; me.kills = a.kl; me.upg = a.up; me.perkT = a.pt;
+    me.stimCd = a.st || 0; me.wallet = a.w; me.kills = a.kl; me.upg = a.up; me.perkT = a.pt;
     me.slots = a.sl.map(function (r) { return r ? { id: r[0], tier: r[1], mag: r[2], res: r[3] < 0 ? Infinity : r[3], reload: r[4] } : null; });
     me.unlocked = a.un; me.sel = a.se; if (a.se !== 3 && a.se !== 4) me.lastSel = a.se;
     me.ghost = a.gh ? { id: 'ghost', tier: 1, heat: a.gh[0], cool: a.gh[1] } : null;
     me.special = a.sp ? { id: a.sp[0], ammo: a.sp[1], max: a.sp[2] } : null;
     me.cards = a.ca.map(function (r) { return { id: r[0], bought: !!r[1] }; });
     me.pendingGun = a.pg || null; me.boxPrize = a.bx || null;
-    if (a.pv) { me.by = a.pv[2] || ''; me.stimCd = a.pv[3] || 0; if (!(me.loT && performance.now() < me.loT)) me.lo = [a.pv[0], a.pv[1]]; }
+    if (a.pv) { me.by = a.pv[2] || ''; if (!(me.loT && performance.now() < me.loT)) me.lo = [a.pv[0], a.pv[1]]; }
   }
 
   // each frame on a client: walk, smooth everything else between the last two snapshots
@@ -5929,7 +5942,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       z = {
         id: r1_[0], type: TYPE_KEYS[r1_[1]], r: t.r, skin: t.skin, cloth: t.cloth, boss: !!t.boss, kind: t.kind || '', seed: (r1_[0] * 7.31) % 10,
         x: r0[2] + (r1_[2] - r0[2]) * a, y: r0[3] + (r1_[3] - r0[3]) * a, ang: angLerp(r0[4], r1_[4], a),
-        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, warn: r1_[8], breath: r1_[9], dashA: r1_[10], goo: r1_[11] || 0
+        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, cf: r1_[7] === 2, warn: r1_[8], breath: r1_[9], dashA: r1_[10], goo: r1_[11] || 0
       };
       if (z.breath > 0 && z.kind === 'fire') pyroFx(z);
       zs.push(z);
