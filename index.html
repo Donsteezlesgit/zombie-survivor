@@ -1175,6 +1175,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var HG_COLS = [['#7a2c20', '#4a160e'], ['#245a7a', '#10304a'], ['#3a6a3a', '#1a381c'], ['#9a7a20', '#58420c']];
   function buildHangar() {
     var T = WALL_T, i;
+    HG_SOL = null;
     function wall(x, y, w, h) { var q = { x: x, y: y, w: w, h: h, wall: true }; RECTS.push(q); return q; }
     // outer wall with a gap for each zombie window (N at x970, S at x430, W and E at y700)
     wall(100, 100, 818 - 0, T); wall(1022, 100, 278, T);
@@ -1212,9 +1213,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var pk = mkRect(d.ex + d.nx * POCKET_D / 2, d.ey + d.ny * POCKET_D / 2, POCKET_D, POCKET_HW * 2, hz);
       BLD.push({ roof: bar, bar: bar, pocket: pk, sx: d.ex + d.nx * POCKET_D * 0.5, sy: d.ey + d.ny * POCKET_D * 0.5, tx: tx, ty: ty, nx: d.nx, ny: d.ny, ex: d.ex, ey: d.ey, win: true });
       // a dim red lamp just inside each window, so you can tell where the dead will come from
-      LIGHTS.push({ x: d.ex + d.nx * (POCKET_D + 40), y: d.ey + d.ny * (POCKET_D + 40), r: 95, a: 0.5, col: '255,60,40', s: Math.random() * 10 });
+      LIGHTS.push({ x: d.ex + d.nx * (POCKET_D + 40), y: d.ey + d.ny * (POCKET_D + 40), r: 95, a: 0.5, col: '255,60,40', s: 0, st: 1 });
     });
-    function light(x, y, r, a, col) { LIGHTS.push({ x: x, y: y, r: r, a: a, col: col, s: Math.random() * 10 }); }
+    function light(x, y, r, a, col) { LIGHTS.push({ x: x, y: y, r: r, a: a, col: col, s: 0, st: 1 }); }
     light(700, 700, 130, 0.7, '255,200,120');
     [[400, 430], [1060, 400], [1000, 970], [240, 1000]].forEach(function (p) { light(p[0], p[1], 90, 0.55, '170,200,255'); });
     light(280, 165, 110, 0.6, '255,230,170'); light(1120, 1235, 110, 0.6, '255,230,170');
@@ -3570,7 +3571,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 129';
+  var updMsg = '', VERSION = 'Version 130';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5150,22 +5151,37 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (mapId === 'haunted') for (i = 0; i < HH_NAMES.length; i++) lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), (HH.cols[i % 3] + HH.Rm / 2) * k, (HH.cols[Math.floor(i / 3)] + HH.Rm / 2) * k, '#e6d9c0', fs + 1);
   }
 
-  // torch beam: a cone that stops at walls, containers and crates
+  // torch beam: a cone that stops at walls, containers and crates (rays refined to the pixel so the edge stays smooth)
+  var HG_SOL = null;
+  function hgRay(x, y, cs, sn, len) {
+    var i, q, d, lo, hi, m, hit;
+    function inside(t) {
+      var X = x + cs * t, Y = y + sn * t, k, r;
+      for (k = 0; k < HG_SOL.length; k++) { r = HG_SOL[k]; if (X >= r.x && X <= r.x + r.w && Y >= r.y && Y <= r.y + r.h) return true; }
+      return false;
+    }
+    for (d = 14; d < len; d += 14) if (inside(d)) break;
+    if (d >= len) return len;
+    lo = d - 14; hi = d;
+    for (i = 0; i < 4; i++) { m = (lo + hi) / 2; if (inside(m)) hi = m; else lo = m; }
+    return hi;
+  }
   function hgTorch(P, px, py, K, mine) {
-    var len = mine ? 440 : 300, half = 0.4, a0 = P.ang || 0, n = mine ? 18 : 10, step = 12, pass, i, a, d, cs, sn, g, h2, pts;
-    for (pass = 0; pass < 2; pass++) {
-      h2 = pass ? half * 1.6 : half; pts = [];
-      for (i = 0; i <= n; i++) {
-        a = a0 - h2 + 2 * h2 * i / n; cs = Math.cos(a); sn = Math.sin(a);
-        for (d = step; d < len; d += step) if (solidAt(P.x + cs * d, P.y + sn * d)) break;
-        d = Math.min(d + 4, len);
-        pts.push((P.x + cs * d - cam.x) * K, (P.y + sn * d - cam.y) * K);
-      }
+    var len = mine ? 440 : 300, half = 0.4, wide = half * 1.6, a0 = P.ang || 0, n = mine ? 44 : 24, i, k, a, d, g, ds = [], as = [], pass, lim, al;
+    if (!HG_SOL) { HG_SOL = []; for (i = 0; i < RECTS.length; i++) if (!RECTS[i].bar && !RECTS[i].furn && !RECTS[i].door) HG_SOL.push(RECTS[i]); }
+    for (i = 0; i <= n; i++) {
+      a = a0 - wide + 2 * wide * i / n; as.push(a);
+      ds.push(hgRay(P.x, P.y, Math.cos(a), Math.sin(a), len));
+    }
+    for (pass = 0; pass < 3; pass++) {
+      lim = pass === 0 ? wide : (pass === 1 ? half * 1.25 : half); al = pass === 0 ? 0.2 : (pass === 1 ? 0.3 : 1);
       g = lctx.createRadialGradient(px, py, 0, px, py, len * K);
-      if (pass) { g.addColorStop(0, 'rgba(0,0,0,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)'); }
-      else { g.addColorStop(0, 'rgba(0,0,0,0.98)'); g.addColorStop(0.6, 'rgba(0,0,0,0.75)'); g.addColorStop(1, 'rgba(0,0,0,0)'); }
+      g.addColorStop(0, 'rgba(0,0,0,' + (0.95 * al).toFixed(2) + ')'); g.addColorStop(0.6, 'rgba(0,0,0,' + (0.7 * al).toFixed(2) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)');
       lctx.fillStyle = g; lctx.beginPath(); lctx.moveTo(px, py);
-      for (i = 0; i < pts.length; i += 2) lctx.lineTo(pts[i], pts[i + 1]);
+      for (i = 0; i <= n; i++) {
+        if (Math.abs(as[i] - a0) > lim + 0.001) continue;
+        lctx.lineTo((P.x + Math.cos(as[i]) * ds[i] - cam.x) * K, (P.y + Math.sin(as[i]) * ds[i] - cam.y) * K);
+      }
       lctx.closePath(); lctx.fill();
     }
   }
@@ -5381,7 +5397,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       pgr.addColorStop(0, me.fr ? 'rgba(242,193,78,0.5)' : 'rgba(242,193,78,0.3)'); pgr.addColorStop(1, 'rgba(242,193,78,0)');
       ctx.strokeStyle = pgr; ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(pcx, pcy); ctx.lineTo(pcx + Math.cos(me.aimAng) * pL, pcy + Math.sin(me.aimAng) * pL); ctx.stroke();
-    } else if (me && me.cone && !me.down && state === 'play' && me.aimAng !== null) {
+    } else if (mapId !== 'hangar' && me && me.cone && !me.down && state === 'play' && me.aimAng !== null) {   // the Hangar's torch beam already shows the cone
       var cd0 = defOf(viewRef(me)), cr = Math.min(420, cd0.range), cm = (cd0.len + 11) * 0.9, cxx = me.x + Math.cos(me.aimAng) * cm, cyy = me.y - 1.5 + Math.sin(me.aimAng) * cm;
       var cg = ctx.createRadialGradient(cxx, cyy, 6, cxx, cyy, cr);
       cg.addColorStop(0, me.fr ? 'rgba(242,193,78,0.26)' : 'rgba(242,193,78,0.12)'); cg.addColorStop(1, me.fr ? 'rgba(242,193,78,0.04)' : 'rgba(242,193,78,0.02)');
