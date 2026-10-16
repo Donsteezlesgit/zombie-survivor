@@ -1995,7 +1995,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (P.sel === 4 && P.ghost) return P.ghost;
     return P.slots[P.sel] || P.slots[P.lastSel] || P.slots[0];
   }
-  // reloading is manual (the round button), except offline in one-finger mode, and for bots
+  // a part-empty mag is topped up by hand (the round button), except offline in one-finger mode, and for bots. An empty mag always reloads itself
   function autoReload(P) { return !!P.bot || (net.mode === 'off' && ctrlMode === 'one'); }
   function isSpecialActive(P) { return P.sel === 3 && !!P.special; }
   function isGhost(P) { return P.sel === 4 && !!P.ghost; }
@@ -3132,7 +3132,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         }
       } else if (ref.mag <= 0) {
         canFire = false;
-        if (ref.res > 0) { if (autoReload(P)) { ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04); } }
+        if (ref.res > 0) { ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04); }
         else autoSwitch(P);
       } else if (autoReload(P) && !tgt && !pvFire && P.idle > 1 && ref.mag < gd.mag && ref.res > 0) {
         ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04);
@@ -3688,7 +3688,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 144';
+  var updMsg = '', VERSION = 'Version 145';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3911,7 +3911,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
     { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
-    { t: 'Guns and ammo', art: 'gun', b: ['The box under the minimap shows your gun and ammo: bullets in the mag | bullets in reserve.', 'Tap the gun box to swap guns.', 'Tap the round button to reload. It tops the mag up from your reserve and keeps the bullets already in it.', 'The button flashes red when the mag is low. An empty gun will not fire until you reload.', 'Reloading is always manual. The one exception is offline in one-finger mode, which reloads for you.', 'There is no refill between waves. Pick up ammo drops, or you are back on the Glock.', 'If every gun is out of ammo and you have no Glock, a starter Glock comes back. It upgrades itself for free, a Mk level every 8 waves.'] },
+    { t: 'Guns and ammo', art: 'gun', b: ['The box under the minimap shows your gun and ammo: bullets in the mag | bullets in reserve.', 'Tap the gun box to swap guns.', 'Tap the round button to reload. It tops the mag up from your reserve and keeps the bullets already in it.', 'The button flashes red when the mag is half empty or less.', 'An empty gun reloads by itself. To top up a part-empty mag you tap the button. Offline in one-finger mode tops up for you too.', 'There is no refill between waves. Pick up ammo drops, or you are back on the Glock.', 'If every gun is out of ammo and you have no Glock, a starter Glock comes back. It upgrades itself for free, a Mk level every 8 waves.'] },
     { t: 'Gun slots', x: 'You start with two gun slots, the Glock and an empty one. The third slot is in the Shop, on the Guns tab, for 1,500 coins. No free slot? A new gun replaces one you own.', art: 'slots' },
     { t: 'Drops', x: 'Zombies sometimes drop health, ammo and 10-second power-ups. Walk over them to grab them.', art: 'drops' },
     { t: 'Mystery box', x: 'Stand next to a glowing ? box and tap the button to pay 120 coins for a random gun.', art: 'box' },
@@ -3921,13 +3921,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   var GUIDE = [
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
-    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. Tap it to swap guns. The round button under it reloads (one-finger offline reloads for you).', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
+    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. Tap it to swap guns. The round button beside it (under it when held upright) tops up your mag.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
     { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 15 seconds early on. From wave 8 it shrinks to 10 seconds by wave 20, then to 8 seconds by wave 30.', 'The break is for shopping and rebuilding barriers. Nothing refills between waves. Ammo only comes from pickups and the Max ammo power-up, so grab what you can. Run dry and you are back on the Glock.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a big med kit and lots of coins. Sometimes a special weapon crate lands near you at the start of a boss wave, and bosses sometimes drop one too.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
     { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock (+5% ammo from every ammo pickup).', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
-    { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. You reload with the round button, and guns do not refill between waves.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
+    { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. An empty magazine reloads itself. Top up a part-empty one with the round button. Guns do not refill between waves.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 1,500 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: you choose which gun to replace. The old gun and its upgrades are lost.', 'Tap the gun box under the minimap to swap guns.'] },
     { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
     { t: 'Armour and stim', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Stim: tap the syringe button above the reload button to heal half your max health and get a short speed boost. It takes 2 minutes to recharge, and it does nothing at full health. Health drops also appear from zombies, but rarely.'] },
@@ -4525,11 +4525,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var nowT = performance.now();
     if (nowT - (hudCache.lay || 0) > 400) {
       hudCache.lay = nowT;
-      if (showStim) {
-        var sr = swapBtn.getBoundingClientRect(), bh = swapGo.offsetHeight || 50, st0 = Math.round(sr.bottom + 6), maxT = window.innerHeight - 2 * bh - 22;
-        st0 = Math.max(4, Math.min(st0, maxT));
-        stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px';
-      } else { stimGo.style.top = ''; swapGo.style.top = ''; }
+      var sr = swapBtn.getBoundingClientRect(), bh = swapGo.offsetHeight || 50, land = window.innerWidth > window.innerHeight, st0 = Math.round(sr.bottom + 6), maxT = window.innerHeight - 2 * bh - 22;
+      if (land && sr.width > 0) {
+        // landscape: reload sits just left of the gun box, out from under the thumb. Stim stays under the box
+        swapGo.style.top = Math.round(sr.top + (sr.height - bh) / 2) + 'px'; swapGo.style.right = Math.round(window.innerWidth - sr.left + 8) + 'px';
+        if (showStim) stimGo.style.top = Math.max(4, Math.min(st0, window.innerHeight - bh - 12)) + 'px'; else stimGo.style.top = '';
+      } else {
+        swapGo.style.right = '';
+        if (showStim) {
+          st0 = Math.max(4, Math.min(st0, maxT));
+          stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px';
+        } else { stimGo.style.top = ''; swapGo.style.top = ''; }
+      }
     }
     if (showStim) {
       if (hudCache.stimP !== sc) { hudCache.stimP = sc; stimGo.style.setProperty('--p', sc); stimGo.classList.toggle('rdy', sc >= 100); }
@@ -4539,7 +4546,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (hudCache.swapShow !== showSwap) { hudCache.swapShow = showSwap; swapBtn.hidden = !showSwap; swapGo.hidden = !showSwap; }
     if (showSwap) {
       var ref = curRef(me), d = defOf(ref), sub, cls = 'swap';
-      var lowMag = !isGhost(me) && !isSpecialActive(me) && !(ref.reload > 0) && ref.mag <= Math.floor(gunMag(d) * 0.25) && ref.res > 0;
+      var lowMag = !isGhost(me) && !isSpecialActive(me) && !(ref.reload > 0) && ref.mag <= Math.floor(gunMag(d) * 0.5) && ref.res > 0;
       if (hudCache.low !== lowMag) { hudCache.low = lowMag; swapGo.classList.toggle('low', lowMag); }
       if (isGhost(me)) {
         var gh = me.ghost, hb = Math.round(gh.heat * 10), hs = '';
@@ -4549,7 +4556,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       else if (isSpecialActive(me)) { sub = me.special.ammo + ' / ' + me.special.max; cls += ' special'; }
       else if (ref.reload > 0) { sub = 'Reloading'; cls += ' warn'; }
       else if (ref.mag <= 0 && ref.res <= 0) { sub = 'No ammo'; cls += ' dry'; }
-      else if (ref.mag <= 0 && !autoReload(me)) { sub = 'RELOAD'; cls += ' dry'; }
       else if (d.noRes) { sub = ref.mag + ' / ' + gunMag(d); cls += ' special'; }
       else { sub = ref.mag + ' | ' + (ref.res === Infinity ? '∞' : ref.res); if (ref.mag + ref.res <= d.mag * 0.4) cls += ' warn'; }
       var rc = d.kind === 'goo' ? '#5dff8a' : rarCol(d), html = '<span style="color:' + rc + '">' + d.name + '</span><small>' + sub + '</small>';
