@@ -505,10 +505,10 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     baseDmg: 10, hpBase: 100, spdBase: 140,
     zHpScale: 0.07, zDmgScale: 0.04, cap: 70,
     coinWave: 0.06, magBase: 80,
-    dropTank: 0.2, crateLife: 15,
+    dropTank: 0.015, rareSpec: 0.04, crateLife: 15,
     stim: { cd: 120, heal: 0.5, boost: 3 },
-    dropHealth: 0.005, healAmount: 30, bossHeal: 50, healLife: 18, dropBossSpecial: 0.25, bossCrate: 0.4, bossCrateLife: 25,
-    dropAmmo: { walker: 0.2, runner: 0.2, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.5, frac: 0.45 }, rifle: { refill: 0.55, frac: 0.52 }, lmg: { refill: 0.55, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.6, restockStep: 0.07, ammoLife: 18,
+    dropHealth: 0.005, healAmount: 30, bossHeal: 50, healLife: 18, dropBossSpecial: 0.15, bossCrate: 0.25, bossCrateLife: 25,
+    dropAmmo: { walker: 0.08, runner: 0.08, tank: 0.2, armoured: 0.18, ghost: 0.15, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.3, frac: 0.45 }, rifle: { refill: 0.33, frac: 0.52 }, lmg: { refill: 0.33, frac: 0.52 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.35, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.015, runner: 0.015, tank: 0.06, armoured: 0.05, ghost: 0.05, boss: 0.3 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -580,6 +580,13 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     mini:   { id: 'mini',   name: 'Minigun',         dmg: 0.43, rate: 18, pellets: 1, spread: 0.18, range: 420, speed: 720, pierce: 0,  len: 17, gw: 8, ammo: 150, kind: 'bullet' }
   };
   var SPECIAL_IDS = ['flame', 'rocket', 'mini'];
+  // which special a drop is: flamethrower, rocket launcher and minigun evenly, with the ray gun and lightning gun very rare
+  function rollSpecialId() {
+    var r = Math.random();
+    if (r < TUNE.rareSpec) return 'ray';
+    if (r < TUNE.rareSpec * 2) return 'zap';
+    return SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)];
+  }
   // box-only specials
   SPECIALS.ray = { id: 'ray', name: 'Ray gun', dmg: 3.6, rate: 3.4, pellets: 1, spread: 0.01, range: 420, speed: 620, pierce: 0, len: 13, gw: 7, ammo: 36, kind: 'ray', blast: 46 };
   SPECIALS.zap = { id: 'zap', name: 'Lightning gun', dmg: 2.0, rate: 5, pellets: 1, spread: 0, range: 300, speed: 0, pierce: 0, len: 16, gw: 6, ammo: 70, kind: 'zap' };
@@ -2199,7 +2206,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (x < WALL + 40 || x > WORLD - WALL - 40 || y < WALL + 40 || y > WORLD - WALL - 40) continue;
       ok = true; for (i = 0; ok && i < RECTS.length; i++) if (distRect(x, y, RECTS[i]) < 30) ok = false;
       if (!ok) continue;
-      addPickup(x, y, 'special', SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)], TUNE.bossCrateLife);
+      addPickup(x, y, 'special', rollSpecialId(), TUNE.bossCrateLife);
       return true;
     }
     return false;
@@ -2679,9 +2686,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         return ids[ids.length - 1];
       }
     }
-    var pool = BOX_SPECIALS.filter(function (k) { return !ownsGun(P, 'k_' + k); });
+    var pool = BOX_SPECIALS.filter(function (k) { return !ownsGun(P, 'k_' + k); }), pw, pt = 0;
     if (!pool.length) pool = BOX_SPECIALS;
-    return 'k_' + pool[Math.floor(Math.random() * pool.length)];
+    pw = pool.map(function (k) { return (k === 'ray' || k === 'zap') ? TUNE.rareSpec : (1 - TUNE.rareSpec * 2) / 3; });
+    pw.forEach(function (x) { pt += x; });
+    r = Math.random() * pt;
+    for (i = 0; i < pool.length; i++) { r -= pw[i]; if (r <= 0) return 'k_' + pool[i]; }
+    return 'k_' + pool[pool.length - 1];
   }
   function freeSlot(P) { for (var i = 0; i < P.unlocked; i++) if (!P.slots[i]) return i; return -1; }
   function openBox(P) {
@@ -2770,7 +2781,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n, to: autoTo }; evictFromPockets(nc, true);
       if (coins.length >= 400) { var nn = coins[Math.floor(Math.random() * coins.length)]; nn.v += nc.v; } else coins.push(nc); }
     // drops
-    if ((z.boss && Math.random() < TUNE.dropBossSpecial) || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', SPECIAL_IDS[Math.floor(Math.random() * SPECIAL_IDS.length)], TUNE.crateLife);
+    if ((z.boss && Math.random() < TUNE.dropBossSpecial) || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', rollSpecialId(), TUNE.crateLife);
     if (z.boss) addPickup(z.x, z.y, 'health', 'big', TUNE.healLife + 6);
     else if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', TUNE.healLife);
     if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', TUNE.ammoLife).to = autoTo;
@@ -3663,7 +3674,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 137';
+  var updMsg = '', VERSION = 'Version 138';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3905,7 +3916,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 900 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: you choose which gun to replace. The old gun and its upgrades are lost.', 'Tap the bottom-right button to cycle through your guns.'] },
     { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
     { t: 'Armour and stim', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Stim: tap the syringe button above the swap button to heal half your max health and get a short speed boost. It takes 2 minutes to recharge, and it does nothing at full health. Health drops also appear from zombies, but rarely.'] },
-    { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: only from the Mystery box.', 'Tanks sometimes drop special crates, and bosses sometimes do. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
+    { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: very rare. They can drop from zombies or come from the Mystery box.', 'Specials are lucky finds. Tanks very rarely drop a crate, and bosses sometimes do. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot, and you can only keep one at a time. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'During a wave, drops vanish if left too long and blink before they go. After a wave they stay until picked up.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.'] },
