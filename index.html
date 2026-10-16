@@ -519,6 +519,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.015, rareSpec: 0.04, crateLife: 15,
     stim: { cd: 120, heal: 0.5, boost: 3 },
+    downT: 20, deadCoins: 200, deadCoinsLate: 1000, deadLateWave: 15,
     dropHealth: 0.005, healAmount: 30, bossHeal: 50, healLife: 18, dropBossSpecial: 0.15, bossCrate: 0.25, bossCrateLife: 25,
     dropAmmo: { walker: 0.15, runner: 0.15, tank: 0.4, armoured: 0.36, ghost: 0.3, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.3, frac: 0.35 }, rifle: { refill: 0.33, frac: 0.4 }, lmg: { refill: 0.33, frac: 0.4 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.35, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.015, runner: 0.015, tank: 0.06, armoured: 0.05, ghost: 0.05, boss: 0.3 }, perkLife: 14, perkDur: 10,
@@ -632,7 +633,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     cval:  { name: 'Coin value',    desc: '+10% coins from every kill',           base: 25 },
     mag:   { name: 'Pick-up magnet', desc: '+25% pick-up range for coins and ammo', base: 15 },
     sammo: { name: 'Special ammo',  desc: '+25% ammo on special weapons',         base: 20 },
-    rest:  { name: 'Ammo restock',  desc: '+5% more ammo from every ammo pickup', base: 30 }
+    rest:  { name: 'Ammo restock',  desc: '+5% more ammo from every ammo pickup', base: 30 },
+    rld:   { name: 'Reload speed',  desc: '5% faster reloads (max 10 levels)',   base: 30 }
   };
   var TIERCOL = ['', '#8a949c', '#5f8a6a', '#78b0ff', '#d2692a'];
   var ARM = {
@@ -2032,11 +2034,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       hp: 0, fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0, stimCd: 0, sb: 0,
       wallet: 0, waveCoins: 0, kills: 0,
       armor: { head: 0, body: 0, legs: 0 },
-      upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0, rest: 0 },
+      upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0, rest: 0, rld: 0 },
       perkT: { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 },
       slots: [makeGun('glock'), null, null], unlocked: 2, special: null, sel: 0, lastSel: 0,
       cards: [], pendingGun: null, boxPrize: null, rebuildLeft: 0, carry: -1, ghost: gbOn ? mkGhost() : null,
-      inx: 0, iny: 0, cone: false, aimAng: null, mvx: 0, mvy: 0, csnd: 0, mhp: 0, cur: null, down: false, rev: 0, tgt: null, pev: [], conn: null,
+      inx: 0, iny: 0, cone: false, aimAng: null, mvx: 0, mvy: 0, csnd: 0, mhp: 0, cur: null, down: false, dead: false, dtT: 0, rev: 0, tgt: null, pev: [], conn: null,
       lo: ['ak47', 'deagle'], go: false, rt: 0, dn: 0, deaths: 0, fr: false
     };
     P.hp = maxHpNow(P);
@@ -2227,6 +2229,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function startWave(n) {
     introOn = false;
+    respawnDead(n);
     // health and ammo left on the floor vanish when the next wave begins
     pickups = pickups.filter(function (q) { return q.kind !== 'health' && q.kind !== 'ammo'; });
     wave = n; queue = buildQueue(n);
@@ -2312,7 +2315,24 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function healPlayer(P, n) { if (P.down) return; P.hp = Math.min(maxHpNow(P), P.hp + n); ptone(P, 520, 780, 0.15, 'sine', 0.07); }
 
+  // not revived in time: you lose everything, then come back at the start of the next wave with a fresh pistol
+  function killForGood(P) {
+    P.dead = true; P.dtT = 0; P.rev = 0;
+    P.wallet = 0; P.armor = { head: 0, body: 0, legs: 0 }; for (var uk in P.upg) P.upg[uk] = 0;
+    P.slots = [makeGun('python'), null, null]; P.unlocked = 2; P.sel = 0; P.lastSel = 0; P.special = null; P.stash = null; P.pendingGun = null; P.boxPrize = null;
+    bannerTo(P, 'You died', 'You come back at the start of the next wave with a fresh pistol.', 3.2);
+    stone(120, 50, 0.5, 'sawtooth', 0.08);
+  }
+  function respawnDead(n) {
+    for (var i = 0; i < players.length; i++) {
+      var P = players[i];
+      if (!P.dead) continue;
+      P.dead = false; P.wallet = n > TUNE.deadLateWave ? TUNE.deadCoinsLate : TUNE.deadCoins; P.slots[0] = makeGun('python');
+      revivePlayer(P, 1);
+    }
+  }
   function revivePlayer(P, frac) {
+    P.dead = false; P.dtT = 0;
     P.down = false; P.rev = 0; P.hp = Math.max(1, maxHpNow(P) * frac); P.inv = 2; P.stimCd = 0;
     ptone(P, 400, 900, 0.3, 'sine', 0.08);
     bannerTo(P, 'Back up', 'Stay close to your team.', 1.6);
@@ -2328,7 +2348,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < players.length; i++) {
       waveRefillAll(players[i]);
       rollCards(players[i]);
-      if (players[i].down) revivePlayer(players[i], 0.5);
     }
     phase = 'grace'; graceT = graceFor(wave);
     if (net.mode === 'off' && wave >= 20) unlockNextMap();
@@ -2635,7 +2654,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function ammoTxt(d) { return d.noRes ? gunMag(d) + ' shots' : d.mag + ' | ' + (d.res === Infinity ? '∞' : d.res); }
   // the three upgrade cards are rolled once per wave, so reopening the shop never rerolls them
   function rollCards(P) {
-    var ids = Object.keys(UPG), i, j, t;
+    var ids = Object.keys(UPG).filter(function (k) { return !(k === 'rld' && (P.upg.rld || 0) >= 10); }), i, j, t;
     for (i = ids.length - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
     P.cards = [{ id: ids[0], bought: false }, { id: ids[1], bought: false }, { id: ids[2], bought: false }];
   }
@@ -2647,6 +2666,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (!UPG[id]) return false;
       for (i = 0; i < P.cards.length; i++) if (P.cards[i].id === id) c = P.cards[i];
       if (!c || c.bought) return false;
+      if (id === 'rld' && (P.upg.rld || 0) >= 10) return false;
       cost = upgCost(P, id); if (P.wallet < cost) return false;
       P.wallet -= cost; c.bought = true; P.upg[id] = (P.upg[id] || 0) + 1;
       if (id === 'hp' && !P.down) P.hp += TUNE.hpBase * 0.1;
@@ -2759,9 +2779,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function downPlayer(P) {
     P.down = true; P.rev = 0; P.tgt = null; P.inx = P.iny = 0; P.boxPrize = null;
+    if (!pvp) { for (var uk in P.upg) P.upg[uk] = 0; P.dtT = TUNE.downT; P.dead = false; }   // going down wipes every bought upgrade (guns and armour stay)
     gbDropCarried(P);
     if (allDown()) { gameOver(); return; }
-    bannerTo(P, 'You are down', 'A teammate can revive you. Or wait for the wave to end.', 2.4);
+    bannerTo(P, 'You are down', 'A teammate has ' + TUNE.downT + ' seconds to revive you. Upgrades lost.', 2.8);
     stone(160, 60, 0.4, 'sawtooth', 0.07);
   }
   function gameOver() {
@@ -3136,7 +3157,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (!isSpecialActive(P)) {
       var gd = st.d;
       if (ref.reload > 0) {
-        ref.reload -= dt * (P.perkT.rf > 0 ? 2 : 1);
+        ref.reload -= dt * (P.perkT.rf > 0 ? 2 : 1) / (1 - 0.05 * Math.min(10, (P.upg && P.upg.rld) || 0));
         canFire = false;
         if (ref.reload <= 0) {
           ref.reload = 0;
@@ -3465,6 +3486,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < players.length; i++) {
       P = players[i];
       if (!P.down) continue;
+      if (!pvp && !P.dead) { P.dtT -= dt; if (P.dtT <= 0) { killForGood(P); continue; } }
+      if (P.dead) continue;
       var helpers = 0;
       for (j = 0; j < players.length; j++) if (!players[j].down && Math.hypot(players[j].x - P.x, players[j].y - P.y) < 46) helpers++;
       if (helpers > 0) { P.rev += dt * (helpers > 1 ? 1.5 : 1) / TUNE.reviveT; if (P.rev >= 1) { for (j = 0; j < players.length; j++) if (!players[j].down && Math.hypot(players[j].x - P.x, players[j].y - P.y) < 46) { if (players[j] === me) statAdd('rv', 1); else if (players[j].conn) sendTo(players[j].conn, { k: 'stat', s: 'rv' }); } revivePlayer(P, 0.5); } }
@@ -3702,7 +3725,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 146';
+  var updMsg = '', VERSION = 'Version 147';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3940,7 +3963,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a big med kit and lots of coins. Sometimes a special weapon crate lands near you at the start of a boss wave, and bosses sometimes drop one too.', 'Later waves bring more than one boss.'] },
     { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
-    { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock (+5% ammo from every ammo pickup).', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
+    { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock (+5% ammo from every ammo pickup), Reload speed (5% faster reloads, up to 10 levels).', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
     { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. An empty magazine reloads itself. Top up a part-empty one with the round button. Guns do not refill between waves.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 1,500 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: a pop-up asks which gun to replace, and offers a new slot if you can afford it. The replaced gun and its upgrades are lost.', 'Tap the gun box under the minimap to swap guns.'] },
     { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
@@ -3954,7 +3977,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Ghost rounds', art: 'ghosts', b: ['Haunted House only. Every 10th wave (10, 20, 30...) is a ghost round.', 'No zombies spawn and the usual boss is skipped. Only small ghosts come.', 'Ghosts are fast and have lots of health, but barely hurt you.', 'They fly through walls and shut doors. Your bullets still stop at walls.', 'Each ghost drops a lot of coins when it dies.'] },
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
     { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then the ones hit by goo burst. The burst hurts nearby zombies, but only zombies hit by goo burst.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the gun box to swap to it. The gun box shows the heat.'] },
-    { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? A teammate standing next to you for 3 seconds revives you. Otherwise you come back at half health when the wave ends.', 'Game over when everyone is down. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
+    { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
     { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
@@ -4485,7 +4508,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function updateHud() {
     if (!me) return;
     var mx = Math.round(maxHpNow(me)), hp = Math.max(0, Math.ceil(me.hp));
-    setText(hptxt, 'hp', me.down ? (pvp ? 'OUT' : 'DOWN') : hp + ' / ' + mx);
+    setText(hptxt, 'hp', me.down ? (pvp ? 'OUT' : (me.dead ? 'DEAD' : 'DOWN ' + Math.ceil(me.dtT || 0) + 's')) : hp + ' / ' + mx);
     var w = Math.max(0, Math.min(100, (me.hp / maxHpNow(me)) * 100)).toFixed(1) + '%';
     if (hudCache.hpw !== w) { hudCache.hpw = w; hpfill.style.width = w; }
     if (screen === 'intro') {
@@ -5434,19 +5457,28 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       lctx.closePath(); lctx.fill();
     }
   }
+  // draw the part of a map-sized layer that is on screen, clipped by hand so a camera past the map edge is safe
+  function drawLayerView(img, vw, vh) {
+    var sx = cam.x * GS, sy = cam.y * GS, sw = vw * GS, sh = vh * GS, dx = cam.x, dy = cam.y, dw = vw, dh = vh, cut;
+    if (sx < 0) { cut = -sx; sx = 0; sw -= cut; dx += cut / GS; dw -= cut / GS; }
+    if (sy < 0) { cut = -sy; sy = 0; sh -= cut; dy += cut / GS; dh -= cut / GS; }
+    if (sx + sw > img.width) { cut = sx + sw - img.width; sw -= cut; dw -= cut / GS; }
+    if (sy + sh > img.height) { cut = sy + sh - img.height; sh -= cut; dh -= cut / GS; }
+    if (sw > 0 && sh > 0) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+  }
   function render() {
     var vw = W / zoom, vh = H / zoom;
     var sx = shake && !reduceMotion ? rnd(-shake, shake) : 0, sy = shake && !reduceMotion ? rnd(-shake, shake) : 0;
     var focus = me || { x: WORLD / 2, y: WORLD / 2 };
-    cam.x = Math.max(0, Math.min(WORLD - vw, focus.x - vw / 2 + sx));
-    cam.y = Math.max(0, Math.min(WORLD - vh, focus.y - vh / 2 - insT / (2 * zoom) + sy));
+    cam.x = focus.x - vw / 2 + sx;   // the player always stays in the middle; past the map edge you just see black
+    cam.y = focus.y - vh / 2 - insT / (2 * zoom) + sy;
     var i, P, rr;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0c0a08'; ctx.fillRect(0, 0, cv.width, cv.height);
     setCam();
-    ctx.drawImage(groundL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
-    if (bloodOn) ctx.drawImage(bloodL.c, cam.x * GS, cam.y * GS, vw * GS, vh * GS, cam.x, cam.y, vw, vh);
+    drawLayerView(groundL.c, vw, vh);
+    if (bloodOn) drawLayerView(bloodL.c, vw, vh);
     drawBarriers();
     drawDoors();
     drawBonus();
@@ -5688,6 +5720,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         ctx.beginPath(); ctx.arc(P.x, P.y, 22, 0, 6.283); ctx.stroke();
         ctx.strokeStyle = P.rev > 0 ? '#78e0a0' : 'rgba(255,255,255,0.4)'; ctx.lineWidth = 3.5;
         ctx.beginPath(); ctx.arc(P.x, P.y, 22, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
+        if (!pvp) { ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var dtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(dtx, P.x, P.y - 32); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(dtx, P.x, P.y - 32); }
       }
       if (players.length > 1 && P !== me) {
         ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -5888,7 +5921,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
-      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry, P.deaths, r1(P.rt), P.go ? 1 : 0];
+      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry, P.deaths, r1(P.rt), P.go ? 1 : 0, r1(P.dtT || 0), P.dead ? 1 : 0];
     });
     o.G = [gbDone, gbOn ? 1 : 0];
     o.Z = zombies.map(function (z) {
@@ -6038,7 +6071,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11] };
       if (r[12]) P.flash = 0.06;
       P.carry = r[15] === undefined ? -1 : r[15];
-      P.deaths = r[16] || 0; P.rt = r[17] || 0; P.go = !!r[18];
+      P.deaths = r[16] || 0; P.rt = r[17] || 0; P.go = !!r[18]; P.dtT = r[19] || 0; P.dead = !!r[20];
       P.kills = r[13]; P.armor = { head: Math.floor(r[14] / 100), body: Math.floor(r[14] / 10) % 10, legs: r[14] % 10 };
       if (P === me) {
         P.sx = r[1]; P.sy = r[2]; P.ang = r[3];
