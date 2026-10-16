@@ -678,7 +678,12 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     var o = bestOverall(); offWave = o.w; offKills = o.k;
     try { localStorage.setItem('zs-maprec', JSON.stringify(mapRec)); localStorage.setItem('zs-off-wave', String(offWave)); localStorage.setItem('zs-off-kills', String(offKills)); } catch (e) {}
   }
-  function mapOpen(i) { var m = MAPS[i]; return m.need ? recOf(m.need.map).w >= m.need.wave : i < mapsOpen; }
+  function mapOpen(i) {
+    var m = MAPS[i];
+    if (m.need) return recOf(m.need.map).w >= m.need.wave;
+    // a map also counts as open if the map before it already has wave 20 on record (covers a clear that never set the saved flag)
+    return i < mapsOpen || (i > 0 && recOf(MAPS[i - 1].id).w >= 20);
+  }
   function unlockNextMap() {
     if (DEV.on) return;
     var idx = 0, i;
@@ -3628,7 +3633,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 134';
+  var updMsg = '', VERSION = 'Version 135';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3819,6 +3824,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var b = e.target.closest ? e.target.closest('[data-a]') : null;
     if (!b || b.disabled) return;
     ensureAudio(); ovAct(b.dataset.a, b);
+  });
+  // tap on the empty space around a menu to close it, same as its Back / Done / Resume button
+  var DISMISS = { offline: 'back', online: 'back', maps: 'back', settings: 'back', devpw: 'back', backup: 'back', diag: 'back', help: 'helpdone', guide: 'helpdone', pause: 'resume', join: 'leave' };
+  ov.addEventListener('click', function (e) {
+    if (e.target !== ov) return;
+    var sel, b2;
+    if (screen === 'me') { saveMe(); mePrev = null; ensureAudio(); showScreen('main'); return; }
+    sel = DISMISS[screen];
+    if (!sel) return;
+    b2 = ov.querySelector('[data-a="' + sel + '"]');
+    if (!b2 || b2.disabled) return;
+    ensureAudio(); ovAct(b2.dataset.a, b2);
   });
   ov.addEventListener('input', function (e) { if (e.target && e.target.id === 'codeIn') { joinCode = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); e.target.value = joinCode; } });
 
@@ -4296,6 +4313,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (!shopOpen) return;
     ensureAudio(); closeShop();
     tone(300, 200, 0.08, 'square', 0.05);
+  });
+  // tap on the empty space around the shop to close it
+  shop.addEventListener('click', function (e) {
+    var t = e.target;
+    if (t === shop || t === $('sstats') || (t.classList && t.classList.contains('shead'))) nextBtn.click();
   });
   shopBtn.addEventListener('click', function () {
     ensureAudio();
