@@ -3571,7 +3571,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'me') drawPreview();
     if (screen === 'help' || screen === 'guide' || screen === 'intro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 130';
+  var updMsg = '', VERSION = 'Version 131';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5166,15 +5166,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < 4; i++) { m = (lo + hi) / 2; if (inside(m)) hi = m; else lo = m; }
     return hi;
   }
+  var hgLast = 0, hgFt = 16;
   function hgTorch(P, px, py, K, mine) {
-    var len = mine ? 440 : 300, half = 0.4, wide = half * 1.6, a0 = P.ang || 0, n = mine ? 44 : 24, i, k, a, d, g, ds = [], as = [], pass, lim, al;
+    // teammates only get the small glow; your own beam gets cheaper on slow phones
+    if (!mine) return;
+    var now = performance.now(), len = 440, half = 0.4, wide = half * 1.4, a0 = P.ang || 0, i, a, g, pass, lim, al, lite, n, as = [], ds = [], npass;
+    if (hgLast) hgFt = hgFt * 0.9 + Math.min(100, now - hgLast) * 0.1;
+    hgLast = now;
+    lite = hgFt > 25;
+    n = lite ? 14 : 26; npass = lite ? 1 : 2;
     if (!HG_SOL) { HG_SOL = []; for (i = 0; i < RECTS.length; i++) if (!RECTS[i].bar && !RECTS[i].furn && !RECTS[i].door) HG_SOL.push(RECTS[i]); }
     for (i = 0; i <= n; i++) {
       a = a0 - wide + 2 * wide * i / n; as.push(a);
       ds.push(hgRay(P.x, P.y, Math.cos(a), Math.sin(a), len));
     }
-    for (pass = 0; pass < 3; pass++) {
-      lim = pass === 0 ? wide : (pass === 1 ? half * 1.25 : half); al = pass === 0 ? 0.2 : (pass === 1 ? 0.3 : 1);
+    for (pass = 0; pass < npass; pass++) {
+      lim = (lite || pass === 1) ? half : wide; al = (lite || pass === 1) ? 1 : 0.3;
       g = lctx.createRadialGradient(px, py, 0, px, py, len * K);
       g.addColorStop(0, 'rgba(0,0,0,' + (0.95 * al).toFixed(2) + ')'); g.addColorStop(0.6, 'rgba(0,0,0,' + (0.7 * al).toFixed(2) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)');
       lctx.fillStyle = g; lctx.beginPath(); lctx.moveTo(px, py);
