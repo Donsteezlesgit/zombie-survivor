@@ -579,7 +579,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     stim: { cd: 120, heal: 0.5, boost: 3 },
     downT: 20, deadCoins: 200, deadCoinsLate: 1000, deadLateWave: 15,
     dropHealth: 0.005, healAmount: 30, bossHeal: 50, healLife: 18, dropBossSpecial: 0.15, bossCrate: 0.25, bossCrateLife: 25,
-    dropAmmo: { walker: 0.1575, runner: 0.1575, tank: 0.42, armoured: 0.378, ghost: 0.315, boss: 1 }, ammoFrac: 0.6, ammoCls: { smg: { refill: 0.3, frac: 0.35 }, rifle: { refill: 0.33, frac: 0.4 }, lmg: { refill: 0.33, frac: 0.4 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.35, restockStep: 0.07, ammoLife: 18,
+    dropAmmo: { walker: 0.1575, runner: 0.1575, tank: 0.42, armoured: 0.378, ghost: 0.315, boss: 1 }, ammoFrac: 0.66, ammoCls: { smg: { refill: 0.3, frac: 0.385 }, rifle: { refill: 0.33, frac: 0.44 }, lmg: { refill: 0.33, frac: 0.44 } }, armFrom: 10, armTank: 2, armArm: 4, armBoss: 3, armFloor: 0.35, armPellet: 0.333, armEarlyFrom: 15, armEarlyP: 0.025, kb: { pistol: 0.4, smg: 0.25, rifle: 0.35, lmg: 0.25, sniper: 0.7, shotgun: 0.9 }, kbSpec: { flame: 0.5, mini: 0.2, rocket: 0.7, ray: 0.6 }, kbExpl: 0.6, kbGoo: 0.5, snapDt: 0.028, hostWait: 20000, clientWait: 20000, weakAt: 1500, interp: 0.075, inDt: 0.016, sendCap: 80000, coopCoin: 0.2, bonusChance: 0.25, bonusAmmo: 2.5, waveRefill: 0.35, restockStep: 0.07, ammoLife: 18,
     dropPerk: { walker: 0.015, runner: 0.015, tank: 0.06, armoured: 0.05, ghost: 0.05, boss: 0.3 }, perkLife: 14, perkDur: 10,
     boxCost: 120, boxSpecial: 0.06, boxes: 2,
     l25: { wave: 20, hp: 1.15, dmg: 1.15, coin: 1.15 },
@@ -4113,7 +4113,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 160';
+  var updMsg = '', VERSION = 'Version 161';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
