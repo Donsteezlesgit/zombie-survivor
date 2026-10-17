@@ -577,7 +577,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
     throwGap: 3.6, grace: 15, graceFlat: 7, graceMid: 10, graceMidWave: 20, graceMin: 8, graceMinWave: 30, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45,
-    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9, scarh: 0.65, vector: 0.72, aug: 0.44, val: 0.6, striker: 0.19, aa12: 0.4, svd: 0.95 } }
+    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, uavEvery: 5, uavShow: 1.5, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9, scarh: 0.65, vector: 0.72, aug: 0.44, val: 0.6, striker: 0.19, aa12: 0.4, svd: 0.95 } }
   };
   var PV_TAG = { mp5: 'Fast, close range', ak47: 'All-rounder', m4a1: 'Accurate and quick', python: 'Slow, hits hard', deagle: 'Heavy, 8 shots', benelli: 'Shotgun, close range', scarh: 'Hard hitting rifle', vector: 'Very fast SMG', aug: 'Quick, 42 rounds', val: 'Fast and accurate', striker: 'Drum shotgun', aa12: 'Auto shotgun', svd: 'Slow, heavy sniper' };
   var TYPES = {
@@ -4072,7 +4072,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 153';
+  var updMsg = '', VERSION = 'Version 154';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4346,13 +4346,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot, and you can only keep one at a time. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'Health and ammo drops stay on the floor until the next wave starts. They blink during the break, as a warning that they are about to go.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.', 'Tap the minimap for a big map. The game keeps running: your left thumb still walks, and a tap on the right half of the screen (or Close) shuts it.'] },
-    { t: 'The Hangar', art: 'hangar', b: ['A third map, and it is pitch dark. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time.', 'You only see by your torch: a beam that points where you aim. It stops at walls, containers and crates, so corners hide the dead.', 'Zombies come in through four windows, one on each wall. A dim red lamp by each window shows where. Rebuild the planks like usual.', 'Shipping containers, crates and a low-walled deck in the middle block walking and the torch. Barrels and the catwalk rails do not.', 'Mystery boxes work as normal, but you have to find them in the dark. Teammates only show as a small glow. In PvP, opponents have no glow at all.', 'It is also the PvP map. Offline and online zombie games both work.'] },
+    { t: 'The Hangar', art: 'hangar', b: ['A third map, and it is pitch dark. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time.', 'You only see by your torch: a beam that points where you aim. It stops at walls, containers and crates, so corners hide the dead.', 'Zombies come in through four windows, one on each wall. A dim red lamp by each window shows where. Rebuild the planks like usual.', 'Shipping containers, crates and a low-walled deck in the middle block walking and the torch. Barrels and the catwalk rails do not.', 'Mystery boxes work as normal, but you have to find them in the dark. Teammates only show as a small glow. In PvP, opponents have no glow and no nametag.', 'It is also the PvP map. Offline and online zombie games both work.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
     { t: 'Ghost rounds', art: 'ghosts', b: ['Haunted House only. Every 10th wave (10, 20, 30...) is a ghost round.', 'No zombies spawn and the usual boss is skipped. Only small ghosts come.', 'Ghosts are fast and have lots of health, but barely hurt you.', 'They fly through walls and shut doors. Your bullets still stop at walls.', 'Each ghost drops a lot of coins when it dies.'] },
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
     { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then the ones hit by goo burst. The burst hurts nearby zombies, but only zombies hit by goo burst.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the gun box to swap to it. The gun box shows the heat.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
-    { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
+    { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.'] },
     { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones each day, shown on the main menu. Finish all three for 1 more. They reset at midnight.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Seven guns (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) have a Use in PvP option on their screen. Buy it once and you can pick that gun in PvP.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
     { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
@@ -4394,7 +4394,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function pvpIntroHtml() {
     var T = TUNE.pvp, list = [
-      { t: 'PvP: the goal', art: 'team', b: ['No zombies. Everyone is against everyone.', 'First to ' + T.target + ' kills wins. Kills show at the top left.', 'Everyone has the same health, and other players do not show on the minimap.', 'Attachments and skins from the Armoury work here too.'] },
+      { t: 'PvP: the goal', art: 'team', b: ['No zombies. Everyone is against everyone.', 'First to ' + T.target + ' kills wins. Kills show at the top left.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.', 'Attachments and skins from the Armoury work here too.'] },
       { t: 'Pick your guns', art: 'slots', b: ['Pick 2 different guns from 6: MP5, AK-47, M4A1, Python, Desert Eagle, Benelli. More can be unlocked in the Armoury.', 'Tap Ready when you are done. The round starts when everyone is ready, or after ' + T.pick + ' seconds.', 'You start with one magazine per gun. Ammo crates appear around the map: walk over one to get a magazine for each gun (' + T.spareMags + ' spare at most).'] },
       { t: 'Aiming', art: 'move', b: ['There is no auto aim. Left thumb walks.', 'Hold the right thumb and point the thin line at someone. Your gun fires only while a player is on the line.', 'Let go and you stop firing.'] },
       { t: 'Down and back up', art: 'stay', b: ['Die and you respawn after ' + T.respawn + ' seconds, far from the others, with ' + T.prot + ' seconds of protection. Firing ends it.', 'While you wait you can change your guns.', 'Stim button: full health and a short speed boost. It takes ' + T.stimCd + ' seconds to recharge, and is ready again when you respawn.'] }
@@ -5645,6 +5645,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
 
   // small radar: you in the middle, view radius 480 world units
+  // PvP UAV: every few seconds all living opponents show for a moment (1 = just pinged, fading to 0)
+  function uavA() { if (!pvp || pvPhase !== 'play') return 0; var ph = (performance.now() / 1000) % TUNE.pvp.uavEvery; return ph < TUNE.pvp.uavShow ? 1 - ph / TUNE.pvp.uavShow : 0; }
   function drawMini() {
     var S = 96, R = 480, k = (S / 2) / R, c = S / 2, i, o, x, y, d;
     mmx.setTransform(mmDpr, 0, 0, mmDpr, 0, 0);
@@ -5693,15 +5695,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         mmx.strokeStyle = '#3ad870'; mmx.lineWidth = me.carry >= 0 ? 2.4 : 1.4; mmx.beginPath(); mmx.arc(c + x, c + y, me.carry >= 0 ? 5 : 3.6, 0, 6.283); mmx.stroke();
       }
     }
+    var ua = uavA();
     for (i = 0; i < players.length; i++) {
-      o = players[i]; if (o === me || pvp) continue;
+      o = players[i]; if (o === me || (pvp && (!ua || o.down))) continue;
       x = (o.x - px) * k; y = (o.y - py) * k;
       d = Math.hypot(x, y);
       if (d > edge) { x = x / d * edge; y = y / d * edge; }
-      mmx.globalAlpha = o.down ? 0.5 : 1;
+      mmx.globalAlpha = pvp ? Math.min(1, 0.25 + ua) : (o.down ? 0.5 : 1);
       mmx.fillStyle = LOOK_COLS[o.look.c];
-      mmx.beginPath(); mmx.arc(c + x, c + y, 3, 0, 6.283); mmx.fill();
+      mmx.beginPath(); mmx.arc(c + x, c + y, pvp ? 3.6 : 3, 0, 6.283); mmx.fill();
+      if (pvp) { mmx.strokeStyle = '#0d0a08'; mmx.lineWidth = 1; mmx.stroke(); }
     }
+    if (ua) { mmx.globalAlpha = ua * 0.55; mmx.strokeStyle = '#9fe8ff'; mmx.lineWidth = 1.6; mmx.beginPath(); mmx.arc(c, c, (1 - ua) * edge, 0, 6.283); mmx.stroke(); }
     mmx.globalAlpha = 1;
     mmx.fillStyle = '#ebe3d4';
     mmx.beginPath(); mmx.arc(c, c, 2.6, 0, 6.283); mmx.fill();
@@ -5771,12 +5776,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       o = zombies[i]; x = o.x * k; y = o.y * k; d = o.boss ? 3.6 : 2.2;
       c.fillStyle = o.boss ? '#ff8a2a' : (o.type === 'ghost' ? '#9fd8ff' : '#e8402e'); c.fillRect(x - d, y - d, d * 2, d * 2);
     }
+    var bua = uavA();
     for (i = 0; i < players.length; i++) {
-      o = players[i]; if (pvp && o !== me) continue;
-      x = o.x * k; y = o.y * k; c.globalAlpha = o.down ? 0.5 : 1;
+      o = players[i]; if (pvp && o !== me && (!bua || o.down)) continue;
+      x = o.x * k; y = o.y * k; c.globalAlpha = (pvp && o !== me) ? Math.min(1, 0.25 + bua) : (o.down ? 0.5 : 1);
       c.fillStyle = o === me ? '#ebe3d4' : LOOK_COLS[o.look.c]; c.beginPath(); c.arc(x, y, o === me ? 5 : 4, 0, 6.283); c.fill();
       if (o === me) { c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke(); labR('You', x + 8, y - 9, '#ebe3d4'); }
-      else lab(o.name || 'Player', x, y - 11, LOOK_COLS[o.look.c]);
+      else if (!(pvp && mapId === 'hangar')) lab(o.name || 'Player', x, y - 11, LOOK_COLS[o.look.c]);
       c.globalAlpha = 1;
     }
     if (mapId === 'haunted') for (i = 0; i < HH_NAMES.length; i++) lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), (HH.cols[i % 3] + HH.Rm / 2) * k, (HH.cols[Math.floor(i / 3)] + HH.Rm / 2) * k, '#e6d9c0', fs + 1);
@@ -6096,7 +6102,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         ctx.beginPath(); ctx.arc(P.x, P.y, 22, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
         if (!pvp) { ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var dtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(dtx, P.x, P.y - 32); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(dtx, P.x, P.y - 32); }
       }
-      if (players.length > 1 && P !== me) {
+      if (players.length > 1 && P !== me && !(pvp && mapId === 'hangar')) {
         ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(P.name, P.x, P.y - 62);
         ctx.fillStyle = LOOK_COLS[P.look.c]; ctx.fillText(P.name, P.x, P.y - 62);
