@@ -455,7 +455,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 .go { background: var(--gold); border-radius: 0; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
 .go.alt { background: transparent; border: 1px solid #6a5a4c; clip-path: none; }
 .go.yel { color: #1a0e08; background: var(--gold); }
-.go.blood { color: #1a0e08; background-color: #efe7d8; background-image: radial-gradient(circle at 12% 28%, #9b1c14 0 5px, transparent 6px), radial-gradient(circle at 20% 70%, #7d140e 0 3px, transparent 4px), radial-gradient(circle at 34% 18%, #b3241a 0 2px, transparent 3px), radial-gradient(circle at 63% 82%, #9b1c14 0 6px, transparent 7px), radial-gradient(circle at 72% 24%, #7d140e 0 3px, transparent 4px), radial-gradient(circle at 88% 58%, #b3241a 0 5px, transparent 6px), radial-gradient(circle at 95% 14%, #9b1c14 0 2px, transparent 3px), radial-gradient(ellipse at 4% 100%, #8e1b14 0 16px, transparent 17px), radial-gradient(ellipse at 100% 0%, #8e1b14 0 20px, transparent 21px); }
+.go.blood { color: #1a0e08; background-color: var(--gold); background-image: radial-gradient(circle at 12% 28%, #8e1b14 0 5px, transparent 6px), radial-gradient(circle at 20% 70%, #6d100b 0 3px, transparent 4px), radial-gradient(circle at 34% 18%, #a31f16 0 2px, transparent 3px), radial-gradient(circle at 63% 82%, #8e1b14 0 6px, transparent 7px), radial-gradient(circle at 72% 24%, #6d100b 0 3px, transparent 4px), radial-gradient(circle at 88% 58%, #a31f16 0 5px, transparent 6px), radial-gradient(circle at 95% 14%, #8e1b14 0 2px, transparent 3px), radial-gradient(ellipse at 4% 100%, #7d140e 0 16px, transparent 17px), radial-gradient(ellipse at 100% 0%, #7d140e 0 20px, transparent 21px); }
+.go.blood.b2 { background-image: radial-gradient(circle at 6% 20%, #8e1b14 0 4px, transparent 5px), radial-gradient(circle at 9% 72%, #a31f16 0 2px, transparent 3px), radial-gradient(circle at 27% 86%, #6d100b 0 5px, transparent 6px), radial-gradient(circle at 41% 12%, #8e1b14 0 3px, transparent 4px), radial-gradient(circle at 55% 30%, #a31f16 0 2px, transparent 3px), radial-gradient(circle at 78% 76%, #8e1b14 0 4px, transparent 5px), radial-gradient(circle at 84% 18%, #6d100b 0 6px, transparent 7px), radial-gradient(circle at 93% 64%, #a31f16 0 3px, transparent 4px), radial-gradient(ellipse at 0% 0%, #7d140e 0 18px, transparent 19px), radial-gradient(ellipse at 100% 100%, #7d140e 0 14px, transparent 15px); }
 .go:disabled { opacity: 0.4; }
 .chip { border-radius: 0; border-color: #6a5a4c; }
 .warn, .card, .buy, .mapcard, .mbest, .boxcard, .perk, textarea.bk, input.bk, pre.diag { border-radius: 0; }
@@ -3938,7 +3939,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var bo = bestOverall();
       h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (bo.w || '–') + '</b><small>Highest wave</small>' + (bo.w ? '<small class="mapn">' + esc(bo.wm) + '</small>' : '') + '</div><div><b>' + (bo.k || '–') + '</b><small>Most kills</small>' + (bo.k ? '<small class="mapn">' + esc(bo.km) + '</small>' : '') + '</div></div>' + questPanel() + '</div>';
       h += '<div class="mplay"><button class="go blood" data-a="offline" type="button">Play offline</button>';
-      h += '<button class="go blood" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
+      h += '<button class="go blood b2" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
       h += '<button class="go yel" data-a="armoury" type="button">Armoury · ' + ZB.z + ' Z</button>';
       h += '<button class="go yel" data-a="me" type="button">Your player</button></div>';
       h += '<div class="mmore"><button class="go alt" data-a="help" type="button">How to play</button>';
@@ -4112,7 +4113,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 157';
+  var updMsg = '', VERSION = 'Version 158';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6672,7 +6673,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   game.appendChild(devBtn); game.appendChild(devPanel);
   (function () {
     var st = document.createElement('style');
-    st.textContent = '#devBtn{position:absolute;z-index:70;top:calc(var(--insT,0px) + 62px);left:max(10px,env(safe-area-inset-left));font:700 14px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:11px 14px;opacity:.9}#devBtn.x{background:#e0453a;color:#fff;opacity:1}#devBtn.menu{top:calc(var(--insT,0px) + 6px)}' +
+    st.textContent = '#devBtn{position:absolute;z-index:70;top:calc(var(--insT,0px) + 62px);left:max(10px,env(safe-area-inset-left));font:700 14px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:11px 14px;opacity:.9}#devBtn.x{background:#e0453a;color:#fff;opacity:1}#devBtn.menu{top:calc(var(--insT,0px) + 36px)}' +
       '#devPanel{position:absolute;z-index:61;top:0;right:0;bottom:0;width:min(330px,62%);background:rgba(10,8,7,.93);border-left:2px solid #78e0a0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(var(--insT,0px) + 8px) max(12px,env(safe-area-inset-right)) 60px 12px;color:#ebe3d4;font:600 14px/1.3 var(--face-ui);text-align:left}' +
       '#devPanel h3{margin:14px 0 6px;font:700 13px/1 var(--face-ui);letter-spacing:.14em;text-transform:uppercase;color:#78e0a0}' +
       '#devPanel .r{display:flex;flex-wrap:wrap;gap:6px}' +
