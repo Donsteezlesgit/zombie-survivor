@@ -524,6 +524,31 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   .overlay[data-scr="pause"] > .go, .overlay[data-scr="pause"] > .chip { grid-column: 2; width: 100%; min-height: 40px; }
   .overlay[data-scr="pause"] > .go:first-of-type { min-height: 48px; }
 }
+/* main menu: everything scales to the screen height, no scrolling */
+.overlay:has(.mhome) { overflow: hidden; }
+.overlay:has(.mhome)::before { flex: 0 0 2.5vh; }
+.mhome { gap: clamp(5px, 1.2vh, 10px); }
+.mhome .mmark { width: clamp(34px, 7vh, 64px); height: clamp(34px, 7vh, 64px); }
+.mhome .mtitle h1 { font-size: clamp(34px, 7.4vh, 66px); }
+.mhome .mtitle .mz { font-size: clamp(12px, 2vh, 17px); }
+.mhome .mbest { padding: clamp(5px, 1.1vh, 10px) 14px clamp(6px, 1.2vh, 12px); margin: clamp(2px, .6vh, 6px) 0 clamp(2px, .8vh, 10px); }
+.mhome .mrow { margin-top: clamp(3px, .8vh, 8px); }
+.mhome .mrow b { font-size: clamp(20px, 3.8vh, 34px); }
+.mhome .mq { margin-top: clamp(3px, .8vh, 8px); font-size: clamp(11px, 1.7vh, 14px); }
+.mhome .mplay, .mhome .mmore { gap: clamp(5px, 1.1vh, 10px); margin-top: 0; }
+.mhome .go { min-height: clamp(32px, 5.6vh, 54px); font-size: clamp(14px, 2.5vh, 20px); }
+.mhome .go.alt { min-height: clamp(30px, 4.9vh, 48px); font-size: clamp(13px, 2.2vh, 16px); }
+@media (max-height: 520px) {
+  .overlay:has(.mhome)::before { flex: 0 0 1.5vh; }
+  .mhome { row-gap: clamp(5px, 1.6vh, 8px); }
+  .mhome .mmark { width: clamp(34px, 15vh, 78px); height: clamp(34px, 15vh, 78px); }
+  .mhome .mtitle h1 { font-size: clamp(34px, 15vh, 66px); }
+  .mhome .go { min-height: clamp(30px, 11vh, 46px); font-size: clamp(13px, 4.4vh, 20px); }
+  .mhome .go.alt { min-height: clamp(30px, 10vh, 42px); font-size: clamp(12px, 3.8vh, 16px); }
+  .mhome .mplay .yel { font-size: clamp(12px, 4vh, 15px); }
+  .mhome .mrow b { font-size: clamp(18px, 6vh, 34px); }
+  .mhome .mq { font-size: clamp(10px, 3vh, 13px); }
+}
 </style>
 
 <div class="game" id="game">
@@ -2357,6 +2382,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // 15s flat through wave 7, easing to 10s by wave 20, then down to the 8s floor by wave 30
   function graceFor(w) {
     var g;
+    if (net.mode === 'off' && !pvp) return 2;   // offline: no real break, the next wave comes almost at once
     if (w <= TUNE.graceFlat) g = TUNE.grace;
     else if (w <= TUNE.graceMidWave) g = TUNE.grace - (TUNE.grace - TUNE.graceMid) * (w - TUNE.graceFlat) / (TUNE.graceMidWave - TUNE.graceFlat);
     else g = TUNE.graceMid - (TUNE.graceMid - TUNE.graceMin) * (w - TUNE.graceMidWave) / (TUNE.graceMinWave - TUNE.graceMidWave);
@@ -2480,7 +2506,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (gi = 0; gi < gn; gi++) gq.push('ghost');
       return gq;
     }
-    var q = [], n = Math.round((6 + 4 * (w - 1)) * (1 + TUNE.coopCount * (np - 1))), i;
+    var q = [], n = Math.round((15 + 6 * (w - 1)) * (1 + TUNE.coopCount * (np - 1))), i;
     var tankP = w >= 5 ? Math.min(0.2, 0.04 * (w - 4)) : 0;
     var armP = w >= TUNE.lateStart ? Math.min(0.22, 0.03 * (w - TUNE.lateStart + 1)) : (w >= TUNE.armEarlyFrom ? TUNE.armEarlyP : 0);
     var runnerP = w >= 3 ? Math.min(0.35, 0.08 * (w - 2)) : 0;
@@ -3607,7 +3633,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       spawnTimer -= dt;
       var cap = TUNE.cap + TUNE.coopCap * (Math.max(1, players.length) - 1);
       if (queue.length && spawnTimer <= 0 && zombies.length < cap) {
-        if (spawnZombie(queue[0])) { queue.shift(); spawnTimer = Math.max(0.22, 0.85 - wave * 0.04); }
+        if (spawnZombie(queue[0])) { queue.shift(); spawnTimer = Math.max(0.15, 0.5 - wave * 0.03); }
         else spawnTimer = 0.5;
       }
       if (!queue.length && zombies.length === 0) waveCleared();
@@ -4113,7 +4139,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 162';
+  var updMsg = '', VERSION = 'Version 163';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4362,8 +4388,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Move', x: 'Left thumb walks. Put it on the left half of the screen and drag. Drag further to go faster.', art: 'move' },
     { t: 'Hold to shoot', x: 'Hold your right thumb down and your gun fires at zombies inside the faint yellow cone. Let go and it stops. Point the cone and stay alive.', art: 'shoot' },
     { t: 'Aiming', x: 'Right thumb aims the yellow cone. Put it on the right half and drag. Hold it to shoot. Lift it and the gun stops, and the cone stays where you left it. Prefer one finger with auto-aim? Switch in Settings.', art: 'aim' },
-    { t: 'Coins', x: 'Zombies drop coins. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
-    { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Between waves you get 20 seconds to shop.', art: 'shop' },
+    { t: 'Coins', x: 'You start every game with 50 coins. Zombies drop more. Walk over them to collect them. Keep an eye on the coin count at the top.', art: 'coins' },
+    { t: 'The shop', x: 'Tap Shop at the top any time. Buy upgrades, guns and armour. Offline the next wave starts 2 seconds after the last, so shop while you fight. Online you get a short break between waves.', art: 'shop' },
     { t: 'Barriers', x: 'Zombies smash the planks to get out. Stand next to a broken barrier to rebuild it and earn a few coins.', art: 'bar' },
     { t: 'Guns and ammo', art: 'gun', b: ['The box under the minimap shows your gun and ammo: bullets in the mag | bullets in reserve.', 'Tap the gun box to swap guns.', 'Tap the round button to reload. It tops the mag up from your reserve and keeps the bullets already in it.', 'The button flashes red when the mag is half empty or less.', 'An empty gun reloads by itself. To top up a part-empty mag you tap the button. Offline in one-finger mode tops up for you too.', 'There is no refill between waves. Pick up ammo drops, or you are back on the Glock.', 'If every gun is out of ammo and you have no Glock, a starter Glock comes back. It upgrades itself for free, a Mk level every 8 waves.'] },
     { t: 'Gun slots', x: 'You start with two gun slots, the Glock and an empty one. The third slot is in the Shop, on the Guns tab, for 1,500 coins. No free slot? A new gun replaces one you own.', art: 'slots' },
@@ -4376,10 +4402,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var GUIDE = [
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
     { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. Tap it to swap guns. The round button beside it (under it when held upright) tops up your mag.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
-    { t: 'Waves and breaks', art: 'wave', b: ['Each wave sends more zombies than the last, and they get tougher.', 'When the last zombie dies you get a break: 15 seconds early on. From wave 8 it shrinks to 10 seconds by wave 20, then to 8 seconds by wave 30.', 'The break is for shopping and rebuilding barriers. Nothing refills between waves. Ammo only comes from pickups and the Max ammo power-up, so grab what you can. Run dry and you are back on the Glock.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
+    { t: 'Waves and breaks', art: 'wave', b: ['Wave 1 is already 15 zombies, and every wave adds 6 more. They get tougher as you go.', 'Offline there is no real break: the next wave starts 2 seconds after the last zombie dies. Shop and rebuild barriers while you fight.', 'Online you still get a break when the last zombie dies: 15 seconds early on. From wave 8 it shrinks to 10 seconds by wave 20, then to 8 seconds by wave 30. Use it for shopping and rebuilding barriers.', 'Nothing refills between waves. Ammo only comes from pickups and the Max ammo power-up, so grab what you can. Run dry and you are back on the Glock.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a big med kit and lots of coins. Sometimes a special weapon crate lands near you at the start of a boss wave, and bosses sometimes drop one too.', 'Later waves bring more than one boss.'] },
-    { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
+    { t: 'Coins', art: 'coins', b: ['Every kill drops coins. Tanks and bosses drop several.', 'Walk close and coins fly to you. The Pick-up magnet upgrade widens the range.', 'You start every game with 50 coins.', 'Coins and drops stay on the floor after a wave until someone grabs them.', 'Coin value goes up each wave. Coin value upgrades and the Double coins power-up boost it more.', 'Online, coins you pick up are yours alone.'] },
     { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock (+5% ammo from every ammo pickup), Reload speed (5% faster reloads, up to 10 levels).', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
     { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. An empty magazine reloads itself. Top up a part-empty one with the round button. Guns do not refill between waves.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 1,500 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: a pop-up asks which gun to replace, and offers a new slot if you can afford it. The replaced gun and its upgrades are lost.', 'Tap the gun box under the minimap to swap guns.'] },
@@ -4387,7 +4413,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Armour and stim', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Stim: tap the syringe button above the reload button to heal half your max health and get a short speed boost. It takes 2 minutes to recharge, and it does nothing at full health. Health drops also appear from zombies, but rarely.'] },
     { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: very rare. They can drop from zombies or come from the Mystery box.', 'Specials are lucky finds. Tanks very rarely drop a crate, and bosses sometimes do. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot, and you can only keep one at a time. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
-    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a little of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'Health and ammo drops stay on the floor until the next wave starts. They blink during the break, as a warning that they are about to go.'] },
+    { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a bit of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'Health and ammo drops stay on the floor until the next wave starts. They blink between waves, as a warning that they are about to go.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.', 'Tap the minimap for a big map. The game keeps running: your left thumb still walks, and a tap on the right half of the screen (or Close) shuts it.'] },
     { t: 'The Hangar', art: 'hangar', b: ['A third map, and it is pitch dark. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time.', 'You only see by your torch: a beam that points where you aim. It stops at walls, containers and crates, so corners hide the dead.', 'Zombies come in through four windows, one on each wall. A dim red lamp by each window shows where. Rebuild the planks like usual.', 'Shipping containers, crates and a low-walled deck in the middle block walking and the torch. Barrels and the catwalk rails do not.', 'Mystery boxes work as normal, but you have to find them in the dark. Teammates only show as a small glow. In PvP, opponents have no glow and no nametag.', 'It is also the PvP map. Offline and online zombie games both work.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
@@ -4425,10 +4451,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       list.push({ t: 'Bonus rooms', art: 'bonus', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'Coins and ammo from your kills there fly straight to you.', 'A gold ring on the minimap points to it.'] });
     } else if (mapId === 'hangar') {
       list.push({ t: 'The Hangar', art: 'hangar', b: ['It is pitch dark. You only see by your torch, which points where you aim.', 'The beam stops at containers, crates and walls. Use corners to hide.', 'Zombies come through four windows, one on each wall. A dim red lamp marks each one. Stand next to broken planks to rebuild them.'] });
-      list.push({ t: 'Stay alive', art: 'stay', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins. Find them in the dark.', 'Every 5th wave brings a boss.'] });
+      list.push({ t: 'Stay alive', art: 'stay', b: ['You start with 50 coins. Kills drop more, to spend on guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins. Find them in the dark.', 'Every 5th wave brings a boss.'] });
     } else {
       list.push({ t: 'Beginners Ground', art: 'bar', b: ['Zombies pour out of four buildings, each with a plank barrier.', 'Stand next to a broken barrier to rebuild it for coins.', 'Buildings block zombies and bullets. Use them to funnel the dead.'] });
-      list.push({ t: 'Stay alive', art: 'stay', b: ['Coins from kills buy guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
+      list.push({ t: 'Stay alive', art: 'stay', b: ['You start with 50 coins. Kills drop more, to spend on guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
     }
     return list;
   }
