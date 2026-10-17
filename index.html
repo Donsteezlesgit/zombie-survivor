@@ -2108,6 +2108,23 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (k = 0; k < 3; k++) { c.save(); c.translate(q.x + ra(-14, q.w + 14), yq + ra(-14, q.h + 14)); c.rotate(ra(0, 6.28)); c.fillStyle = '#b4996a'; rrect(-6, -4, 12, 8, 3); c.fill(); c.restore(); }
       for (k = 0; k < 18; k++) { c.fillStyle = '#c9b88a'; c.fillRect(q.x + ra(-12, q.w + 12), yq + ra(-12, q.h + 12), 1.6, 1.6); }
     });
+    // ---------- garden furniture and loose props (these are solid, so they must be drawn)
+    [[60, 480], [1670, 480]].forEach(function (b) {   // garden bench, one slat kicked out
+      var x = b[0], y = b[1]; F('rgba(0,0,0,0.25)', x + 3, y + 4, 70, 40); F('#3a2a18', x, y, 70, 40);
+      for (k = 0; k < 5; k++) { if (k === 3 && x < 900) continue; F(k % 2 ? '#a07040' : '#8f6236', x + 3, y + 3 + k * 7.4, 64, 6); F('rgba(255,235,190,0.2)', x + 3, y + 3 + k * 7.4, 64, 1.5); }
+      if (x < 900) { c.save(); c.translate(x + 46, y + 52); c.rotate(0.4); F('#8f6236', -20, -3, 40, 6); c.restore(); }
+      scorch(x + 50, y + 14, 16);
+    });
+    [[190, 400], [1560, 550]].forEach(function (b) {  // rusty barbecue, lid thrown off
+      var x = b[0], y = b[1]; F('rgba(0,0,0,0.25)', x + 3, y + 4, 50, 50); rrect(x, y, 50, 50, 8); c.fillStyle = '#2a2622'; c.fill(); rrect(x + 4, y + 4, 42, 42, 6); c.fillStyle = '#6a6a6e'; c.fill();
+      c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 1.2; for (k = 1; k < 7; k++) { c.beginPath(); c.moveTo(x + 6, y + 4 + k * 6); c.lineTo(x + 44, y + 4 + k * 6); c.stroke(); }
+      blob(x + 18, y + 28, 10, 'rgba(140,70,30,0.45)'); scorch(x + 32, y + 20, 14); F('#3a3a3e', x + 40, y + 44, 12, 5);
+      c.save(); c.translate(x + 60, y + 6); c.rotate(0.5); c.fillStyle = '#4a4a4e'; c.beginPath(); c.arc(0, 0, 11, 0, 6.283); c.fill(); c.strokeStyle = '#2a2a2e'; c.lineWidth = 2; c.stroke(); c.restore();
+    });
+    // dustbin at the front yard, crate of bottles by the shop
+    c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(625, 714, 10, 0, 6.283); c.fill(); c.fillStyle = '#3f6a4a'; c.beginPath(); c.arc(622, 710, 10, 0, 6.283); c.fill(); c.fillStyle = '#2f5238'; c.beginPath(); c.arc(622, 710, 6.5, 0, 6.283); c.fill(); c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(616, 703, 6, 2);
+    F('rgba(0,0,0,0.25)', 1319, 934, 30, 20); F('#5a3a1e', 1316, 930, 30, 20); F('#7a5230', 1318, 932, 26, 16);
+    for (k = 0; k < 6; k++) { c.fillStyle = k % 2 ? '#3a7a3a' : '#7a4a1a'; c.beginPath(); c.arc(1322 + (k % 3) * 9, 937 + Math.floor(k / 3) * 9, 3.4, 0, 6.283); c.fill(); }
     // ---------- hedges, trees, playground equipment (all tall, so drawn on top)
     function hedge(x, y, w, h, burnt) {
       F('rgba(0,0,0,0.25)', x + 3, y + 4, w, h); rrect(x, y, w, h, 9); c.fillStyle = '#1f4a1a'; c.fill();
@@ -4654,7 +4671,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 170';
+  var updMsg = '', VERSION = 'Version 171';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
