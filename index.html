@@ -4113,7 +4113,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 158';
+  var updMsg = '', VERSION = 'Version 159';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6673,7 +6673,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   game.appendChild(devBtn); game.appendChild(devPanel);
   (function () {
     var st = document.createElement('style');
-    st.textContent = '#devBtn{position:absolute;z-index:70;top:calc(var(--insT,0px) + 62px);left:max(10px,env(safe-area-inset-left));font:700 14px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:11px 14px;opacity:.9}#devBtn.x{background:#e0453a;color:#fff;opacity:1}#devBtn.menu{top:calc(var(--insT,0px) + 36px)}' +
+    st.textContent = '#devBtn{position:absolute;z-index:70;top:calc(var(--insT,0px) + 62px);left:max(10px,env(safe-area-inset-left));font:700 14px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:11px 14px;opacity:.9}#devBtn.x{background:#e0453a;color:#fff;opacity:1}#devBtn.menu{top:calc(var(--insT,0px) + 62px)}' +
       '#devPanel{position:absolute;z-index:61;top:0;right:0;bottom:0;width:min(330px,62%);background:rgba(10,8,7,.93);border-left:2px solid #78e0a0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(var(--insT,0px) + 8px) max(12px,env(safe-area-inset-right)) 60px 12px;color:#ebe3d4;font:600 14px/1.3 var(--face-ui);text-align:left}' +
       '#devPanel h3{margin:14px 0 6px;font:700 13px/1 var(--face-ui);letter-spacing:.14em;text-transform:uppercase;color:#78e0a0}' +
       '#devPanel .r{display:flex;flex-wrap:wrap;gap:6px}' +
