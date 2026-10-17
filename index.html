@@ -3249,7 +3249,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if ((z.boss && Math.random() < TUNE.dropBossSpecial) || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', rollSpecialId(), TUNE.crateLife);
     if (z.boss) addPickup(z.x, z.y, 'health', 'big', 1e9);
     else if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', 1e9);
-    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1) * (wave > 17 ? Math.max(0.5, 1 - 0.04 * (wave - 17)) : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', 1e9).to = autoTo;
+    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1) * (wave > 17 ? 0.75 : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', 1e9).to = autoTo;
     if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave) * (ammoLow() ? 1.5 : 1)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
     if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
     if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
@@ -3787,7 +3787,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       // outside the map, or stuck for ages far from everyone: remove it quietly so the wave can end
       // (no route to any player for a few seconds means it is walled off or outside the map)
       if (navOn && !bar && !z.nvOk && !z.boss) z.stO = (z.stO || 0) + dt; else z.stO = 0;
-      if (z.stO > 3 || (!z.boss && (z.stL || 0) >= 12 && pdist > 250)) { zombies.splice(i, 1); i--; continue; }
+      if (z.stO > 3 || (!z.boss && (z.stL || 0) >= 12 && pdist > 250)) { queue.push(z.type); zombies.splice(i, 1); i--; continue; }   // a replacement spawns, so it is never a free kill
       if (bar && distRect(z.x, z.y, bar) < z.r + 4) {
         bar.acc += z.dmg * 0.4 * dt;
         if (bar.acc >= 10) { bar.acc -= 10; bar.planks--; snoise(0.1, 900, 0.07); stone(140, 80, 0.1, 'square', 0.05); addFx(bar.cx, bar.cy, 5, 90, 0.3, 2.5, '170,120,70'); }
@@ -4174,7 +4174,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 164';
+  var updMsg = '', VERSION = 'Version 165';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
