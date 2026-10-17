@@ -2404,7 +2404,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       id: id, name: name, look: look,
       x: MAPCFG.sx + Math.cos(a) * 26, y: MAPCFG.sy + Math.sin(a) * 26, ang: -Math.PI / 2, r: PR - 1,
       hp: 0, fireCd: 0, flash: 0, inv: 0, step: 0, idle: 0, stimCd: 0, sb: 0,
-      wallet: 0, waveCoins: 0, kills: 0,
+      wallet: pvp ? 0 : 50, waveCoins: 0, kills: 0,
       armor: { head: 0, body: 0, legs: 0 },
       upg: { dmg: 0, hp: 0, spd: 0, rate: 0, crit: 0, cval: 0, mag: 0, sammo: 0, rest: 0, rld: 0 },
       perkT: { dp: 0, spd: 0, rf: 0, ex: 0, mg: 0 },
@@ -4113,7 +4113,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 161';
+  var updMsg = '', VERSION = 'Version 162';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
