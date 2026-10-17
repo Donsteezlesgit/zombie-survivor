@@ -612,9 +612,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
     throwGap: 3.6, grace: 15, graceFlat: 7, graceMid: 10, graceMidWave: 20, graceMin: 8, graceMinWave: 30, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45,
-    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, uavEvery: 5, uavShow: 1.5, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9, scarh: 0.65, vector: 0.72, aug: 0.44, val: 0.6, striker: 0.19, aa12: 0.4, svd: 0.95 } }
+    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, uavEvery: 5, uavShow: 1.5, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9, scarh: 0.65, vector: 0.72, aug: 0.44, val: 0.6, striker: 0.19, aa12: 0.4, svd: 0.95, glock: 0.9, m1911: 1.4, uzi: 1.2, rem870: 1.35, p90: 1.1, m249: 0.95, m60: 0.8, negev: 0.64, m82: 0.5, tac50: 0.3, m2: 0.5 } }
   };
-  var PV_TAG = { mp5: 'Fast, close range', ak47: 'All-rounder', m4a1: 'Accurate and quick', python: 'Slow, hits hard', deagle: 'Heavy, 8 shots', benelli: 'Shotgun, close range', scarh: 'Hard hitting rifle', vector: 'Very fast SMG', aug: 'Quick, 42 rounds', val: 'Fast and accurate', striker: 'Drum shotgun', aa12: 'Auto shotgun', svd: 'Slow, heavy sniper' };
+  var PV_TAG = { mp5: 'Fast, close range', ak47: 'All-rounder', m4a1: 'Accurate and quick', python: 'Slow, hits hard', deagle: 'Heavy, 8 shots', benelli: 'Shotgun, close range', scarh: 'Hard hitting rifle', vector: 'Very fast SMG', aug: 'Quick, 42 rounds', val: 'Fast and accurate', striker: 'Drum shotgun', aa12: 'Auto shotgun', svd: 'Slow, heavy sniper', glock: 'Weak but steady', m1911: 'Light pistol', uzi: 'Fast and wild', rem870: 'Slow pump shotgun', p90: 'Fast, 50 rounds', m249: 'Belt-fed LMG', m60: 'Heavy LMG', negev: 'Very fast LMG', m82: 'One-shot sniper', tac50: 'One-shot, very slow', m2: 'Heavy machine gun' };
   var TYPES = {
     walker: { r: 9.9, hp: 40,  spd: 60,  dmg: 8,  cd: 0.9, coins: 2,  skin: '#7f9669', cloth: '#4a4f3c' },
     runner: { r: 8.1,  hp: 24,  spd: 122, dmg: 6,  cd: 0.7, coins: 3,  skin: '#93a56c', cloth: '#6b3b32' },
@@ -1985,7 +1985,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     function pick(v, n, d) { v = Math.floor(+v); return v >= 0 && v < n ? v : d; }
     l = l || {};
     return { c: pick(l.c, LOOK_COLS.length, (id | 0) % LOOK_COLS.length), h: pick(l.h, HATS.length, 0), sk: pick(l.sk, SKINS.length, 2), hs: pick(l.hs, HAIRS.length, 0), hc: pick(l.hc, HAIRC.length, 1),
-      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0), pu: pick(l.pu, 128, 0), lg: cleanLg(l.lg) };
+      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0), pu: pick(l.pu, 1 << 20, 0), lg: cleanLg(l.lg) };
   }
 
 
@@ -2045,7 +2045,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var GSKIN = [{ n: 'Standard', z: 0, c: null }, { n: 'Arctic', z: 1, c: '#9fc4d8' }, { n: 'Blood', z: 1, c: '#a02a24' }, { n: 'Toxic', z: 2, c: '#58b24a' }, { n: 'Violet', z: 2, c: '#8a58c8' }, { n: 'Chrome', z: 3, c: '#c4c8ce' }, { n: 'Gold', z: 4, c: '#d4a52e' }];
   var BTRAIL = [{ n: 'Standard', z: 0, c: null }, { n: 'Red', z: 1, c: '#ff5a4a' }, { n: 'Green', z: 1, c: '#5dff8a' }, { n: 'Blue', z: 2, c: '#6ab8ff' }, { n: 'Violet', z: 2, c: '#c08aff' }, { n: 'Gold', z: 3, c: '#ffd25a' }, { n: 'Rainbow', z: 5, c: 'rainbow' }];
   // extra guns you can buy the right to pick in PvP (you still buy the gun itself with coins in Zombies)
-  var PVP_X = [['scarh', 10], ['vector', 12], ['aug', 15], ['val', 18], ['striker', 20], ['aa12', 22], ['svd', 25]];
+  var PVP_X = [['scarh', 10], ['vector', 12], ['aug', 15], ['val', 18], ['striker', 20], ['aa12', 22], ['svd', 25], ['glock', 1], ['m1911', 3], ['uzi', 4], ['rem870', 5], ['p90', 8], ['m249', 28], ['m60', 35], ['negev', 45], ['m82', 50], ['tac50', 65], ['m2', 80]];
   // repeatable rewards, earned every game: 1 Z-buck for every 10 waves reached and every 500 kills (offline and online)
   var ZB_WAVE_STEP = 10, ZB_KILL_STEP = 500, zbWT = 0, zbKT = 0;
   var PVP_WIN_Z = 4, QUEST_ALL_Z = 1;
@@ -2078,7 +2078,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     try { if (state === 'play' && me && !screen) bannerTo(me, '+' + z + ' Z-buck' + (z === 1 ? '' : 's'), why, 2.6); } catch (e) {}
   }
   function armPay(z, why) { ZB.z += z; armToast(z, why); armSave(); }
-  function dayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function dayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + (d.getHours() >= 12 ? 'b' : 'a'); }   // quests refresh at midnight and midday
   function qSeed(key) { var h = 7, i; for (i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0; return h; }
   function qList() {
     var h = qSeed(dayKey());
@@ -2284,7 +2284,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var h = '', i, it, tabs = ['Guns', 'Earn'], L, q, id, ids = Object.keys(WEAPONS), n, own, on, lo;
     armDay();
     h += '<h1>Armoury</h1><div class="zbal"><b>' + ZB.z + '</b> Z-buck' + (ZB.z === 1 ? '' : 's') + '</div>';
-    if (ZB.news.length) { h += '<div class="msg">' + esc(ZB.news.join(' · ')) + '</div>'; ZB.news = []; }
+    ZB.news = [];
     h += '<div class="mtabs zt">';
     for (i = 0; i < tabs.length; i++) h += '<button class="chip" type="button" data-a="atab" data-i="' + i + '" aria-pressed="' + (armTab === i) + '">' + tabs[i] + '</button>';
     h += '</div>' + (armTab === 0 ? devRow('*') : '') + '<div class="maps zlist">';
@@ -2296,7 +2296,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     } else {
       L = qList();
-      h += '<div class="lab">Daily quests · new ones at midnight</div>';
+      h += '<div class="lab">Daily quests · new ones every 12 hours</div>';
       for (i = 0; i < 3; i++) {
         q = L[i];
         h += '<div class="mapcard zc"><b>' + q.x + '</b><span>' + (ZB.qc[i] ? 'Done · +' + q.z + ' Z' : Math.min(ZB.qp[i], q.n) + ' / ' + q.n + ' · pays ' + q.z + ' Z') + '</span><div class="mbar"><i style="width:' + Math.min(100, ZB.qp[i] / q.n * 100).toFixed(0) + '%"></i></div></div>';
@@ -2775,7 +2775,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (pvp) { shopOpen = false; shop.hidden = true; boxUI.hidden = true; banner.hidden = true; bannerTimer = 0; pvpBegin(); return; }
     startWave(1);
     // a short briefing for this map, then the countdown runs out and wave 1 begins
-    wave = 0; queue = []; phase = 'grace'; graceT = INTRO_T; introOn = true; banner.hidden = true; bannerTimer = 0;
+    wave = 0; queue = []; phase = 'grace'; graceT = net.mode === 'off' ? 0.4 : INTRO_T; introOn = true; banner.hidden = true; bannerTimer = 0;
     shopOpen = false; shop.hidden = true; boxUI.hidden = true;
     showScreen('intro');
   }
@@ -3205,13 +3205,31 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     pickups.push(np);
     return np;
   }
+  // true when every player who relies on reserve ammo is nearly dry (the Glock never runs out, so it does not count)
+  function ammoLow() {
+    var i, j, g, d, cnt = 0, low = 0, fin, fr;
+    if (pvp) return false;
+    for (i = 0; i < players.length; i++) {
+      var P = players[i]; if (P.down) continue;
+      fin = 0; fr = 0;
+      for (j = 0; j < 3; j++) {
+        g = P.slots[j]; if (!g || j >= P.unlocked) continue;
+        d = WEAPONS[g.id]; if (!d || d.res === Infinity) continue;
+        fin++; fr = Math.max(fr, (g.mag + g.res) / (gunMag(d, P) + d.res));
+      }
+      if (!fin) continue;
+      cnt++; if (fr < 0.25) low++;
+    }
+    return cnt > 0 && low === cnt;
+  }
   function pickPerk() {
-    var ids = Object.keys(PERKS), tot = 0, i;
+    var ids = Object.keys(PERKS), tot = 0, i, lowA = ammoLow();
     // no Magnet power-up online (it would drag everyone's coins to the picker)
     if (net.mode !== 'off') ids = ids.filter(function (k) { return k !== 'mg'; });
-    for (i = 0; i < ids.length; i++) tot += PERKS[ids[i]].w;
+    function pw(k) { return PERKS[k].w * (lowA && k === 'ma' ? 6 : 1); }
+    for (i = 0; i < ids.length; i++) tot += pw(ids[i]);
     var r = Math.random() * tot;
-    for (i = 0; i < ids.length; i++) { r -= PERKS[ids[i]].w; if (r <= 0) return ids[i]; }
+    for (i = 0; i < ids.length; i++) { r -= pw(ids[i]); if (r <= 0) return ids[i]; }
     return ids[0];
   }
 
@@ -3231,8 +3249,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if ((z.boss && Math.random() < TUNE.dropBossSpecial) || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', rollSpecialId(), TUNE.crateLife);
     if (z.boss) addPickup(z.x, z.y, 'health', 'big', 1e9);
     else if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', 1e9);
-    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', 1e9).to = autoTo;
-    if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
+    if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1) * (wave > 17 ? Math.max(0.5, 1 - 0.04 * (wave - 17)) : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', 1e9).to = autoTo;
+    if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave) * (ammoLow() ? 1.5 : 1)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
     if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
     if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
   }
@@ -3639,7 +3657,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (!queue.length && zombies.length === 0) waveCleared();
     } else if (phase === 'grace') {
       // short breather between waves; opening the shop pauses this countdown when playing offline
-      graceT -= dt;
+      if (!(introOn && net.mode === 'off' && screen === 'intro')) graceT -= dt;   // offline, wave 1 waits until the tips are closed
       if (graceT <= 0) startWave(wave + 1);
     }
 
@@ -3688,6 +3706,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var dx = tx - z.x, dy = ty - z.y, d = Math.hypot(dx, dy) || 1;
       z.ang = Math.atan2(pdy, pdx);
       var mv = 1, ma = Math.atan2(dy, dx);
+      if (z.rtT > 0) { z.rtT -= dt; ma += z.rtD * 1.3; }   // stuck: swing to one side while a fresh route is worked out
       var lurch = 0.72 + 0.28 * Math.sin(time * 3 + z.seed);
       var drift = bar ? 0 : Math.sin(time * 1.6 + z.seed * 3) * 0.35 * Math.min(1, d / 220);
       if (z.boss && !bar) {
@@ -3753,6 +3772,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         z.stick = 0.6;
         z.x += tdx * z.side * z.spd * 0.8 * dt; z.y += tdy * z.side * z.spd * 0.8 * dt;
       }
+      // stuck check every half second: not getting anywhere while it should be walking
+      z.stT = (z.stT || 0) - dt;
+      if (z.stT <= 0) {
+        z.stT = 0.5;
+        var smv = z.stX === undefined ? 99 : Math.hypot(z.x - z.stX, z.y - z.stY);
+        z.stX = z.x; z.stY = z.y;
+        var swant = !bar && mv !== 0 && !(z.boss && (z.warn > 0 || z.rest > 0 || z.breath > 0 || z.dash > 0)) && !(z.gooT > 0) && d > stopD + 6;
+        if (swant && smv < 5) { z.stN = (z.stN || 0) + 1; z.stL = (z.stL || 0) + 0.5; } else { z.stN = 0; if (smv > 14) z.stL = 0; }
+        if (z.stN >= 3) {
+          z.stN = 0; z.rtT = 1.1; z.rtD = Math.random() < 0.5 ? 1 : -1; z.navT = 0; z.nvOk = false; z.side = -(z.side || 1); z.stick = 0;
+        }
+      }
+      // outside the map, or stuck for ages far from everyone: remove it quietly so the wave can end
+      // (no route to any player for a few seconds means it is walled off or outside the map)
+      if (navOn && !bar && !z.nvOk && !z.boss) z.stO = (z.stO || 0) + dt; else z.stO = 0;
+      if (z.stO > 3 || (!z.boss && (z.stL || 0) >= 12 && pdist > 250)) { zombies.splice(i, 1); i--; continue; }
       if (bar && distRect(z.x, z.y, bar) < z.r + 4) {
         bar.acc += z.dmg * 0.4 * dt;
         if (bar.acc >= 10) { bar.acc -= 10; bar.planks--; snoise(0.1, 900, 0.07); stone(140, 80, 0.1, 'square', 0.05); addFx(bar.cx, bar.cy, 5, 90, 0.3, 2.5, '170,120,70'); }
@@ -4139,7 +4174,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 163';
+  var updMsg = '', VERSION = 'Version 164';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4422,7 +4457,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then the ones hit by goo burst. The burst hurts nearby zombies, but only zombies hit by goo burst.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the gun box to swap to it. The gun box shows the heat.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.'] },
-    { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones each day, shown on the main menu. Finish all three for 1 more. They reset at midnight.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Seven guns (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) have a Use in PvP option on their screen. Buy it once and you can pick that gun in PvP.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
+    { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones every 12 hours (at midnight and midday), shown on the main menu. Finish all three for 1 more.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Every gun that is not already in the PvP list has a Use in PvP option on its screen. Buy it once and you can pick that gun in PvP. Weak guns are cheap, the strongest cost a lot.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
     { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
@@ -4459,12 +4494,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return list;
   }
   function introHtml() {
-    return helpHtml(introSlides(), mapDef(mapId).name, '<div class="swipe" id="introMsg">Swipe for tips · wave 1 starts in <b id="introT">' + Math.max(0, Math.ceil(graceT)) + '</b>s</div><button class="go" data-a="introdone" id="introBtn" type="button">Got it</button>');
+    return helpHtml(introSlides(), mapDef(mapId).name, (net.mode === 'off' ? '<div class="swipe" id="introMsg">Swipe for tips · wave 1 starts when you tap Play</div><button class="go" data-a="introdone" id="introBtn" type="button">Play</button>' : '<div class="swipe" id="introMsg">Swipe for tips · wave 1 starts in <b id="introT">' + Math.max(0, Math.ceil(graceT)) + '</b>s</div><button class="go" data-a="introdone" id="introBtn" type="button">Got it</button>'));
   }
   function pvpIntroHtml() {
     var T = TUNE.pvp, list = [
       { t: 'PvP: the goal', art: 'team', b: ['No zombies. Everyone is against everyone.', 'First to ' + T.target + ' kills wins. Kills show at the top left.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.', 'Attachments and skins from the Armoury work here too.'] },
-      { t: 'Pick your guns', art: 'slots', b: ['Pick 2 different guns from 6: MP5, AK-47, M4A1, Python, Desert Eagle, Benelli. More can be unlocked in the Armoury.', 'Tap Ready when you are done. The round starts when everyone is ready, or after ' + T.pick + ' seconds.', 'You start with one magazine per gun. Ammo crates appear around the map: walk over one to get a magazine for each gun (' + T.spareMags + ' spare at most).'] },
+      { t: 'Pick your guns', art: 'slots', b: ['Pick 2 different guns. You start with 6: MP5, AK-47, M4A1, Python, Desert Eagle, Benelli. Every other gun can be unlocked in the Armoury with Z-bucks.', 'Tap Ready when you are done. The round starts when everyone is ready, or after ' + T.pick + ' seconds.', 'You start with one magazine per gun. Ammo crates appear around the map: walk over one to get a magazine for each gun (' + T.spareMags + ' spare at most).'] },
       { t: 'Aiming', art: 'move', b: ['There is no auto aim. Left thumb walks.', 'Hold the right thumb and point the thin line at someone. Your gun fires only while a player is on the line.', 'Let go and you stop firing.'] },
       { t: 'Down and back up', art: 'stay', b: ['Die and you respawn after ' + T.respawn + ' seconds, far from the others, with ' + T.prot + ' seconds of protection. Firing ends it.', 'While you wait you can change your guns.', 'Stim button: full health and a short speed boost. It takes ' + T.stimCd + ' seconds to recharge, and is ready again when you respawn.'] }
     ];
@@ -5851,7 +5886,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       x = o.x * k; y = o.y * k; c.globalAlpha = (pvp && o !== me) ? Math.min(1, 0.25 + bua) : (o.down ? 0.5 : 1);
       c.fillStyle = o === me ? '#ebe3d4' : LOOK_COLS[o.look.c]; c.beginPath(); c.arc(x, y, o === me ? 5 : 4, 0, 6.283); c.fill();
       if (o === me) { c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke(); labR('You', x + 8, y - 9, '#ebe3d4'); }
-      else if (!(pvp && mapId === 'hangar')) lab(o.name || 'Player', x, y - 11, LOOK_COLS[o.look.c]);
+      else if (!pvp) lab(o.name || 'Player', x, y - 11, LOOK_COLS[o.look.c]);
       c.globalAlpha = 1;
     }
     if (mapId === 'haunted') for (i = 0; i < HH_NAMES.length; i++) lab(HH_NAMES[i][0].replace('GREAT HALL', 'Great Hall'), (HH.cols[i % 3] + HH.Rm / 2) * k, (HH.cols[Math.floor(i / 3)] + HH.Rm / 2) * k, '#e6d9c0', fs + 1);
@@ -6171,7 +6206,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         ctx.beginPath(); ctx.arc(P.x, P.y, 22, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
         if (!pvp) { ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var dtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(dtx, P.x, P.y - 32); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(dtx, P.x, P.y - 32); }
       }
-      if (players.length > 1 && P !== me && !(pvp && mapId === 'hangar')) {
+      if (players.length > 1 && P !== me && !pvp) {
         ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(P.name, P.x, P.y - 62);
         ctx.fillStyle = LOOK_COLS[P.look.c]; ctx.fillText(P.name, P.x, P.y - 62);
