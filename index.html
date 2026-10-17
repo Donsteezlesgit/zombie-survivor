@@ -385,11 +385,13 @@ pre.diag { margin: 0; padding: 10px 12px; width: min(340px, 100%); box-sizing: b
 .mhome .msg { text-align: center; }
 @media (max-height: 520px) {
   .overlay:has(.mhome)::before { flex: 1 1 0; margin: 0; }
-  .mhome { width: min(780px, 100%); display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "title best" "play more" "me more"; column-gap: 36px; row-gap: 8px; align-items: start; }
+  .mhome { width: min(780px, 100%); display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "title best" "play more"; column-gap: 36px; row-gap: 8px; align-items: start; }
   .mtitle { grid-area: title; align-self: center; text-align: left; }
   .mtitle h1 { font-size: 60px; text-align: left; line-height: 1; }
   .mbest { grid-area: best; align-self: center; margin: 0; }
-  .mplay { grid-area: play; gap: 8px; }
+  .mplay { grid-area: play; gap: 8px; display: grid; grid-template-columns: 1fr 1fr; }
+  .mplay .blood { grid-column: 1 / -1; }
+  .mplay .yel { font-size: 15px; letter-spacing: 0.08em; }
   .mme { grid-area: me; margin-top: 0; }
   .mmore { grid-area: more; margin-top: 0; gap: 8px; }
   .mrow b { font-size: 34px; }
@@ -452,6 +454,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
 .shead h2 { font-size: 36px; }
 .go { background: var(--gold); border-radius: 0; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
 .go.alt { background: transparent; border: 1px solid #6a5a4c; clip-path: none; }
+.go.yel { color: #1a0e08; background: var(--gold); }
+.go.blood { color: #1a0e08; background-color: #efe7d8; background-image: radial-gradient(circle at 12% 28%, #9b1c14 0 5px, transparent 6px), radial-gradient(circle at 20% 70%, #7d140e 0 3px, transparent 4px), radial-gradient(circle at 34% 18%, #b3241a 0 2px, transparent 3px), radial-gradient(circle at 63% 82%, #9b1c14 0 6px, transparent 7px), radial-gradient(circle at 72% 24%, #7d140e 0 3px, transparent 4px), radial-gradient(circle at 88% 58%, #b3241a 0 5px, transparent 6px), radial-gradient(circle at 95% 14%, #9b1c14 0 2px, transparent 3px), radial-gradient(ellipse at 4% 100%, #8e1b14 0 16px, transparent 17px), radial-gradient(ellipse at 100% 0%, #8e1b14 0 20px, transparent 21px); }
 .go:disabled { opacity: 0.4; }
 .chip { border-radius: 0; border-color: #6a5a4c; }
 .warn, .card, .buy, .mapcard, .mbest, .boxcard, .perk, textarea.bk, input.bk, pre.diag { border-radius: 0; }
@@ -3933,11 +3937,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<div class="mtitle">' + '<svg class="mmark" viewBox="0 0 100 100" role="img" aria-label="Zombie Survivor"><circle cx="50" cy="50" r="38" fill="none" stroke="#ebe3d4" stroke-width="4"/><path d="M50 4 V17 M50 83 V96 M4 50 H17 M83 50 H96" stroke="#ebe3d4" stroke-width="4" stroke-linecap="round"/><path d="M50 50 L74 26 A34 34 0 0 1 83.9 47 Z" fill="#f2c14e" fill-opacity="0.9"/><circle cx="75" cy="40" r="4" fill="#7f9669"/><circle cx="50" cy="50" r="5.5" fill="#ebe3d4"/></svg>' + '<div><div class="mz">Zombie</div><h1>Survivor</h1></div></div>';
       var bo = bestOverall();
       h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (bo.w || '–') + '</b><small>Highest wave</small>' + (bo.w ? '<small class="mapn">' + esc(bo.wm) + '</small>' : '') + '</div><div><b>' + (bo.k || '–') + '</b><small>Most kills</small>' + (bo.k ? '<small class="mapn">' + esc(bo.km) + '</small>' : '') + '</div></div>' + questPanel() + '</div>';
-      h += '<div class="mplay"><button class="go" data-a="offline" type="button">Play offline</button>';
-      h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button></div>';
-      h += '<div class="mme"><button class="go alt" data-a="me" type="button">Your player</button></div>';
+      h += '<div class="mplay"><button class="go blood" data-a="offline" type="button">Play offline</button>';
+      h += '<button class="go blood" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button>';
+      h += '<button class="go yel" data-a="armoury" type="button">Armoury · ' + ZB.z + ' Z</button>';
+      h += '<button class="go yel" data-a="me" type="button">Your player</button></div>';
       h += '<div class="mmore"><button class="go alt" data-a="help" type="button">How to play</button>';
-      h += '<button class="go alt" data-a="armoury" type="button">Armoury · ' + ZB.z + ' Z</button>';
       h += '<button class="go alt" data-a="settings" type="button">Settings</button></div>';
       h += '</div>';
       if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
@@ -4108,7 +4112,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 156';
+  var updMsg = '', VERSION = 'Version 157';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
