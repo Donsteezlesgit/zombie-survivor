@@ -1712,21 +1712,23 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       WL(street, y0, 340, true, [[18, 88], [128, 208], [252, 322]]);                          // street wall: window, door section (pocket), window
       // inside: two walls with doorways, and a divider in the hall
       WL(x0, 443, 260, false, [[hi === 0 ? 30 : 170, hi === 0 ? 100 : 240]]);
-      WL(x0, 557, 260, false, [[hi === 0 ? 160 : 40, hi === 0 ? 230 : 110]]);
+      WL(x0, 557, 260, false, [[100, 170]]);
       WL(x0 + 130, 443, 114, true, [[22, 92]]);
       shadow(x0, y0, 260, 340, 70);
-      // the street door: a spawn pocket in front of it, closed with planks
-      var d = { ex: street, ey: 500 + O, nx: hs.dir, ny: 0 }, hz = true, tx = 0, ty = d.nx, s2, r2;
-      for (s2 = -1; s2 <= 1; s2 += 2) {
-        r2 = mkRect(d.ex + d.nx * (POCKET_D / 2 + WALL_T / 2), d.ey + ty * s2 * (POCKET_HW + WALL_T / 2), POCKET_D + WALL_T, WALL_T, hz);
-        r2.side = true; RECTS.push(r2);
-      }
-      var bar = mkRect(d.ex + d.nx * (POCKET_D + WALL_T / 2), d.ey, WALL_T, POCKET_HW * 2, hz);
-      bar.bar = true; bar.max = TUNE.barPlanks; bar.planks = bar.max; bar.acc = 0; bar.rt = 0; bar.hz = hz;
-      bar.cx = bar.x + bar.w / 2; bar.cy = bar.y + bar.h / 2; RECTS.push(bar);
-      var pk = mkRect(d.ex + d.nx * POCKET_D / 2, d.ey, POCKET_D, POCKET_HW * 2, hz);
-      var roof = { x: x0, y: y0 + O, w: 260, h: 340 };
-      BLD.push({ roof: roof, bar: bar, pocket: pk, sx: d.ex + d.nx * POCKET_D * 0.5, sy: d.ey, tx: tx, ty: ty, nx: d.nx, ny: 0, ex: d.ex, ey: d.ey });
+      // the door: a pocket on each side of the wall (street and hall), each closed with its own planks, so zombies can go either way
+      [hs.dir, -hs.dir].forEach(function (dn) {
+        var d = { ex: street, ey: 500 + O, nx: dn, ny: 0 }, hz = true, tx = 0, ty = d.nx, s2, r2;
+        for (s2 = -1; s2 <= 1; s2 += 2) {
+          r2 = mkRect(d.ex + d.nx * (POCKET_D / 2 + WALL_T / 2), d.ey + ty * s2 * (POCKET_HW + WALL_T / 2), POCKET_D + WALL_T, WALL_T, hz);
+          r2.side = true; RECTS.push(r2);
+        }
+        var bar = mkRect(d.ex + d.nx * (POCKET_D + WALL_T / 2), d.ey, WALL_T, POCKET_HW * 2, hz);
+        bar.bar = true; bar.max = TUNE.barPlanks; bar.planks = bar.max; bar.acc = 0; bar.rt = 0; bar.hz = hz;
+        bar.cx = bar.x + bar.w / 2; bar.cy = bar.y + bar.h / 2; RECTS.push(bar);
+        var pk = mkRect(d.ex + d.nx * POCKET_D / 2, d.ey, POCKET_D, POCKET_HW * 2, hz);
+        var roof = { x: x0, y: y0 + O, w: 260, h: 340 };
+        BLD.push({ roof: roof, bar: bar, pocket: pk, sx: d.ex + d.nx * POCKET_D * 0.5, sy: d.ey, tx: tx, ty: ty, nx: d.nx, ny: 0, ex: d.ex, ey: d.ey });
+      });
     });
     // ---- the two garages (solid blocks, zombies burst out of the door into the street lane)
     [{ y: 50, ny: 1 }, { y: 800, ny: -1 }].forEach(function (g) {
@@ -4652,7 +4654,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 168';
+  var updMsg = '', VERSION = 'Version 169';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4929,7 +4931,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Drops and power-ups', art: 'drops', b: ['Health: rare. Restores 30. Bosses always drop a big one that restores 50.', 'Ammo: refills a bit of every gun and is pulled toward you.', 'Online, a power-up goes to the whole team. Power-ups last 10 seconds: Double coins, Super speed, Rapid fire, Explosive rounds, Max ammo (instant refill) and Magnet (every coin on the map flies to you; offline only).', 'Power-up timers pause while you hold a special weapon.', 'Power-ups get rarer after wave 20, but coins keep growing.', 'Health and ammo drops stay on the floor until the next wave starts. They blink between waves, as a warning that they are about to go.'] },
     { t: 'Barriers and the map', art: 'bar', b: ['Four buildings spawn the zombies. Each has a barrier of 5 planks.', 'Zombies smash a plank at a time. When it is gone they pour out.', 'Stand next to a broken barrier to rebuild it. It earns a few coins, with a limit per wave.', 'Barriers stay damaged between waves. Only a new game resets them.', 'Buildings block walking but not bullets, which funnels zombies at you.', 'The minimap bottom-left shows zombies in red, boxes in gold, barriers as red blocks and teammates as coloured dots.', 'Tap the minimap for a big map. The game keeps running: your left thumb still walks, and a tap on the right half of the screen (or Close) shuts it.'] },
     { t: 'The Hangar', art: 'hangar', b: ['A third map, and it is pitch dark. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time.', 'You only see by your torch: a beam that points where you aim. It stops at walls, containers and crates, so corners hide the dead.', 'Zombies come in through four windows, one on each wall. A dim red lamp by each window shows where. Rebuild the planks like usual.', 'Shipping containers, crates and a low-walled deck in the middle block walking and the torch. Barrels and the catwalk rails do not.', 'Mystery boxes work as normal, but you have to find them in the dark. Teammates only show as a small glow. In PvP, opponents have no glow and no nametag.', 'It is also the PvP map. Offline and online zombie games both work.'] },
-    { t: 'Dummy Town', art: 'bar', b: ['A fourth map, in bright sunset. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time, for zombies or PvP.', 'Two houses face each other across a long street, with a garage at each end of the lane and a garden behind each house.', 'Zombies burst out of the two street doors and the two garages. Rebuild the planks like usual.', 'You can climb in through the smashed windows. The bus, sandbags and hedges stop bullets. Cars and fences only stop walking.', 'In PvP you start in the gardens. Blood never stays on anything you can not walk through.'] },
+    { t: 'Dummy Town', art: 'bar', b: ['A fourth map, in bright sunset. Unlock it offline by clearing wave 10 on Beginners Ground. Online, the host can pick it any time, for zombies or PvP.', 'Two houses face each other across a long street, with a garage at each end of the lane and a garden behind each house.', 'Zombies burst out of the two house doors and the two garages. Each house door has planks on both sides, street and hall, so they can come out either way. Rebuild the planks like usual.', 'You can climb in through the smashed windows. The bus, sandbags and hedges stop bullets. Cars and fences only stop walking.', 'In PvP you start in the gardens. Blood never stays on anything you can not walk through.'] },
     { t: 'Haunted House', art: 'haunted', b: ['A second map. Unlock it offline by clearing wave 20 on Beginners Ground. Online, the host can pick it any time.', 'Zombies climb in through the four windows. Rebuild the planks like usual.', 'Rooms are joined by corridors with a door at each end. Stand next to a door for 3 seconds to open or close it.', 'Zombies can open a shut door too, but it takes them 5 seconds. Shut doors to buy time and split them up.', 'Shut doors block you, zombies and bullets.', 'Mystery boxes only appear inside the house.', 'Sometimes (about 1 wave in 4) a room glows gold as a bonus room. It is announced at the start of the wave. Kill zombies while you stand inside it for double coins and more ammo drops. They fly straight to you, no need to pick them up.'] },
     { t: 'Ghost rounds', art: 'ghosts', b: ['Haunted House only. Every 10th wave (10, 20, 30...) is a ghost round.', 'No zombies spawn and the usual boss is skipped. Only small ghosts come.', 'Ghosts are fast and have lots of health, but barely hurt you.', 'They fly through walls and shut doors. Your bullets still stop at walls.', 'Each ghost drops a lot of coins when it dies.'] },
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
@@ -4964,7 +4966,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       list.push({ t: 'Ghost rounds', art: 'ghosts', b: ['Every 10th wave is a ghost round. No zombies and no normal boss.', 'Ghosts are quick, tough and fly straight through walls and doors. Their hits are weak.', 'Each ghost drops lots of coins. Walls only stop your bullets, so shoot them when you can see them.'] });
       list.push({ t: 'Bonus rooms', art: 'bonus', b: ['About 1 wave in 4, one room glows gold. The wave banner tells you which.', 'Kill zombies while you stand inside it for double coins and more ammo drops.', 'Coins and ammo from your kills there fly straight to you.', 'A gold ring on the minimap points to it.'] });
     } else if (mapId === 'dummytown') {
-      list.push({ t: 'Dummy Town', art: 'bar', b: ['Sunset on a worn-out street. Two houses face each other, with a garage at each end of the lane.', 'Zombies burst out of the two street doors and the two garages. Stand next to broken planks to rebuild them.', 'Houses have smashed windows you can climb through. Bus, sandbags and hedges stop bullets. Cars and fences only stop walking.'] });
+      list.push({ t: 'Dummy Town', art: 'bar', b: ['Sunset on a worn-out street. Two houses face each other, with a garage at each end of the lane.', 'Zombies burst out of the two house doors (planks on the street side and the hall side) and the two garages. Stand next to broken planks to rebuild them.', 'Houses have smashed windows you can climb through. Bus, sandbags and hedges stop bullets. Cars and fences only stop walking.'] });
       list.push({ t: 'Stay alive', art: 'stay', b: ['You start with 50 coins. Kills drop more, to spend on guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
     } else if (mapId === 'hangar') {
       list.push({ t: 'The Hangar', art: 'hangar', b: ['It is pitch dark. You only see by your torch, which points where you aim.', 'The beam stops at containers, crates and walls. Use corners to hide.', 'Zombies come through four windows, one on each wall. A dim red lamp marks each one. Stand next to broken planks to rebuild them.'] });
