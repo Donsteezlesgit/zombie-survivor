@@ -4113,7 +4113,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 159';
+  var updMsg = '', VERSION = 'Version 160';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6713,7 +6713,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (net.mode === 'client') { DEV.msg = 'Dev actions only work for the host or offline.'; devRender(); return; }
     DEV.msg = '';
     if (a === 'close') { DEV.open = false; devPanel.hidden = true; return; }
-    else if (a === 'zb') { ZB.z += +v; armSave(); DEV.msg = 'Z-bucks: ' + ZB.z; }
+    else if (a === 'zb') { ZB.z = Math.max(0, ZB.z + +v); armSave(); DEV.msg = 'Z-bucks: ' + ZB.z; }
     else if (a === 'zb0') { ZB.z = 0; armSave(); DEV.msg = 'Z-bucks: 0'; }
     else if (a === 'keepall') { armKeepSet(Object.keys(WEAPONS), true); DEV.msg = 'Everything is now really unlocked.'; }
     else if (a === 'keepnone') { armKeepSet(Object.keys(WEAPONS), false); DEV.msg = 'All keeps removed. Fitted items come off when dev mode goes off.'; }
@@ -6887,6 +6887,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + b('Add fake player', 'addbot') + b('Remove fake players', 'rmbots') + '</div><div class="m" style="color:#9c8f7e">Fresh game (solo, or your whole room when hosting) on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
     if (state !== 'play') {
       h += '<h3>Armoury</h3><div class="r">' + b('+10 Z', 'zb', 10) + b('+100 Z', 'zb', 100) + b('+1,000 Z', 'zb', 1000) + b('Set to 0', 'zb0') + '</div>';
+      h += '<div class="r" style="margin-top:6px">' + b('-10 Z', 'zb', -10) + b('-100 Z', 'zb', -100) + b('-1,000 Z', 'zb', -1000) + '</div>';
       h += '<div class="r" style="margin-top:6px">' + b('Keep everything', 'keepall') + b('Remove all keeps', 'keepnone') + '</div>';
       h += '<div class="r" style="margin-top:6px">' + b('Reset daily quests', 'qreset') + b('Give starter 10 Z', 'gift') + '</div>';
       h += '<div class="m" style="color:#9c8f7e">Z-bucks: ' + ZB.z + '. The rest of the dev tools appear once a game is running.</div>';
