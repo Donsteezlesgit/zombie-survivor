@@ -1943,14 +1943,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function cleanLg(o) {
     var r = {}, k, v, m, sk;
     if (!o || typeof o !== 'object') return r;
-    for (k in WEAPONS) { v = o[k]; if (!v || typeof v !== 'object') continue; m = Math.floor(+v[0]) & 63; sk = Math.floor(+v[1]); if (!(sk >= 0 && sk < 7)) sk = 0; if (m || sk) r[k] = [m, sk]; }
+    for (k in WEAPONS) { v = o[k]; if (!v || typeof v !== 'object') continue; m = Math.floor(+v[0]) & 63; sk = Math.floor(+v[1]); if (!(sk >= 0 && sk < 7)) sk = 0; var tt = Math.floor(+v[2]); if (!(tt >= 0 && tt < 7)) tt = 0; if (m || sk || tt) r[k] = [m, sk, tt]; }
     return r;
   }
   function cleanLook(l, id) {
     function pick(v, n, d) { v = Math.floor(+v); return v >= 0 && v < n ? v : d; }
     l = l || {};
     return { c: pick(l.c, LOOK_COLS.length, (id | 0) % LOOK_COLS.length), h: pick(l.h, HATS.length, 0), sk: pick(l.sk, SKINS.length, 2), hs: pick(l.hs, HAIRS.length, 0), hc: pick(l.hc, HAIRC.length, 1),
-      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0), bt: pick(l.bt, 7, 0), pu: pick(l.pu, 128, 0), lg: cleanLg(l.lg) };
+      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0), pu: pick(l.pu, 128, 0), lg: cleanLg(l.lg) };
   }
 
 
@@ -2027,6 +2027,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       ZB.qp = (zj.qp || [0, 0, 0]).map(function (v) { return Math.floor(+v) || 0; }); ZB.qc = (zj.qc || [0, 0, 0]).map(function (v) { return v ? 1 : 0; }); ZB.qb = zj.qb ? 1 : 0;
     }
   })();
+  (function () {
+    var k, n = 0;
+    for (k in ZB.own) if (/^t:\d+$/.test(k)) { n += BTRAIL[+k.slice(2)] ? BTRAIL[+k.slice(2)].z : 0; delete ZB.own[k]; }
+    if (n) { ZB.z += n; ZB.news.unshift('Your old shared bullet trails were refunded: +' + n + ' Z. Trails are per gun now.'); }
+    try { var lk = JSON.parse(localStorage.getItem('zs-look') || 'null'); if (lk && lk.bt) { delete lk.bt; localStorage.setItem('zs-look', JSON.stringify(lk)); } } catch (e) {}
+    if (n) try { localStorage.setItem('zs-arm', JSON.stringify({ z: ZB.z, own: ZB.own, ms: ZB.ms, qd: ZB.qd, qp: ZB.qp, qc: ZB.qc, qb: ZB.qb })); } catch (e) {}
+  })();
   function armSave() { try { localStorage.setItem('zs-arm', JSON.stringify({ z: ZB.z, own: ZB.own, ms: ZB.ms, qd: ZB.qd, qp: ZB.qp, qc: ZB.qc, qb: ZB.qb })); } catch (e) {} }
   function armToast(z, why) {
     ZB.news.unshift('+' + z + ' Z-buck' + (z === 1 ? '' : 's') + ': ' + why); if (ZB.news.length > 6) ZB.news.length = 6;
@@ -2067,11 +2074,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function gunMul(id) { var pr = WEAPONS[id].price; return pr <= 300 ? 1 : (pr <= 1200 ? 1.5 : 2); }
   function attPrice(id, i) { return Math.ceil(ATT[i].z * gunMul(id)); }
   function skinPrice(id, i) { return Math.ceil(GSKIN[i].z * gunMul(id)); }
+  function trailPrice(id, i) { return Math.ceil(BTRAIL[i].z * gunMul(id)); }
   function pvpIdx(id) { for (var i = 0; i < PVP_X.length; i++) if (PVP_X[i][0] === id) return i; return -1; }
   function armHas(key) { return DEV.on || !!ZB.own[key]; }
   function gunLo(look, id) { var o = look && look.lg && look.lg[id]; return o || null; }
   function atM(P, id) { var o = P && gunLo(P.look, id); return o ? o[0] : 0; }
-  function gunOwned(id) { var n = 0, i; for (i = 0; i < ATT.length; i++) if (ZB.own['a:' + id + ':' + i]) n++; for (i = 1; i < GSKIN.length; i++) if (ZB.own['s:' + id + ':' + i]) n++; return n; }
+  function gunOwned(id) { var n = 0, i; for (i = 0; i < ATT.length; i++) if (ZB.own['a:' + id + ':' + i]) n++; for (i = 1; i < GSKIN.length; i++) if (ZB.own['s:' + id + ':' + i]) n++; for (i = 1; i < BTRAIL.length; i++) if (ZB.own['t:' + id + ':' + i]) n++; return n; }
   // the PvP unlocks travel with your look so the host and the other players know them
   function armSyncPu() { var m = 0, i; for (i = 0; i < PVP_X.length; i++) if (ZB.own['p:' + PVP_X[i][0]]) m |= 1 << i; myLook.pu = m; }
   function pvpAllowed(P, id) {
@@ -2079,16 +2087,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var i = pvpIdx(id);
     return i >= 0 && (((P && P.look && P.look.pu) | 0) & (1 << i)) !== 0;
   }
-  function lgSet(id, mask, skin) {
+  function lgSet(id, mask, skin, trail) {
     if (!myLook.lg) myLook.lg = {};
-    if (!mask && !skin) delete myLook.lg[id]; else myLook.lg[id] = [mask, skin];
+    if (!mask && !skin && !trail) delete myLook.lg[id]; else myLook.lg[id] = [mask, skin, trail | 0];
   }
   function armBuy(kind, id, v) {
     var price, key;
     if (kind === 'a') { key = 'a:' + id + ':' + v; price = attPrice(id, v); }
     else if (kind === 's') { key = 's:' + id + ':' + v; price = skinPrice(id, v); }
     else if (kind === 'p') { key = 'p:' + id; price = PVP_X[pvpIdx(id)][1]; }
-    else { key = 't:' + v; price = BTRAIL[v].z; }
+    else { key = 't:' + id + ':' + v; price = trailPrice(id, v); }
     if (ZB.own[key] || ZB.z < price) return false;
     ZB.z -= price; ZB.own[key] = 1; armSave();
     if (kind === 'p') { armSyncPu(); saveMe(); }
@@ -2096,16 +2104,19 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   var gAnim = null;
   function armEquip(kind, id, v) {
-    var lo, mask, skin;
-    if (kind === 't') { if (!armHas('t:' + v)) return; myLook.bt = (myLook.bt === v ? 0 : v); saveMe(); return; }
+    var lo, mask, skin, tr;
     if (kind === 'a') {
       if (!armHas('a:' + id + ':' + v)) return;
-      lo = gunLo(myLook, id) || [0, 0]; mask = lo[0] ^ ATT[v].bit; lgSet(id, mask, lo[1]);
+      lo = gunLo(myLook, id) || [0, 0, 0]; mask = lo[0] ^ ATT[v].bit; lgSet(id, mask, lo[1], lo[2]);
       if (gAnim && gAnim.id === id) gAnim.target[ATT[v].bit] = (mask & ATT[v].bit) ? 1 : 0;
     } else if (kind === 's') {
       if (!armHas('s:' + id + ':' + v)) return;
-      lo = gunLo(myLook, id) || [0, 0]; skin = lo[1] === v ? 0 : v; lgSet(id, lo[0], skin);
+      lo = gunLo(myLook, id) || [0, 0, 0]; skin = lo[1] === v ? 0 : v; lgSet(id, lo[0], skin, lo[2]);
       if (gAnim && gAnim.id === id) { gAnim.skinFrom = gAnim.skinNow; gAnim.skinTo = skin; gAnim.skinT = 0; }
+    } else if (kind === 't') {
+      if (!armHas('t:' + id + ':' + v)) return;
+      lo = gunLo(myLook, id) || [0, 0, 0]; tr = lo[2] === v ? 0 : v; lgSet(id, lo[0], lo[1], tr);
+      if (gAnim && gAnim.id === id) gAnim.trail = tr;
     }
     saveMe();
   }
@@ -2148,19 +2159,29 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), r = Math.round((x >> 16) + ((y >> 16) - (x >> 16)) * t), g = Math.round(((x >> 8) & 255) + (((y >> 8) & 255) - ((x >> 8) & 255)) * t), bl = Math.round((x & 255) + ((y & 255) - (x & 255)) * t);
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1);
   }
-  function drawGunBig(c, W, H, id, prog, skC) {
-    var d = WEAPONS[id], S = Math.min(W * 0.78 / (d.len + 22), H * 0.5 / 14);
+  function drawGunBig(c, W, H, id, prog, skC, trail) {
+    var d = WEAPONS[id], S = Math.min(W * 0.92 / (d.len + 18 + 30), H * 0.5 / 14);
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H);
     c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W / 2, H * 0.78, W * 0.4, H * 0.07, 0, 0, 6.283); c.fill();
-    c.save(); c.translate(W / 2 - (d.len - 6) * S / 2, H * 0.46); c.scale(S, S);
+    c.save(); c.translate((W - (d.len + 18 + 30) * S) / 2 + 13 * S, H * 0.46); c.scale(S, S);
     gunParts(c, d, skC, 1, '#0d0a08'); drawAtt(c, d, 0, '#0d0a08', prog);
+    if (trail) {
+      var tcol = BTRAIL[trail].c, now = performance.now(), k, x0, a0;
+      c.lineCap = 'round'; c.lineWidth = 1.1;
+      for (k = 0; k < 4; k++) {
+        x0 = ((now * 0.03 + k * 6) % 24); a0 = 1 - x0 / 24;
+        c.globalAlpha = a0; c.strokeStyle = tcol === 'rainbow' ? 'hsl(' + ((now / 4 + k * 60) % 360).toFixed(0) + ',90%,62%)' : tcol;
+        c.beginPath(); c.moveTo(d.len + 14 + x0, -1); c.lineTo(d.len + 14 + x0 + 6, -1); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
     c.restore();
   }
   function gunAnimStart(id) {
-    var lo = gunLo(myLook, id) || [0, 0], i, pr = {}, tg = {};
+    var lo = gunLo(myLook, id) || [0, 0, 0], i, pr = {}, tg = {};
     for (i = 0; i < ATT.length; i++) { pr[ATT[i].bit] = (lo[0] & ATT[i].bit) ? 1 : 0; tg[ATT[i].bit] = pr[ATT[i].bit]; }
     var sc = lo[1] ? GSKIN[lo[1]].c : null;
-    gAnim = { id: id, prog: pr, target: tg, skinNow: sc, skinFrom: sc, skinTo: lo[1], skinT: 1, last: performance.now(), raf: 0 };
+    gAnim = { id: id, trail: lo[2] | 0, prog: pr, target: tg, skinNow: sc, skinFrom: sc, skinTo: lo[1], skinT: 1, last: performance.now(), raf: 0 };
     gunAnimFrame();
   }
   function gunAnimFrame() {
@@ -2172,7 +2193,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var cf = g.skinFrom ? g.skinFrom : null, ct = g.skinTo ? GSKIN[g.skinTo].c : null;
     tc = (cf && ct) ? lerpHex(cf, ct, g.skinT) : (g.skinT < 0.5 ? cf : ct); if (g.skinT >= 1) tc = ct;
     g.skinNow = tc;
-    if (cv) drawGunBig(cv.getContext('2d'), cv.width, cv.height, g.id, g.prog, tc);
+    if (cv) drawGunBig(cv.getContext('2d'), cv.width, cv.height, g.id, g.prog, tc, g.trail);
     g.raf = requestAnimationFrame(gunAnimFrame);
   }
   function drawArmThumbs() {
@@ -2194,7 +2215,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return h + '</button>';
   }
   function armHtml() {
-    var h = '', i, it, tabs = ['Guns', 'Bullet trails', 'Earn'], L, q, id, ids = Object.keys(WEAPONS), n, own, on, lo;
+    var h = '', i, it, tabs = ['Guns', 'Earn'], L, q, id, ids = Object.keys(WEAPONS), n, own, on, lo;
     armDay();
     h += '<h1>Armoury</h1><div class="zbal"><b>' + ZB.z + '</b> Z-buck' + (ZB.z === 1 ? '' : 's') + '</div>';
     if (ZB.news.length) { h += '<div class="msg">' + esc(ZB.news.join(' · ')) + '</div>'; ZB.news = []; }
@@ -2205,14 +2226,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<div class="lab">Pick a gun to fit attachments and skins</div>';
       for (i = 0; i < ids.length; i++) {
         id = ids[i]; n = gunOwned(id); lo = gunLo(myLook, id);
-        h += '<button class="mapcard zc zg" type="button" data-a="agun" data-id="' + id + '"><canvas width="220" height="70" data-gun="' + id + '" aria-hidden="true"></canvas><b>' + esc(WEAPONS[id].name) + '</b><span>' + WEAPONS[id].cls + ' · ' + n + ' of ' + (ATT.length + GSKIN.length - 1) + ' unlocked' + (pvpIdx(id) >= 0 && ZB.own['p:' + id] ? ' · PvP' : '') + '</span></button>';
-      }
-    } else if (armTab === 1) {
-      h += '<div class="lab">Bullet trails · others see yours too</div>';
-      for (i = 1; i < BTRAIL.length; i++) {
-        it = BTRAIL[i]; own = armHas('t:' + i); on = myLook.bt === i;
-        h += '<div class="mapcard zc"><b><i class="zsw" style="background:' + (it.c === 'rainbow' ? 'linear-gradient(90deg,#ff5a4a,#ffd25a,#5dff8a,#6ab8ff,#c08aff)' : it.c) + '"></i>' + it.n + '</b>' + (own ? '<button class="go alt" type="button" data-a="aequip" data-k="t" data-id="" data-v="' + i + '">' + (on ? 'Equipped · tap to remove' : 'Equip') + '</button>'
-          : '<button class="go" type="button" data-a="abuy" data-k="t" data-id="" data-v="' + i + '"' + (ZB.z < it.z ? ' disabled' : '') + '>Buy · ' + it.z + ' Z</button>') + '</div>';
+        h += '<button class="mapcard zc zg" type="button" data-a="agun" data-id="' + id + '"><canvas width="220" height="70" data-gun="' + id + '" aria-hidden="true"></canvas><b>' + esc(WEAPONS[id].name) + '</b><span>' + WEAPONS[id].cls + ' · ' + n + ' of ' + (ATT.length + GSKIN.length + BTRAIL.length - 2) + ' unlocked' + (pvpIdx(id) >= 0 && ZB.own['p:' + id] ? ' · PvP' : '') + '</span></button>';
       }
     } else {
       L = qList();
@@ -2231,7 +2245,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return h;
   }
   function gunHtml() {
-    var id = armGun, d = WEAPONS[id], h = '', i, lo = gunLo(myLook, id) || [0, 0], own, on, pi = pvpIdx(id), pr;
+    var id = armGun, d = WEAPONS[id], h = '', i, lo = gunLo(myLook, id) || [0, 0, 0], own, on, pi = pvpIdx(id), pr;
     h += '<h1>' + esc(d.name) + '</h1><div class="zbal"><b>' + ZB.z + '</b> Z-buck' + (ZB.z === 1 ? '' : 's') + '</div>';
     h += '<div class="gscr"><div class="gl"><canvas id="gcv" width="560" height="300" aria-hidden="true"></canvas><div class="mis">' + d.cls + ' · attachments and skins on this gun only</div></div><div class="gr">';
     h += '<div class="lab">Attachments</div>';
@@ -2244,6 +2258,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 1; i < GSKIN.length; i++) {
       own = armHas('s:' + id + ':' + i); on = lo[1] === i; pr = skinPrice(id, i);
       h += '<button class="gs' + (on ? ' on' : '') + '" type="button" data-a="' + (own ? 'aequip' : 'abuy') + '" data-k="s" data-id="' + id + '" data-v="' + i + '"' + (!own && ZB.z < pr ? ' disabled' : '') + '><i style="background:' + GSKIN[i].c + '"></i><b>' + GSKIN[i].n + '</b><small>' + (own ? (on ? 'On' : 'Fit') : pr + ' Z') + '</small></button>';
+    }
+    h += '</div><div class="lab">Bullet trail</div><div class="gsk">';
+    for (i = 1; i < BTRAIL.length; i++) {
+      own = armHas('t:' + id + ':' + i); on = lo[2] === i; pr = trailPrice(id, i);
+      h += '<button class="gs' + (on ? ' on' : '') + '" type="button" data-a="' + (own ? 'aequip' : 'abuy') + '" data-k="t" data-id="' + id + '" data-v="' + i + '"' + (!own && ZB.z < pr ? ' disabled' : '') + '><i style="background:' + (BTRAIL[i].c === 'rainbow' ? 'linear-gradient(90deg,#ff5a4a,#ffd25a,#5dff8a,#6ab8ff,#c08aff)' : BTRAIL[i].c) + '"></i><b>' + BTRAIL[i].n + '</b><small>' + (own ? (on ? 'On' : 'Fit') : pr + ' Z') + '</small></button>';
     }
     h += '</div>';
     if (pi >= 0) {
@@ -3204,7 +3223,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var AM = d.special ? 0 : atM(P, d.id), critP = 0.1 * P.upg.crit + ((AM & 32) ? 0.1 : 0), expl = P.perkT.ex > 0, pm = pvp ? (TUNE.pvp.dmg[d.id] || 1) : 1;
     var mx = P.x + Math.cos(P.ang) * (d.len + 10), my = P.y + Math.sin(P.ang) * (d.len + 10);
     if (pvp) P.inv = 0;   // spawn protection ends the moment you fire
-    var sprF = d.special ? 1 : ((AM & 1) ? 0.75 : 1) * ((AM & 16) ? 0.85 : 1), btI = (P.look && P.look.bt) | 0;
+    var sprF = d.special ? 1 : ((AM & 1) ? 0.75 : 1) * ((AM & 16) ? 0.85 : 1), btI = d.special ? 0 : ((gunLo(P.look, d.id) || [0, 0, 0])[2] | 0);
     for (i = 0; d.kind !== 'zap' && i < d.pellets; i++) {
       if (d.pellets > 1) a = P.ang + ((i / (d.pellets - 1)) - 0.5) * d.spread * sprF + rnd(-0.04, 0.04);
       else a = P.ang + rnd(-d.spread * sprF / 2, d.spread * sprF / 2);
@@ -4053,7 +4072,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 152';
+  var updMsg = '', VERSION = 'Version 153';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4162,7 +4181,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'atab') { armTab = +b.dataset.i; armMsg = ''; renderScreen(); }
     else if (a === 'agun') { armGun = b.dataset.id; gAnim = null; ov.scrollTop = 0; showScreen('gun'); }
     else if (a === 'armback') { gAnim = null; showScreen('armoury'); }
-    else if (a === 'armq') { armTab = 2; armMsg = ''; showScreen('armoury'); }
+    else if (a === 'armq') { armTab = 1; armMsg = ''; showScreen('armoury'); }
     else if (a === 'abuy' || a === 'aequip') {
       var ak = b.dataset.k, aid = b.dataset.id, av = +b.dataset.v;
       if (a === 'abuy') { if (armBuy(ak, aid, av)) { if (ak !== 'p') armEquip(ak, aid, av); tone(700, 1100, 0.07, 'square', 0.05); } } else armEquip(ak, aid, av);
@@ -4258,16 +4277,33 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   });
   // tap on the empty space around a menu to close it, same as its Back / Done / Resume button
   var DISMISS = { offline: 'back', online: 'back', maps: 'back', settings: 'back', armoury: 'back', gun: 'armback', devpw: 'back', backup: 'back', diag: 'back', help: 'helpdone', guide: 'helpdone', pause: 'resume', join: 'leave' };
-  ov.addEventListener('click', function (e) {
-    if (e.target !== ov) return;
+  function ovBack() {
     var sel, b2;
-    if (screen === 'me') { saveMe(); mePrev = null; ensureAudio(); showScreen('main'); return; }
+    if (screen === 'me') { saveMe(); mePrev = null; ensureAudio(); showScreen('main'); return true; }
     sel = DISMISS[screen];
-    if (!sel) return;
+    if (!sel) return false;
     b2 = ov.querySelector('[data-a="' + sel + '"]');
-    if (!b2 || b2.disabled) return;
-    ensureAudio(); ovAct(b2.dataset.a, b2);
-  });
+    if (!b2 || b2.disabled) return false;
+    ensureAudio(); ovAct(b2.dataset.a, b2); return true;
+  }
+  ov.addEventListener('click', function (e) { if (e.target !== ov) return; ovBack(); });
+  // swipe right from the left edge = Back, on the menu screens that have a Back or Done button
+  var SWIPE_OK = { me: 1, offline: 1, online: 1, maps: 1, settings: 1, armoury: 1, gun: 1, devpw: 1, backup: 1, diag: 1 }, swp = null;
+  ov.addEventListener('touchstart', function (e) {
+    var t = e.touches[0];
+    swp = (e.touches.length === 1 && SWIPE_OK[screen] && t.clientX <= 28) ? { x: t.clientX, y: t.clientY, ok: true } : null;
+  }, { passive: true });
+  ov.addEventListener('touchmove', function (e) {
+    if (!swp || !swp.ok) return;
+    var t = e.touches[0];
+    if (Math.abs(t.clientY - swp.y) > 70 && Math.abs(t.clientY - swp.y) > Math.abs(t.clientX - swp.x)) swp = null;
+  }, { passive: true });
+  ov.addEventListener('touchend', function (e) {
+    if (!swp) return;
+    var t = e.changedTouches[0], dx = t.clientX - swp.x, dy = Math.abs(t.clientY - swp.y);
+    swp = null;
+    if (dx > 70 && dy < 60) ovBack();
+  }, { passive: true });
   ov.addEventListener('input', function (e) { if (e.target && e.target.id === 'codeIn') { joinCode = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4); e.target.value = joinCode; } });
 
   function pauseGame() {
@@ -4317,8 +4353,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then the ones hit by goo burst. The burst hurts nearby zombies, but only zombies hit by goo burst.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the gun box to swap to it. The gun box shows the heat.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
-    { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones each day, shown on the main menu. Finish all three for 1 more. They reset at midnight.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Seven guns (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) have a Use in PvP option on their screen. Buy it once and you can pick that gun in PvP.', 'Bullet trails are bought in the Armoury too. Other players see your skins and trails online.'] },
-    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
+    { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones each day, shown on the main menu. Finish all three for 1 more. They reset at midnight.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Seven guns (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) have a Use in PvP option on their screen. Buy it once and you can pick that gun in PvP.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
+    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
     list = list || HELP; title = title || 'How to play';
