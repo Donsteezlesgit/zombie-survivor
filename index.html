@@ -11,6 +11,39 @@
 .overlay:has(.zlist) h1 { font-size: 40px; }
 .overlay .maps.zlist .zc { justify-content: space-between; }
 .overlay .maps.zlist .zc .go { white-space: normal; padding-inline: 8px; }
+.mq { display: block; width: 100%; margin-top: 8px; padding: 6px 0 0; border: 0; border-top: 1px solid #3a322d; background: none; color: var(--bone); font: inherit; text-align: left; cursor: pointer; }
+.mq .lab { font-size: 10px; margin-bottom: 3px; }
+.mqr { display: flex; justify-content: space-between; gap: 8px; font: 600 12px/1.35 var(--face-ui); color: var(--bone); }
+.mqr b { color: var(--gold); font-weight: 700; }
+.mqr.dn { color: var(--dim); text-decoration: line-through; }
+.mqr.dn b { color: #78e0a0; text-decoration: none; }
+.zg { align-items: stretch; }
+.zg canvas { width: 100%; height: auto; max-height: 64px; }
+.lg.locked { opacity: 0.5; cursor: default; }
+.gscr { display: grid; grid-template-columns: 1fr; gap: 10px; width: min(860px, 100%); text-align: left; }
+.gl canvas { width: 100%; height: auto; display: block; background: rgba(0, 0, 0, 0.35); border: 1px solid #3a322d; }
+.gl .mis { text-align: center; text-transform: capitalize; }
+.gr { display: flex; flex-direction: column; gap: 6px; }
+.gi { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; border: 1px solid #3a322d; background: rgba(10, 8, 7, 0.6); }
+.gi div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gi b { font: 700 16px/1.1 var(--face-ui); letter-spacing: 0.06em; text-transform: uppercase; }
+.gi span { font: 500 12px/1.25 var(--face-ui); color: var(--dim); }
+.gi .go { width: 84px; min-height: 40px; font-size: 14px; flex: 0 0 auto; padding-inline: 4px; }
+.gok { font: 700 14px/1 var(--face-ui); letter-spacing: 0.1em; text-transform: uppercase; color: #78e0a0; }
+.gsk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.gs { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border: 1px solid #3a322d; background: rgba(10, 8, 7, 0.6); color: var(--bone); font: inherit; cursor: pointer; }
+.gs i { width: 26px; height: 12px; border: 1px solid #0d0a08; }
+.gs b { font: 700 13px/1 var(--face-ui); letter-spacing: 0.06em; text-transform: uppercase; }
+.gs small { font: 600 11px/1 var(--face-ui); color: var(--dim); }
+.gs.on { border-color: var(--rust); background: rgba(210, 105, 42, 0.25); }
+.gs:disabled { opacity: 0.45; cursor: default; }
+@media (orientation: landscape) { .gscr { grid-template-columns: 1fr 1fr; align-items: start; } }
+.overlay:has(.gscr) { justify-content: flex-start; gap: 6px; }
+.overlay:has(.gscr)::before, .overlay:has(.gscr)::after { flex: 0 0 0; margin: 0; }
+.overlay:has(.gscr) h1 { font-size: 36px; }
+.overlay:has(.gscr) .zbal { font-size: 16px; }
+.overlay:has(.gscr) .zbal b { font-size: 24px; }
+@media (orientation: landscape) { .gl { position: sticky; top: 4px; } }
 </style></head><body>
 <title>Zombie Survivor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -544,9 +577,9 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     barPlanks: 5, rebuildTime: 0.45, barStep: 0.15,
     throwGap: 3.6, grace: 15, graceFlat: 7, graceMid: 10, graceMidWave: 20, graceMin: 8, graceMinWave: 30, lateStart: 20, rampFrom: 15, earlyCap: 24, boxPow: 1.4, lateHp: 0.03, lateDmg: 0.03, lateCoin: 0.04, perkFadeEnd: 40, perkFloor: 0.25, maxTier: 10, coopCount: 0.55, coopHp: 0.2, coopCap: 45, coopPocket: 5, earlyStep: 0.01, reviveT: 3, lateCoins: 40,
     fireRange: 160, fireCone: 0.45,
-    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9 } }
+    pvp: { stimCd: 60, stimBoost: 3, stimSpd: 1.25, crateEvery: 15, crateMax: 4, spareMags: 3, hp: 120, target: 15, respawn: 3, prot: 2, pick: 30, auto: 12, hitR: 2, pool: ['mp5', 'ak47', 'm4a1', 'python', 'deagle', 'benelli'], dmg: { mp5: 1.45, ak47: 0.85, m4a1: 0.72, python: 1.7, deagle: 0.95, benelli: 0.9, scarh: 0.65, vector: 0.72, aug: 0.44, val: 0.6, striker: 0.19, aa12: 0.4, svd: 0.95 } }
   };
-  var PV_TAG = { mp5: 'Fast, close range', ak47: 'All-rounder', m4a1: 'Accurate and quick', python: 'Slow, hits hard', deagle: 'Heavy, 8 shots', benelli: 'Shotgun, close range' };
+  var PV_TAG = { mp5: 'Fast, close range', ak47: 'All-rounder', m4a1: 'Accurate and quick', python: 'Slow, hits hard', deagle: 'Heavy, 8 shots', benelli: 'Shotgun, close range', scarh: 'Hard hitting rifle', vector: 'Very fast SMG', aug: 'Quick, 42 rounds', val: 'Fast and accurate', striker: 'Drum shotgun', aa12: 'Auto shotgun', svd: 'Slow, heavy sniper' };
   var TYPES = {
     walker: { r: 9.9, hp: 40,  spd: 60,  dmg: 8,  cd: 0.9, coins: 2,  skin: '#7f9669', cloth: '#4a4f3c' },
     runner: { r: 8.1,  hp: 24,  spd: 122, dmg: 6,  cd: 0.7, coins: 3,  skin: '#93a56c', cloth: '#6b3b32' },
@@ -1907,11 +1940,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function pById(id) { for (var i = 0; i < players.length; i++) if (players[i].id === id) return players[i]; return null; }
   function cleanName(s) { return String(s || '').replace(/[^\w \-.!?']/g, '').trim().slice(0, 12); }
   function shade(h, a) { var n = parseInt(h.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; function f(v) { return Math.max(0, Math.min(255, v + a)); } return '#' + ((1 << 24) + (f(r) << 16) + (f(g) << 8) + f(b)).toString(16).slice(1); }
+  function cleanLg(o) {
+    var r = {}, k, v, m, sk;
+    if (!o || typeof o !== 'object') return r;
+    for (k in WEAPONS) { v = o[k]; if (!v || typeof v !== 'object') continue; m = Math.floor(+v[0]) & 63; sk = Math.floor(+v[1]); if (!(sk >= 0 && sk < 7)) sk = 0; if (m || sk) r[k] = [m, sk]; }
+    return r;
+  }
   function cleanLook(l, id) {
     function pick(v, n, d) { v = Math.floor(+v); return v >= 0 && v < n ? v : d; }
     l = l || {};
     return { c: pick(l.c, LOOK_COLS.length, (id | 0) % LOOK_COLS.length), h: pick(l.h, HATS.length, 0), sk: pick(l.sk, SKINS.length, 2), hs: pick(l.hs, HAIRS.length, 0), hc: pick(l.hc, HAIRC.length, 1),
-      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0), gs: pick(l.gs, 7, 0), bt: pick(l.bt, 7, 0), at: pick(l.at, 64, 0) };
+      pn: pick(l.pn, PANTS.length, 0), hk: pick(l.hk, ACOLS.length + 1, 0), kc: pick(l.kc, ACOLS.length + 1, 0), f: pick(l.f, FACES.length, 0), j: pick(l.j, JACKS.length, 0), k: pick(l.k, BACKS.length, 0), n: pick(l.n, 2, 0), a: pick(l.a, 2, 0), pt: pick(l.pt, PET_NAMES.length, 0), bt: pick(l.bt, 7, 0), pu: pick(l.pu, 128, 0), lg: cleanLg(l.lg) };
   }
 
 
@@ -1959,17 +1998,19 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
 
   // ---------- Armoury: Z-bucks, gun attachments and cosmetics (this device only) ----------
+  // every gun has its own attachments and skin. Base prices are scaled by the gun (x1 cheap, x1.5 mid, x2 top)
   var ATT = [
-    { id: 'dot', bit: 1, name: 'Red dot sight', z: 3, d: 'Tighter shots: spread 25% smaller.' },
-    { id: 'mag', bit: 2, name: 'Extended mag', z: 5, d: 'Every magazine holds 25% more.' },
-    { id: 'sup', bit: 4, name: 'Suppressor', z: 4, d: 'Quiet shots and 5% more damage.' },
-    { id: 'grip', bit: 8, name: 'Foregrip', z: 4, d: 'Guns fire 8% faster.' },
-    { id: 'las', bit: 16, name: 'Laser sight', z: 6, d: 'A red laser shows where you aim. Spread 15% smaller.' },
-    { id: 'hp', bit: 32, name: 'Hollow points', z: 10, d: '+10% chance of a critical hit.' }
+    { id: 'dot', bit: 1, name: 'Red dot sight', z: 1, d: 'Tighter shots: spread 25% smaller.' },
+    { id: 'mag', bit: 2, name: 'Extended mag', z: 2, d: 'The magazine holds 25% more.' },
+    { id: 'sup', bit: 4, name: 'Suppressor', z: 2, d: 'Quiet shots and 5% more damage.' },
+    { id: 'grip', bit: 8, name: 'Foregrip', z: 1, d: 'Fires 8% faster.' },
+    { id: 'las', bit: 16, name: 'Laser sight', z: 2, d: 'A red laser shows your aim. Spread 15% smaller.' },
+    { id: 'hp', bit: 32, name: 'Hollow points', z: 3, d: '+10% chance of a critical hit.' }
   ];
-  var GSKIN = [{ n: 'Standard', z: 0, c: null }, { n: 'Arctic', z: 3, c: '#9fc4d8' }, { n: 'Blood', z: 4, c: '#a02a24' }, { n: 'Toxic', z: 5, c: '#58b24a' }, { n: 'Violet', z: 5, c: '#8a58c8' }, { n: 'Chrome', z: 8, c: '#c4c8ce' }, { n: 'Gold', z: 12, c: '#d4a52e' }];
-  var BTRAIL = [{ n: 'Standard', z: 0, c: null }, { n: 'Red', z: 2, c: '#ff5a4a' }, { n: 'Green', z: 2, c: '#5dff8a' }, { n: 'Blue', z: 3, c: '#6ab8ff' }, { n: 'Violet', z: 4, c: '#c08aff' }, { n: 'Gold', z: 6, c: '#ffd25a' }, { n: 'Rainbow', z: 10, c: 'rainbow' }];
-  var ATT_MAX = 2;
+  var GSKIN = [{ n: 'Standard', z: 0, c: null }, { n: 'Arctic', z: 1, c: '#9fc4d8' }, { n: 'Blood', z: 1, c: '#a02a24' }, { n: 'Toxic', z: 2, c: '#58b24a' }, { n: 'Violet', z: 2, c: '#8a58c8' }, { n: 'Chrome', z: 3, c: '#c4c8ce' }, { n: 'Gold', z: 4, c: '#d4a52e' }];
+  var BTRAIL = [{ n: 'Standard', z: 0, c: null }, { n: 'Red', z: 1, c: '#ff5a4a' }, { n: 'Green', z: 1, c: '#5dff8a' }, { n: 'Blue', z: 2, c: '#6ab8ff' }, { n: 'Violet', z: 2, c: '#c08aff' }, { n: 'Gold', z: 3, c: '#ffd25a' }, { n: 'Rainbow', z: 5, c: 'rainbow' }];
+  // extra guns you can buy the right to pick in PvP (you still buy the gun itself with coins in Zombies)
+  var PVP_X = [['scarh', 10], ['vector', 12], ['aug', 15], ['val', 18], ['striker', 20], ['aa12', 22], ['svd', 25]];
   // repeatable rewards, earned every game: 1 Z-buck for every 10 waves reached and every 500 kills (offline and online)
   var ZB_WAVE_STEP = 10, ZB_KILL_STEP = 500, zbWT = 0, zbKT = 0;
   var PVP_WIN_Z = 4, QUEST_ALL_Z = 1;
@@ -1977,7 +2018,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var QW = [{ t: 'w', n: 5, z: 1, x: 'Reach wave 5 in one game' }, { t: 'w', n: 8, z: 1, x: 'Reach wave 8 in one game' }, { t: 'w', n: 12, z: 2, x: 'Reach wave 12 in one game' }];
   var QO = [{ t: 'b', n: 1, z: 1, x: 'Defeat a boss' }, { t: 'b', n: 2, z: 2, x: 'Defeat 2 bosses' }, { t: 'p', n: 1, z: 2, x: 'Win a PvP match' }];
   var ZB = { z: 0, own: {}, ms: {}, qd: '', qp: [0, 0, 0], qc: [0, 0, 0], qb: 0, news: [] };
-  var armTab = 0, armMsg = '';
+  var armTab = 0, armMsg = '', armGun = '';
   (function () {
     var zj = null, k;
     try { zj = JSON.parse(localStorage.getItem('zs-arm') || 'null'); } catch (e) {}
@@ -2023,52 +2064,155 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (kt > zbKT) { armPay(kt - zbKT, kt * ZB_KILL_STEP + ' kills this game'); zbKT = kt; }
   }
   function armPvpWin() { if (DEV.on) return; statAdd('pw', 1); armQ('p', 1); ZB.z += PVP_WIN_Z; armToast(PVP_WIN_Z, 'You won the PvP match'); armSave(); }
-  function ownKey(kind, v) { return kind + ':' + v; }
-  function armHas(kind, v) { return DEV.on || !!ZB.own[ownKey(kind, v)]; }
-  function atHas(P, bit) { return !pvp && !!P && !!P.look && ((P.look.at | 0) & bit) !== 0; }
-  function atCount(m) { var n = 0, i; for (i = 0; i < ATT.length; i++) if (m & ATT[i].bit) n++; return n; }
-  function armBuy(kind, v) {
-    var it = kind === 'a' ? ATT[v] : (kind === 'g' ? GSKIN[v] : BTRAIL[v]);
-    if (!it || armHas(kind, v) || ZB.z < it.z) return false;
-    ZB.z -= it.z; ZB.own[ownKey(kind, v)] = 1; armSave(); return true;
+  function gunMul(id) { var pr = WEAPONS[id].price; return pr <= 300 ? 1 : (pr <= 1200 ? 1.5 : 2); }
+  function attPrice(id, i) { return Math.ceil(ATT[i].z * gunMul(id)); }
+  function skinPrice(id, i) { return Math.ceil(GSKIN[i].z * gunMul(id)); }
+  function pvpIdx(id) { for (var i = 0; i < PVP_X.length; i++) if (PVP_X[i][0] === id) return i; return -1; }
+  function armHas(key) { return DEV.on || !!ZB.own[key]; }
+  function gunLo(look, id) { var o = look && look.lg && look.lg[id]; return o || null; }
+  function atM(P, id) { var o = P && gunLo(P.look, id); return o ? o[0] : 0; }
+  function gunOwned(id) { var n = 0, i; for (i = 0; i < ATT.length; i++) if (ZB.own['a:' + id + ':' + i]) n++; for (i = 1; i < GSKIN.length; i++) if (ZB.own['s:' + id + ':' + i]) n++; return n; }
+  // the PvP unlocks travel with your look so the host and the other players know them
+  function armSyncPu() { var m = 0, i; for (i = 0; i < PVP_X.length; i++) if (ZB.own['p:' + PVP_X[i][0]]) m |= 1 << i; myLook.pu = m; }
+  function pvpAllowed(P, id) {
+    if (TUNE.pvp.pool.indexOf(id) >= 0) return true;
+    var i = pvpIdx(id);
+    return i >= 0 && (((P && P.look && P.look.pu) | 0) & (1 << i)) !== 0;
   }
-  function armEquip(kind, v) {
-    if (!armHas(kind, v)) return;
-    if (kind === 'g') myLook.gs = (myLook.gs === v ? 0 : v);
-    else if (kind === 't') myLook.bt = (myLook.bt === v ? 0 : v);
-    else {
-      var bit = ATT[v].bit, cur = myLook.at | 0;
-      if (cur & bit) cur &= ~bit;
-      else if (atCount(cur) >= ATT_MAX) { armMsg = 'You can carry ' + ATT_MAX + ' attachments at a time. Take one off first.'; return; }
-      else cur |= bit;
-      myLook.at = cur;
+  function lgSet(id, mask, skin) {
+    if (!myLook.lg) myLook.lg = {};
+    if (!mask && !skin) delete myLook.lg[id]; else myLook.lg[id] = [mask, skin];
+  }
+  function armBuy(kind, id, v) {
+    var price, key;
+    if (kind === 'a') { key = 'a:' + id + ':' + v; price = attPrice(id, v); }
+    else if (kind === 's') { key = 's:' + id + ':' + v; price = skinPrice(id, v); }
+    else if (kind === 'p') { key = 'p:' + id; price = PVP_X[pvpIdx(id)][1]; }
+    else { key = 't:' + v; price = BTRAIL[v].z; }
+    if (ZB.own[key] || ZB.z < price) return false;
+    ZB.z -= price; ZB.own[key] = 1; armSave();
+    if (kind === 'p') { armSyncPu(); saveMe(); }
+    return true;
+  }
+  var gAnim = null;
+  function armEquip(kind, id, v) {
+    var lo, mask, skin;
+    if (kind === 't') { if (!armHas('t:' + v)) return; myLook.bt = (myLook.bt === v ? 0 : v); saveMe(); return; }
+    if (kind === 'a') {
+      if (!armHas('a:' + id + ':' + v)) return;
+      lo = gunLo(myLook, id) || [0, 0]; mask = lo[0] ^ ATT[v].bit; lgSet(id, mask, lo[1]);
+      if (gAnim && gAnim.id === id) gAnim.target[ATT[v].bit] = (mask & ATT[v].bit) ? 1 : 0;
+    } else if (kind === 's') {
+      if (!armHas('s:' + id + ':' + v)) return;
+      lo = gunLo(myLook, id) || [0, 0]; skin = lo[1] === v ? 0 : v; lgSet(id, lo[0], skin);
+      if (gAnim && gAnim.id === id) { gAnim.skinFrom = gAnim.skinNow; gAnim.skinTo = skin; gAnim.skinT = 0; }
     }
-    armMsg = ''; saveMe();
+    saveMe();
+  }
+  // ---- gun drawing shared by the match and the Armoury preview
+  function gunParts(c, d, skC, tr, OUT) {
+    var art = GART[(d.cls && d.cls !== 'special') ? d.cls : (d.sid || d.id)] || GART.rifle, kx = (d.len + 11 - 6) / art.tip;
+    c.save(); c.scale(kx, 1); c.lineJoin = 'round';
+    art.p.forEach(function (q, qi) {
+      var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2;
+      c.fillStyle = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4]; c.strokeStyle = OUT; c.lineWidth = 1; c.fillRect(q[0], py, q[2], ph); c.strokeRect(q[0], py, q[2], ph);
+      c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(q[0], py, q[2], Math.min(1.2, ph * 0.3));
+      if (qi === art.m) {
+        var sl = Math.min(5, q[2] * 0.3), sh = Math.max(1.8, ph * 0.5);
+        c.fillStyle = rarCol(d); c.fillRect(q[0] + 2, py + (ph - sh) / 2, sl, sh);
+        c.fillStyle = tierCol(tr); c.fillRect(q[0] + 2 + sl + 1.2, py + (ph - sh) / 2, sl, sh);
+      }
+    });
+    c.restore();
+  }
+  // attachments in the gun's frame. prog (0..1 per bit) slides each one in or out; without it they are all fully on
+  function drawAtt(c, d, AT, OUT, prog) {
+    var mz = d.len + 5, i, bit, t, ox, oy;
+    c.lineWidth = 1; c.strokeStyle = OUT;
+    for (i = 0; i < ATT.length; i++) {
+      bit = ATT[i].bit; t = prog ? (prog[bit] || 0) : ((AT & bit) ? 1 : 0);
+      if (t <= 0.01) continue;
+      ox = 0; oy = 0;
+      if (bit === 4) ox = (1 - t) * 14; else if (bit === 1) oy = -(1 - t) * 12; else oy = (1 - t) * 12;
+      c.save(); c.globalAlpha = Math.min(1, t * 1.4); c.translate(ox, oy);
+      if (bit === 4) { c.fillStyle = '#25262a'; c.fillRect(mz - 1, -3, 9, 4); c.strokeRect(mz - 1, -3, 9, 4); c.fillStyle = '#3a3c42'; c.fillRect(mz + 1, -2.6, 1.2, 3.2); c.fillRect(mz + 4, -2.6, 1.2, 3.2); }
+      else if (bit === 1) { c.fillStyle = '#1a1c20'; c.fillRect(d.len * 0.35, -8, 8, 3.2); c.strokeRect(d.len * 0.35, -8, 8, 3.2); c.fillStyle = '#ff4a3a'; c.fillRect(d.len * 0.35 + 5.4, -7.4, 1.8, 1.8); }
+      else if (bit === 2) { c.fillStyle = '#3a3a40'; c.fillRect(d.len * 0.3, 3, 4, 10); c.strokeRect(d.len * 0.3, 3, 4, 10); c.fillStyle = '#d4a52e'; c.fillRect(d.len * 0.3, 11, 4, 1.4); }
+      else if (bit === 8) { c.fillStyle = '#2e2a26'; c.fillRect(d.len * 0.62, 3, 3, 6); c.strokeRect(d.len * 0.62, 3, 3, 6); }
+      else if (bit === 16) { c.fillStyle = '#ff3a3a'; c.fillRect(mz - 7, 2, 5, 2.2); c.fillStyle = '#7a1a1a'; c.fillRect(mz - 8, 1.6, 1.6, 3); }
+      else if (bit === 32) { c.fillStyle = '#d4a52e'; c.fillRect(d.len * 0.12, -5.4, 3.4, 2); c.strokeRect(d.len * 0.12, -5.4, 3.4, 2); c.fillStyle = '#ffeaa0'; c.fillRect(d.len * 0.12 + 0.6, -5, 1.2, 1); }
+      c.restore();
+    }
+  }
+  function lerpHex(a, b, t) {
+    var x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), r = Math.round((x >> 16) + ((y >> 16) - (x >> 16)) * t), g = Math.round(((x >> 8) & 255) + (((y >> 8) & 255) - ((x >> 8) & 255)) * t), bl = Math.round((x & 255) + ((y & 255) - (x & 255)) * t);
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1);
+  }
+  function drawGunBig(c, W, H, id, prog, skC) {
+    var d = WEAPONS[id], S = Math.min(W * 0.78 / (d.len + 22), H * 0.5 / 14);
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H);
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W / 2, H * 0.78, W * 0.4, H * 0.07, 0, 0, 6.283); c.fill();
+    c.save(); c.translate(W / 2 - (d.len - 6) * S / 2, H * 0.46); c.scale(S, S);
+    gunParts(c, d, skC, 1, '#0d0a08'); drawAtt(c, d, 0, '#0d0a08', prog);
+    c.restore();
+  }
+  function gunAnimStart(id) {
+    var lo = gunLo(myLook, id) || [0, 0], i, pr = {}, tg = {};
+    for (i = 0; i < ATT.length; i++) { pr[ATT[i].bit] = (lo[0] & ATT[i].bit) ? 1 : 0; tg[ATT[i].bit] = pr[ATT[i].bit]; }
+    var sc = lo[1] ? GSKIN[lo[1]].c : null;
+    gAnim = { id: id, prog: pr, target: tg, skinNow: sc, skinFrom: sc, skinTo: lo[1], skinT: 1, last: performance.now(), raf: 0 };
+    gunAnimFrame();
+  }
+  function gunAnimFrame() {
+    var g = gAnim, cv = $('gcv'), now = performance.now(), dt, k, tc;
+    if (!g || screen !== 'gun') { if (g) g.raf = 0; return; }
+    dt = Math.min(0.05, (now - g.last) / 1000); g.last = now;
+    for (k in g.target) { var v = g.prog[k], tg = g.target[k]; g.prog[k] = v < tg ? Math.min(tg, v + dt * 4) : Math.max(tg, v - dt * 4); }
+    if (g.skinT < 1) g.skinT = Math.min(1, g.skinT + dt * 4);
+    var cf = g.skinFrom ? g.skinFrom : null, ct = g.skinTo ? GSKIN[g.skinTo].c : null;
+    tc = (cf && ct) ? lerpHex(cf, ct, g.skinT) : (g.skinT < 0.5 ? cf : ct); if (g.skinT >= 1) tc = ct;
+    g.skinNow = tc;
+    if (cv) drawGunBig(cv.getContext('2d'), cv.width, cv.height, g.id, g.prog, tc);
+    g.raf = requestAnimationFrame(gunAnimFrame);
+  }
+  function drawArmThumbs() {
+    var cs = ov.querySelectorAll('canvas[data-gun]'), i, t, id, lo, d, S, c;
+    for (i = 0; i < cs.length; i++) {
+      t = cs[i]; id = t.dataset.gun; d = WEAPONS[id]; lo = gunLo(myLook, id); c = t.getContext('2d');
+      c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, t.width, t.height);
+      S = Math.min(t.width * 0.8 / (d.len + 22), t.height * 0.5 / 14);
+      c.save(); c.translate(t.width / 2 - (d.len - 6) * S / 2, t.height * 0.5); c.scale(S, S);
+      gunParts(c, d, lo && lo[1] ? GSKIN[lo[1]].c : null, 1, '#0d0a08'); drawAtt(c, d, lo ? lo[0] : 0, '#0d0a08', null);
+      c.restore();
+    }
+  }
+  function questPanel() {
+    var L = qList(), h = '', i;
+    armDay();
+    h += '<button class="mq" type="button" data-a="armq"><div class="lab">Daily quests · tap for the Armoury</div>';
+    for (i = 0; i < 3; i++) h += '<div class="mqr' + (ZB.qc[i] ? ' dn' : '') + '"><span>' + L[i].x + '</span><b>' + (ZB.qc[i] ? 'Done' : Math.min(ZB.qp[i], L[i].n) + '/' + L[i].n) + '</b></div>';
+    return h + '</button>';
   }
   function armHtml() {
-    var h = '', i, it, own, on, tabs = ['Attachments', 'Gun skins', 'Bullet trails', 'Earn'], L, q;
+    var h = '', i, it, tabs = ['Guns', 'Bullet trails', 'Earn'], L, q, id, ids = Object.keys(WEAPONS), n, own, on, lo;
     armDay();
     h += '<h1>Armoury</h1><div class="zbal"><b>' + ZB.z + '</b> Z-buck' + (ZB.z === 1 ? '' : 's') + '</div>';
     if (ZB.news.length) { h += '<div class="msg">' + esc(ZB.news.join(' · ')) + '</div>'; ZB.news = []; }
     h += '<div class="mtabs zt">';
     for (i = 0; i < tabs.length; i++) h += '<button class="chip" type="button" data-a="atab" data-i="' + i + '" aria-pressed="' + (armTab === i) + '">' + tabs[i] + '</button>';
-    h += '</div>';
-    if (armMsg) h += '<div class="msg">' + esc(armMsg) + '</div>';
-    h += '<div class="maps zlist">';
+    h += '</div><div class="maps zlist">';
     if (armTab === 0) {
-      h += '<div class="lab">Carry up to ' + ATT_MAX + ' · Zombies only, off in PvP</div>';
-      for (i = 0; i < ATT.length; i++) {
-        it = ATT[i]; own = armHas('a', i); on = ((myLook.at | 0) & it.bit) !== 0;
-        h += '<div class="mapcard zc"><b>' + it.name + '</b><span>' + it.d + '</span>' + (own ? '<button class="go alt" type="button" data-a="aequip" data-k="a" data-v="' + i + '">' + (on ? 'Equipped · tap to remove' : 'Equip') + '</button>'
-          : '<button class="go" type="button" data-a="abuy" data-k="a" data-v="' + i + '"' + (ZB.z < it.z ? ' disabled' : '') + '>Buy · ' + it.z + ' Z</button>') + '</div>';
+      h += '<div class="lab">Pick a gun to fit attachments and skins</div>';
+      for (i = 0; i < ids.length; i++) {
+        id = ids[i]; n = gunOwned(id); lo = gunLo(myLook, id);
+        h += '<button class="mapcard zc zg" type="button" data-a="agun" data-id="' + id + '"><canvas width="220" height="70" data-gun="' + id + '" aria-hidden="true"></canvas><b>' + esc(WEAPONS[id].name) + '</b><span>' + WEAPONS[id].cls + ' · ' + n + ' of ' + (ATT.length + GSKIN.length - 1) + ' unlocked' + (pvpIdx(id) >= 0 && ZB.own['p:' + id] ? ' · PvP' : '') + '</span></button>';
       }
-    } else if (armTab === 1 || armTab === 2) {
-      var kd = armTab === 1 ? 'g' : 't', arr = armTab === 1 ? GSKIN : BTRAIL, cur = armTab === 1 ? myLook.gs : myLook.bt;
-      h += '<div class="lab">' + (armTab === 1 ? 'Colours for all your guns' : 'Colours for your bullets · others see it too') + '</div>';
-      for (i = 1; i < arr.length; i++) {
-        it = arr[i]; own = armHas(kd, i); on = cur === i;
-        h += '<div class="mapcard zc"><b><i class="zsw" style="background:' + (it.c === 'rainbow' ? 'linear-gradient(90deg,#ff5a4a,#ffd25a,#5dff8a,#6ab8ff,#c08aff)' : it.c) + '"></i>' + it.n + '</b>' + (own ? '<button class="go alt" type="button" data-a="aequip" data-k="' + kd + '" data-v="' + i + '">' + (on ? 'Equipped · tap to remove' : 'Equip') + '</button>'
-          : '<button class="go" type="button" data-a="abuy" data-k="' + kd + '" data-v="' + i + '"' + (ZB.z < it.z ? ' disabled' : '') + '>Buy · ' + it.z + ' Z</button>') + '</div>';
+    } else if (armTab === 1) {
+      h += '<div class="lab">Bullet trails · others see yours too</div>';
+      for (i = 1; i < BTRAIL.length; i++) {
+        it = BTRAIL[i]; own = armHas('t:' + i); on = myLook.bt === i;
+        h += '<div class="mapcard zc"><b><i class="zsw" style="background:' + (it.c === 'rainbow' ? 'linear-gradient(90deg,#ff5a4a,#ffd25a,#5dff8a,#6ab8ff,#c08aff)' : it.c) + '"></i>' + it.n + '</b>' + (own ? '<button class="go alt" type="button" data-a="aequip" data-k="t" data-id="" data-v="' + i + '">' + (on ? 'Equipped · tap to remove' : 'Equip') + '</button>'
+          : '<button class="go" type="button" data-a="abuy" data-k="t" data-id="" data-v="' + i + '"' + (ZB.z < it.z ? ' disabled' : '') + '>Buy · ' + it.z + ' Z</button>') + '</div>';
       }
     } else {
       L = qList();
@@ -2078,12 +2222,36 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         h += '<div class="mapcard zc"><b>' + q.x + '</b><span>' + (ZB.qc[i] ? 'Done · +' + q.z + ' Z' : Math.min(ZB.qp[i], q.n) + ' / ' + q.n + ' · pays ' + q.z + ' Z') + '</span><div class="mbar"><i style="width:' + Math.min(100, ZB.qp[i] / q.n * 100).toFixed(0) + '%"></i></div></div>';
       }
       h += '<div class="mis">' + (ZB.qb ? 'All three done. Bonus paid.' : 'Finish all three for +' + QUEST_ALL_Z + ' Z.') + '</div>';
-      h += '<div class="lab">PvP</div><div class="mapcard zc"><b>Win a PvP match</b><span>Pays ' + PVP_WIN_Z + ' Z each win. ' + STATS.pw + ' win' + (STATS.pw === 1 ? '' : 's') + ' so far.</span></div>';
-      h += '<div class="lab">Every Zombies game, offline or online</div>';
-      h += '<div class="mapcard zc"><b>1 Z-buck every ' + ZB_WAVE_STEP + ' waves</b><span>Wave 10 pays 1, wave 20 pays another, wave 30 another, and so on.</span></div>';
-      h += '<div class="mapcard zc"><b>1 Z-buck every ' + ZB_KILL_STEP + ' kills</b><span>500 kills in one game pays 1, 1,000 pays another, and so on.</span></div>';
+      h += '<div class="lab">Every game</div>';
+      h += '<div class="mapcard zc"><b>1 Z-buck every ' + ZB_WAVE_STEP + ' waves</b><span>Zombies, offline or online. Wave 10 pays 1, wave 20 another, and so on.</span></div>';
+      h += '<div class="mapcard zc"><b>1 Z-buck every ' + ZB_KILL_STEP + ' kills</b><span>In one Zombies game. 500 kills pays 1, 1,000 another, and so on.</span></div>';
+      h += '<div class="mapcard zc"><b>Win a PvP match</b><span>Pays ' + PVP_WIN_Z + ' Z each win. ' + STATS.pw + ' win' + (STATS.pw === 1 ? '' : 's') + ' so far.</span></div>';
     }
     h += '</div><button class="chip" type="button" data-a="back" data-to="main">Back</button>';
+    return h;
+  }
+  function gunHtml() {
+    var id = armGun, d = WEAPONS[id], h = '', i, lo = gunLo(myLook, id) || [0, 0], own, on, pi = pvpIdx(id), pr;
+    h += '<h1>' + esc(d.name) + '</h1><div class="zbal"><b>' + ZB.z + '</b> Z-buck' + (ZB.z === 1 ? '' : 's') + '</div>';
+    h += '<div class="gscr"><div class="gl"><canvas id="gcv" width="560" height="300" aria-hidden="true"></canvas><div class="mis">' + d.cls + ' · attachments and skins on this gun only</div></div><div class="gr">';
+    h += '<div class="lab">Attachments</div>';
+    for (i = 0; i < ATT.length; i++) {
+      own = armHas('a:' + id + ':' + i); on = (lo[0] & ATT[i].bit) !== 0; pr = attPrice(id, i);
+      h += '<div class="gi"><div><b>' + ATT[i].name + '</b><span>' + ATT[i].d + '</span></div>' + (own ? '<button class="go alt" type="button" data-a="aequip" data-k="a" data-id="' + id + '" data-v="' + i + '">' + (on ? 'Remove' : 'Fit') + '</button>'
+        : '<button class="go" type="button" data-a="abuy" data-k="a" data-id="' + id + '" data-v="' + i + '"' + (ZB.z < pr ? ' disabled' : '') + '>' + pr + ' Z</button>') + '</div>';
+    }
+    h += '<div class="lab">Skins</div><div class="gsk">';
+    for (i = 1; i < GSKIN.length; i++) {
+      own = armHas('s:' + id + ':' + i); on = lo[1] === i; pr = skinPrice(id, i);
+      h += '<button class="gs' + (on ? ' on' : '') + '" type="button" data-a="' + (own ? 'aequip' : 'abuy') + '" data-k="s" data-id="' + id + '" data-v="' + i + '"' + (!own && ZB.z < pr ? ' disabled' : '') + '><i style="background:' + GSKIN[i].c + '"></i><b>' + GSKIN[i].n + '</b><small>' + (own ? (on ? 'On' : 'Fit') : pr + ' Z') + '</small></button>';
+    }
+    h += '</div>';
+    if (pi >= 0) {
+      own = armHas('p:' + id);
+      h += '<div class="lab">PvP</div><div class="gi"><div><b>Use in PvP</b><span>Lets you pick this gun in PvP matches. The gun itself is still bought with coins in Zombies.</span></div>' + (own ? '<div class="gok">Unlocked</div>'
+        : '<button class="go" type="button" data-a="abuy" data-k="p" data-id="' + id + '" data-v="0"' + (ZB.z < PVP_X[pi][1] ? ' disabled' : '') + '>' + PVP_X[pi][1] + ' Z</button>') + '</div>';
+    }
+    h += '</div></div><button class="chip" type="button" data-a="armback">Back to guns</button>';
     return h;
   }
   // what this game unlocked: snapshot at the start, compare at the end
@@ -2140,7 +2308,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function specStage() { return Math.floor(wave / TUNE.specStep) + Math.max(0, Math.floor((wave - 20) / 5)); }
   function specMult() { return 1 + TUNE.specDmg * specStage(); }
   function specAmmoMult() { return 1 + TUNE.specAmmo * specStage(); }
-  function gunMag(d, P) { var m = d.special ? Math.round(d.mag * specAmmoMult()) : d.mag; return (P && !d.special && atHas(P, 2)) ? Math.round(m * 1.25) : m; }
+  function gunMag(d, P) { var m = d.special ? Math.round(d.mag * specAmmoMult()) : d.mag; return (P && !d.special && (atM(P, d.id) & 2)) ? Math.round(m * 1.25) : m; }
   function makeGun(id, P) { var d = WEAPONS[id]; return { id: id, tier: 1, mag: gunMag(d, P), res: d.res, reload: 0 }; }
   function refillGun(g, P) { var d = WEAPONS[g.id]; g.mag = gunMag(d, P); g.res = d.res; g.reload = 0; }
   function defOf(ref) { return WEAPONS[ref.id] || SPECIALS[ref.id]; }
@@ -2157,8 +2325,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var d = defOf(ref), t = ref.tier || 1;
     return {
       d: d,
-      dmg: TUNE.baseDmg * d.dmg * (1 + 0.3 * (t - 1)) * (1 + 0.1 * P.upg.dmg) * (d.special ? specMult() : 1) * (!d.special && atHas(P, 4) ? 1.05 : 1),
-      rate: d.rate * (1 + 0.1 * (Math.min(t, 4) - 1) + 0.05 * Math.max(0, t - 4)) * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1) * (!d.special && atHas(P, 8) ? 1.08 : 1)
+      dmg: TUNE.baseDmg * d.dmg * (1 + 0.3 * (t - 1)) * (1 + 0.1 * P.upg.dmg) * (d.special ? specMult() : 1) * (!d.special && (atM(P, d.id) & 4) ? 1.05 : 1),
+      rate: d.rate * (1 + 0.1 * (Math.min(t, 4) - 1) + 0.05 * Math.max(0, t - 4)) * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1) * (!d.special && (atM(P, d.id) & 8) ? 1.08 : 1)
     };
   }
   function setSel(P, n) {
@@ -2539,7 +2707,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function pvFeed(kn, vn) { rec(['K', kn, vn]); feedAdd(kn, vn); }
   function pvpSetLo(P, s, id) {
-    if (TUNE.pvp.pool.indexOf(id) < 0 || (s !== 0 && s !== 1)) return;
+    if (!WEAPONS[id] || !pvpAllowed(P, id) || (s !== 0 && s !== 1)) return;
     var o = 1 - s;
     if (P.lo[o] === id) P.lo[o] = P.lo[s];
     P.lo[s] = id;
@@ -3033,10 +3201,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function shoot(P) {
     var ref = curRef(P), st = wstats(P, ref), d = st.d, i, a, crit;
-    var critP = 0.1 * P.upg.crit + (atHas(P, 32) ? 0.1 : 0), expl = P.perkT.ex > 0, pm = pvp ? (TUNE.pvp.dmg[d.id] || 1) : 1;
+    var AM = d.special ? 0 : atM(P, d.id), critP = 0.1 * P.upg.crit + ((AM & 32) ? 0.1 : 0), expl = P.perkT.ex > 0, pm = pvp ? (TUNE.pvp.dmg[d.id] || 1) : 1;
     var mx = P.x + Math.cos(P.ang) * (d.len + 10), my = P.y + Math.sin(P.ang) * (d.len + 10);
     if (pvp) P.inv = 0;   // spawn protection ends the moment you fire
-    var sprF = d.special ? 1 : (atHas(P, 1) ? 0.75 : 1) * (atHas(P, 16) ? 0.85 : 1), btI = (P.look && P.look.bt) | 0;
+    var sprF = d.special ? 1 : ((AM & 1) ? 0.75 : 1) * ((AM & 16) ? 0.85 : 1), btI = (P.look && P.look.bt) | 0;
     for (i = 0; d.kind !== 'zap' && i < d.pellets; i++) {
       if (d.pellets > 1) a = P.ang + ((i / (d.pellets - 1)) - 0.5) * d.spread * sprF + rnd(-0.04, 0.04);
       else a = P.ang + rnd(-d.spread * sprF / 2, d.spread * sprF / 2);
@@ -3052,7 +3220,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     P.flash = 0.06;
     shotN++;
     var id = d.sid || ref.id, cls = d.cls;
-    if (!d.special && atHas(P, 4)) { if (shotN % 2 === 0) snoise(0.03, 1500, 0.02); }
+    if (AM & 4) { if (shotN % 2 === 0) snoise(0.03, 1500, 0.02); }
     else if (GUNSND[cls]) sgun(cls);
     else if (id === 'ray') { stone(1000, 220, 0.2, 'sawtooth', 0.06); snoise(0.05, 3500, 0.04); }
     else if (id === 'zap') { stone(1300, 260, 0.14, 'sawtooth', 0.06); snoise(0.1, 4500, 0.06); }
@@ -3672,6 +3840,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (s = 0; s < 2; s++) {
       h += '<div class="lcol"><div class="lab">Gun ' + (s + 1) + '</div><div class="lgrid">';
       for (i = 0; i < ps.length; i++) { id = ps[i]; h += '<button class="lg" type="button" data-a="lo" data-s="' + s + '" data-id="' + id + '" aria-pressed="' + (P.lo[s] === id) + '"><b>' + esc(WEAPONS[id].name) + '</b><small>' + PV_TAG[id] + '</small></button>'; }
+      for (i = 0; i < PVP_X.length; i++) {
+        id = PVP_X[i][0];
+        if (pvpAllowed(P, id)) h += '<button class="lg" type="button" data-a="lo" data-s="' + s + '" data-id="' + id + '" aria-pressed="' + (P.lo[s] === id) + '"><b>' + esc(WEAPONS[id].name) + '</b><small>' + PV_TAG[id] + '</small></button>';
+        else h += '<button class="lg locked" type="button" disabled><b>&#128274; ' + esc(WEAPONS[id].name) + '</b><small>Unlock in the Armoury · ' + PVP_X[i][1] + ' Z</small></button>';
+      }
       h += '</div></div>';
     }
     h += '</div><button class="go" id="loGo" data-a="logo" type="button"></button>';
@@ -3704,7 +3877,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<div class="mhome">';
       h += '<div class="mtitle">' + '<svg class="mmark" viewBox="0 0 100 100" role="img" aria-label="Zombie Survivor"><circle cx="50" cy="50" r="38" fill="none" stroke="#ebe3d4" stroke-width="4"/><path d="M50 4 V17 M50 83 V96 M4 50 H17 M83 50 H96" stroke="#ebe3d4" stroke-width="4" stroke-linecap="round"/><path d="M50 50 L74 26 A34 34 0 0 1 83.9 47 Z" fill="#f2c14e" fill-opacity="0.9"/><circle cx="75" cy="40" r="4" fill="#7f9669"/><circle cx="50" cy="50" r="5.5" fill="#ebe3d4"/></svg>' + '<div><div class="mz">Zombie</div><h1>Survivor</h1></div></div>';
       var bo = bestOverall();
-      h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (bo.w || '–') + '</b><small>Highest wave</small>' + (bo.w ? '<small class="mapn">' + esc(bo.wm) + '</small>' : '') + '</div><div><b>' + (bo.k || '–') + '</b><small>Most kills</small>' + (bo.k ? '<small class="mapn">' + esc(bo.km) + '</small>' : '') + '</div></div></div>';
+      h += '<div class="mbest"><div class="lab">Offline best</div><div class="mrow"><div><b>' + (bo.w || '–') + '</b><small>Highest wave</small>' + (bo.w ? '<small class="mapn">' + esc(bo.wm) + '</small>' : '') + '</div><div><b>' + (bo.k || '–') + '</b><small>Most kills</small>' + (bo.k ? '<small class="mapn">' + esc(bo.km) + '</small>' : '') + '</div></div>' + questPanel() + '</div>';
       h += '<div class="mplay"><button class="go" data-a="offline" type="button">Play offline</button>';
       h += '<button class="go" data-a="online" type="button"' + (hasPeer ? '' : ' disabled') + '>Play online</button></div>';
       h += '<div class="mme"><button class="go alt" data-a="me" type="button">Your player</button></div>';
@@ -3715,6 +3888,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (!hasPeer) h += '<div class="msg">Online play needs signal the first time you open the app.</div>';
     } else if (screen === 'armoury') {
       h += armHtml();
+    } else if (screen === 'gun') {
+      h += gunHtml();
     } else if (screen === 'offline') {
       d = readSave();
       h += '<h1>Offline</h1><p>Just you against the dead. Your game saves on this phone after every wave.</p>';
@@ -3874,9 +4049,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     meGridReset = false;
     if (screen === 'me') drawPreview();
+    if (screen === 'armoury') drawArmThumbs();
+    if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 151';
+  var updMsg = '', VERSION = 'Version 152';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -3983,10 +4160,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (a === 'offline') showScreen('offline');
     else if (a === 'armoury') { armMsg = ''; armTab = 0; showScreen('armoury'); }
     else if (a === 'atab') { armTab = +b.dataset.i; armMsg = ''; renderScreen(); }
+    else if (a === 'agun') { armGun = b.dataset.id; gAnim = null; ov.scrollTop = 0; showScreen('gun'); }
+    else if (a === 'armback') { gAnim = null; showScreen('armoury'); }
+    else if (a === 'armq') { armTab = 2; armMsg = ''; showScreen('armoury'); }
     else if (a === 'abuy' || a === 'aequip') {
-      var ak = b.dataset.k, av = +b.dataset.v, ast = ov.scrollTop;
-      if (a === 'abuy') { if (armBuy(ak, av)) { armEquip(ak, av); tone(700, 1100, 0.07, 'square', 0.05); } } else armEquip(ak, av);
-      renderScreen(); ov.scrollTop = ast;
+      var ak = b.dataset.k, aid = b.dataset.id, av = +b.dataset.v;
+      if (a === 'abuy') { if (armBuy(ak, aid, av)) { if (ak !== 'p') armEquip(ak, aid, av); tone(700, 1100, 0.07, 'square', 0.05); } } else armEquip(ak, aid, av);
+      renderScreen();
     }
     else if (a === 'start') { startOffline(); tone(300, 200, 0.08, 'square', 0.05); }
     else if (a === 'maps') { mapCtx = b.dataset.ctx || 'offline'; showScreen('maps'); }
@@ -4077,7 +4257,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ensureAudio(); ovAct(b.dataset.a, b);
   });
   // tap on the empty space around a menu to close it, same as its Back / Done / Resume button
-  var DISMISS = { offline: 'back', online: 'back', maps: 'back', settings: 'back', armoury: 'back', devpw: 'back', backup: 'back', diag: 'back', help: 'helpdone', guide: 'helpdone', pause: 'resume', join: 'leave' };
+  var DISMISS = { offline: 'back', online: 'back', maps: 'back', settings: 'back', armoury: 'back', gun: 'armback', devpw: 'back', backup: 'back', diag: 'back', help: 'helpdone', guide: 'helpdone', pause: 'resume', join: 'leave' };
   ov.addEventListener('click', function (e) {
     if (e.target !== ov) return;
     var sel, b2;
@@ -4136,8 +4316,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Relics and the cauldron', art: 'relic', b: ['Haunted House only. 8 relics hide in the house, one in every room except the Great Hall.', 'Each appears on a different wave, roughly every 2 to 3 waves, and waits where it is until someone takes it.', 'Walk over a relic to carry it. One at a time. If you go down, it drops where you fell.', 'Take it to the green cauldron in the Great Hall. The cauldron shows how many relics are in.', 'Relics show as coloured gems on the minimap, and the cauldron as a green ring.'] },
     { t: 'The Ghostbuster', art: 'ghost', b: ['When all 8 relics are in the cauldron, the whole team gets the Ghostbuster as an extra gun slot.', 'It shoots green goo. Goo slows zombies down, then the ones hit by goo burst. The burst hurts nearby zombies, but only zombies hit by goo burst.', 'Infinite ammo, and it never hurts teammates.', 'Fire for 6 seconds and it overheats. It then needs 25 seconds to cool down and you drop back to your other gun.', 'Tap the gun box to swap to it. The gun box shows the heat.'] },
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
-    { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
-    { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones each day, plus 1 more for finishing all three. They reset at midnight.', 'Spend them in the Armoury on the main menu: gun attachments (carry 2 at a time, Zombies only), gun skins and bullet trails.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points.', 'Online, other players see your gun skin and bullet trail.'] },
+    { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. Other players do not show on the minimap.'] },
+    { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones each day, shown on the main menu. Finish all three for 1 more. They reset at midnight.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Seven guns (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) have a Use in PvP option on their screen. Buy it once and you can pick that gun in PvP.', 'Bullet trails are bought in the Armoury too. Other players see your skins and trails online.'] },
     { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
@@ -4178,8 +4358,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function pvpIntroHtml() {
     var T = TUNE.pvp, list = [
-      { t: 'PvP: the goal', art: 'team', b: ['No zombies. Everyone is against everyone.', 'First to ' + T.target + ' kills wins. Kills show at the top left.', 'Everyone has the same health, and other players do not show on the minimap.'] },
-      { t: 'Pick your guns', art: 'slots', b: ['Pick 2 different guns from 6: MP5, AK-47, M4A1, Python, Desert Eagle, Benelli.', 'Tap Ready when you are done. The round starts when everyone is ready, or after ' + T.pick + ' seconds.', 'You start with one magazine per gun. Ammo crates appear around the map: walk over one to get a magazine for each gun (' + T.spareMags + ' spare at most).'] },
+      { t: 'PvP: the goal', art: 'team', b: ['No zombies. Everyone is against everyone.', 'First to ' + T.target + ' kills wins. Kills show at the top left.', 'Everyone has the same health, and other players do not show on the minimap.', 'Attachments and skins from the Armoury work here too.'] },
+      { t: 'Pick your guns', art: 'slots', b: ['Pick 2 different guns from 6: MP5, AK-47, M4A1, Python, Desert Eagle, Benelli. More can be unlocked in the Armoury.', 'Tap Ready when you are done. The round starts when everyone is ready, or after ' + T.pick + ' seconds.', 'You start with one magazine per gun. Ammo crates appear around the map: walk over one to get a magazine for each gun (' + T.spareMags + ' spare at most).'] },
       { t: 'Aiming', art: 'move', b: ['There is no auto aim. Left thumb walks.', 'Hold the right thumb and point the thin line at someone. Your gun fires only while a player is on the line.', 'Let go and you stop firing.'] },
       { t: 'Down and back up', art: 'stay', b: ['Die and you respawn after ' + T.respawn + ' seconds, far from the others, with ' + T.prot + ' seconds of protection. Firing ends it.', 'While you wait you can change your guns.', 'Stim button: full health and a short speed boost. It takes ' + T.stimCd + ' seconds to recharge, and is ready again when you respawn.'] }
     ];
@@ -5215,30 +5395,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     function part(fn, col) { c.lineWidth = 2; c.strokeStyle = OUT; c.fillStyle = col; fn(); c.fill(); c.stroke(); }
     function rr(x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
     function gun() {
-      var art = GART[(d.cls && d.cls !== 'special') ? d.cls : (d.sid || d.id)] || GART.rifle, kx = (d.len + 11 - 6) / art.tip;
-      var skC = (!d.special && GSKIN[L.gs | 0]) ? GSKIN[L.gs | 0].c : null, AT = pvp ? 0 : (L.at | 0);
+      var lo = d.special ? null : gunLo(L, d.id), skC = (lo && lo[1]) ? GSKIN[lo[1]].c : null, AT = lo ? lo[0] : 0;
       c.save(); c.translate(0, -15); c.rotate(ang); if (fx < 0) c.scale(1, -1);
-      c.translate(6, 0); c.save(); c.scale(kx, 1); c.lineJoin = 'round';
-      art.p.forEach(function (q, qi) {
-        var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2;
-        c.fillStyle = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4]; c.strokeStyle = OUT; c.lineWidth = 1; c.fillRect(q[0], py, q[2], ph); c.strokeRect(q[0], py, q[2], ph);
-        c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(q[0], py, q[2], Math.min(1.2, ph * 0.3));
-        if (qi === art.m) {
-          var sl = Math.min(5, q[2] * 0.3), sh = Math.max(1.8, ph * 0.5);
-          c.fillStyle = rarCol(d); c.fillRect(q[0] + 2, py + (ph - sh) / 2, sl, sh);
-          c.fillStyle = tierCol(tr); c.fillRect(q[0] + 2 + sl + 1.2, py + (ph - sh) / 2, sl, sh);
-        }
-      });
-      c.restore();
-      if (AT && !d.special) {
-        var mz = d.len + 5;
-        c.lineWidth = 1; c.strokeStyle = OUT;
-        if (AT & 4) { c.fillStyle = '#25262a'; c.fillRect(mz - 1, -3, 9, 4); c.strokeRect(mz - 1, -3, 9, 4); }
-        if (AT & 1) { c.fillStyle = '#1a1c20'; c.fillRect(d.len * 0.35, -8, 8, 3.2); c.strokeRect(d.len * 0.35, -8, 8, 3.2); c.fillStyle = '#ff4a3a'; c.fillRect(d.len * 0.35 + 5.4, -7.4, 1.8, 1.8); }
-        if (AT & 2) { c.fillStyle = '#3a3a40'; c.fillRect(d.len * 0.3, 3, 4, 10); c.strokeRect(d.len * 0.3, 3, 4, 10); }
-        if (AT & 8) { c.fillStyle = '#2e2a26'; c.fillRect(d.len * 0.62, 3, 3, 6); c.strokeRect(d.len * 0.62, 3, 3, 6); }
-        if (AT & 16) { c.fillStyle = '#ff3a3a'; c.fillRect(mz - 7, 2, 5, 2.2); }
-      }
+      c.translate(6, 0);
+      gunParts(c, d, skC, tr, OUT);
+      if (AT) drawAtt(c, d, AT, OUT, null);
       part(function () { c.beginPath(); c.arc(2, 1, 3.2, 0, 6.283); }, skin);
       c.restore();
     }
@@ -5861,9 +6022,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       ctx.beginPath(); ctx.moveTo(cxx, cyy); ctx.arc(cxx, cyy, cr, me.aimAng - CONE_HALF, me.aimAng + CONE_HALF); ctx.closePath(); ctx.fill(); ctx.stroke();
     }
     // laser sights
-    if (!pvp && state === 'play') for (i = 0; i < players.length; i++) {
-      var LP = players[i];
-      if (LP.down || !atHas(LP, 16) || isSpecialActive(LP) || isGhost(LP)) continue;
+    if (state === 'play') for (i = 0; i < players.length; i++) {
+      var LP = players[i], LR = viewRef(LP);
+      if (LP.down || !LR || !WEAPONS[LR.id] || !(atM(LP, LR.id) & 16) || isSpecialActive(LP) || isGhost(LP)) continue;
       var lax = LP.x + Math.cos(LP.ang) * 24, lay = LP.y + Math.sin(LP.ang) * 24, lgr = ctx.createLinearGradient(lax, lay, lax + Math.cos(LP.ang) * 320, lay + Math.sin(LP.ang) * 320);
       lgr.addColorStop(0, 'rgba(255,60,50,0.55)'); lgr.addColorStop(1, 'rgba(255,60,50,0)');
       ctx.strokeStyle = lgr; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(lax, lay); ctx.lineTo(lax + Math.cos(LP.ang) * 320, lay + Math.sin(LP.ang) * 320); ctx.stroke();
@@ -6729,7 +6890,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   document.addEventListener("focusout", function () { setTimeout(function () { window.scrollTo(0, 0); try { fit(); } catch (e) {} }, 60); });
 
   // ---------- start ----------
-  myLook = cleanLook(savedLook, Math.floor(Math.random() * LOOK_COLS.length));
+  myLook = cleanLook(savedLook, Math.floor(Math.random() * LOOK_COLS.length)); armSyncPu();
   players = [newPlayer(0, 'You', myLook)]; me = players[0];
   showScreen('main');
   updateHud();
