@@ -4108,7 +4108,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 155';
+  var updMsg = '', VERSION = 'Version 156';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6668,7 +6668,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   game.appendChild(devBtn); game.appendChild(devPanel);
   (function () {
     var st = document.createElement('style');
-    st.textContent = '#devBtn{position:absolute;z-index:70;top:calc(var(--insT,0px) + 62px);left:max(10px,env(safe-area-inset-left));font:700 14px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:11px 14px;opacity:.9}#devBtn.x{background:#e0453a;color:#fff;opacity:1}' +
+    st.textContent = '#devBtn{position:absolute;z-index:70;top:calc(var(--insT,0px) + 62px);left:max(10px,env(safe-area-inset-left));font:700 14px/1 var(--face-ui);letter-spacing:.12em;color:#1a0e08;background:#78e0a0;border:0;border-radius:4px;padding:11px 14px;opacity:.9}#devBtn.x{background:#e0453a;color:#fff;opacity:1}#devBtn.menu{top:calc(var(--insT,0px) + 6px)}' +
       '#devPanel{position:absolute;z-index:61;top:0;right:0;bottom:0;width:min(330px,62%);background:rgba(10,8,7,.93);border-left:2px solid #78e0a0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(var(--insT,0px) + 8px) max(12px,env(safe-area-inset-right)) 60px 12px;color:#ebe3d4;font:600 14px/1.3 var(--face-ui);text-align:left}' +
       '#devPanel h3{margin:14px 0 6px;font:700 13px/1 var(--face-ui);letter-spacing:.14em;text-transform:uppercase;color:#78e0a0}' +
       '#devPanel .r{display:flex;flex-wrap:wrap;gap:6px}' +
@@ -6682,7 +6682,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       devBtn.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
     });
   })();
-  function devUpdateBtn() { devBtn.textContent = DEV.open ? 'CLOSE DEV' : 'DEV'; devBtn.className = DEV.open ? 'x' : ''; devBtn.hidden = !(DEV.on && !screen && net.mode !== 'client'); if (!DEV.on || screen || net.mode === 'client') { DEV.open = false; devPanel.hidden = true; } }
+  var devMM = null;
+  function devUpdateBtn() {
+    var mm = state !== 'play';
+    devBtn.textContent = DEV.open ? 'CLOSE DEV' : 'DEV'; devBtn.className = (DEV.open ? 'x' : '') + (screen ? ' menu' : '');
+    devBtn.hidden = !(DEV.on && net.mode !== 'client');
+    if (!DEV.on || net.mode === 'client') { DEV.open = false; devPanel.hidden = true; }
+    if (DEV.open && devMM !== mm) devRender();
+    devMM = mm;
+  }
   function devDoor(all, open) { for (var i = 0; i < DOORS.length; i++) { DOORS[i].open = open; DOORS[i].prog = 0; } if (typeof navInit === 'function' && MAPCFG.nav === true) navInit(); }
   function devPos(P, d) { var a = P.aimAng !== null && P.aimAng !== undefined ? P.aimAng : P.ang; return { x: P.x + Math.cos(a) * d, y: P.y + Math.sin(a) * d }; }
   function devSpawn(type, n) {
@@ -6700,6 +6708,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (net.mode === 'client') { DEV.msg = 'Dev actions only work for the host or offline.'; devRender(); return; }
     DEV.msg = '';
     if (a === 'close') { DEV.open = false; devPanel.hidden = true; return; }
+    else if (a === 'zb') { ZB.z += +v; armSave(); DEV.msg = 'Z-bucks: ' + ZB.z; }
+    else if (a === 'zb0') { ZB.z = 0; armSave(); DEV.msg = 'Z-bucks: 0'; }
+    else if (a === 'keepall') { armKeepSet(Object.keys(WEAPONS), true); DEV.msg = 'Everything is now really unlocked.'; }
+    else if (a === 'keepnone') { armKeepSet(Object.keys(WEAPONS), false); DEV.msg = 'All keeps removed. Fitted items come off when dev mode goes off.'; }
+    else if (a === 'qreset') { ZB.qp = [0, 0, 0]; ZB.qc = [0, 0, 0]; ZB.qb = 0; armSave(); DEV.msg = 'Daily quests reset.'; }
+    else if (a === 'gift') { ZB.z += STARTER_Z; armSave(); DEV.msg = 'Gave ' + STARTER_Z + ' Z. Z-bucks: ' + ZB.z; }
     else if (a === 'god') DEV.god = !DEV.god;
     else if (a === 'kill1') DEV.kill1 = !DEV.kill1;
     else if (a === 'zfreeze') DEV.zfreeze = !DEV.zfreeze;
@@ -6866,6 +6880,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     h += '</div><div class="r" style="margin-top:6px"><select id="devSuLvl">';
     Object.keys(DEV_LEVELS).forEach(function (k) { h += '<option value="' + k + '"' + (DEV.su.lvl === k ? ' selected' : '') + '>' + DEV_LEVELS[k].name + '</option>'; });
     h += '</select></div><div class="r" style="margin-top:6px">' + b('Start test game', 'setup') + b('Add fake player', 'addbot') + b('Remove fake players', 'rmbots') + '</div><div class="m" style="color:#9c8f7e">Fresh game (solo, or your whole room when hosting) on that map, at that wave, with the guns, upgrades and armour you would roughly have by then. Offline only. Dev test games never save.</div>';
+    if (state !== 'play') {
+      h += '<h3>Armoury</h3><div class="r">' + b('+10 Z', 'zb', 10) + b('+100 Z', 'zb', 100) + b('+1,000 Z', 'zb', 1000) + b('Set to 0', 'zb0') + '</div>';
+      h += '<div class="r" style="margin-top:6px">' + b('Keep everything', 'keepall') + b('Remove all keeps', 'keepnone') + '</div>';
+      h += '<div class="r" style="margin-top:6px">' + b('Reset daily quests', 'qreset') + b('Give starter 10 Z', 'gift') + '</div>';
+      h += '<div class="m" style="color:#9c8f7e">Z-bucks: ' + ZB.z + '. The rest of the dev tools appear once a game is running.</div>';
+      h += '<h3>Dev mode</h3><div class="r">' + b('Turn dev mode off', 'off') + '</div><div class="m">' + esc(DEV.msg) + '</div>';
+      var sc0 = devPanel.scrollTop; devPanel.innerHTML = h; devPanel.scrollTop = sc0;
+      return;
+    }
     h += '<h3>Switches</h3><div class="r">' + t('God mode', 'god', DEV.god) + t('Instakill', 'kill1', DEV.kill1) + t('Freeze zombies', 'zfreeze', DEV.zfreeze) + t('Infinite ammo', 'inf', DEV.inf) + t('Pause while open', 'pause', DEV.pause) + '</div>';
     h += '<h3>Game speed</h3><div class="r">';
     [0.25, 0.5, 1, 2].forEach(function (x) { h += '<button data-d="ts" data-v="' + x + '" class="' + (DEV.ts === x ? 'on' : '') + '" type="button">' + x + 'x</button>'; });
