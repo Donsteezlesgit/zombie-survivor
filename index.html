@@ -1463,6 +1463,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var P = players[i]; if (P.down) continue;
       var pcx = Math.max(0, Math.min(NN - 1, Math.floor(P.x / NC))), pcy = Math.max(0, Math.min(NN - 1, Math.floor(P.y / NC)));
       c = pcy * NN + pcx;
+      if (navCost[c] === inf) {   // standing in a tight gap the grid thinks is blocked: aim the paths at the nearest open cell instead
+        var bc = -1, bdd = 1e9, ax, ay, ac, dd;
+        for (ay = -3; ay <= 3; ay++) for (ax = -3; ax <= 3; ax++) {
+          var qx = pcx + ax, qy = pcy + ay; if (qx < 0 || qy < 0 || qx >= NN || qy >= NN) continue;
+          ac = qy * NN + qx; if (navCost[ac] === inf) continue;
+          dd = ax * ax + ay * ay; if (dd < bdd) { bdd = dd; bc = ac; }
+        }
+        if (bc >= 0) c = bc;
+      }
       if (navDist[c] > 0) { navDist[c] = 0; navPar[c] = -1; push(0, c); }
     }
     var DX = [1, -1, 0, 0, 1, 1, -1, -1], DY = [0, 0, 1, -1, 1, -1, 1, -1];
@@ -1764,7 +1773,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     fence(570, 300, 210, false, [[60, 100], [150, 175]]); fence(570, 700, 210, false, [[30, 60], [120, 160]]);
     fence(1020, 300, 210, false, [[80, 120]]); fence(1020, 700, 210, false, [[40, 90], [140, 170]]);
     // ---- playground (top left)
-    fence(340, 60, 400, false, [[165, 235]]); fence(340, 280, 400, false, [[270, 340]]); fence(340, 60, 220, true, [[90, 160]]); fence(740, 60, 220, true, []);
+    fence(340, 60, 400, false, [[165, 235]]); fence(340, 280, 400, false, [[20, 120], [270, 340]]); fence(340, 60, 220, true, [[90, 160]]); fence(740, 60, 220, true, []);
     R(370, 90, 110, 14, { furn: 'deco' }); R(370, 90, 14, 60, { furn: 'deco' }); R(466, 90, 14, 60, { furn: 'deco' }); shadow(370, 90, 110, 60, 40);
     R(560, 100, 40, 110, { furn: 'deco' }); shadow(560, 100, 40, 110, 34);
     R(494, 214, 12, 12, { furn: 'deco' }); DT_SH.push({ t: 'c', x: 500, y: 220, r: 22, hg: 60 });
@@ -1926,7 +1935,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     [[30, 230, 270, 0, [[100, 170]]], [30, 770, 270, 0, [[100, 170]]], [30, 230, 540, 1, []], [300, 230, 100, 1, []], [300, 670, 100, 1, []],
      [1500, 230, 270, 0, [[100, 170]]], [1500, 770, 270, 0, [[100, 170]]], [1770, 230, 540, 1, []], [1500, 230, 100, 1, []], [1500, 670, 100, 1, []],
      [570, 300, 210, 0, [[60, 100], [150, 175]]], [570, 700, 210, 0, [[30, 60], [120, 160]]], [1020, 300, 210, 0, [[80, 120]]], [1020, 700, 210, 0, [[40, 90], [140, 170]]],
-     [340, 60, 400, 0, [[165, 235]]], [340, 280, 400, 0, [[270, 340]]], [340, 60, 220, 1, [[90, 160]]], [740, 60, 220, 1, []]].forEach(function (f) { dtFencePaint(c, rr, f[0], f[1], f[2], !!f[3], f[4]); });
+     [340, 60, 400, 0, [[165, 235]]], [340, 280, 400, 0, [[20, 120], [270, 340]]], [340, 60, 220, 1, [[90, 160]]], [740, 60, 220, 1, []]].forEach(function (f) { dtFencePaint(c, rr, f[0], f[1], f[2], !!f[3], f[4]); });
     // the stone wall around the whole town
     c.strokeStyle = '#85735e'; c.lineWidth = 10; c.strokeRect(5, 5, 1790, 1010); c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 2; c.strokeRect(10, 10, 1780, 1000);
     for (i = 0; i < 90; i++) { c.fillStyle = rr() < 0.5 ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.12)'; c.fillRect(ra(0, 1800), rr() < 0.5 ? 1 : 1009, ra(4, 12), 8); c.fillRect(rr() < 0.5 ? 1 : 1791, ra(0, 1010), 8, ra(4, 12)); }
@@ -4277,15 +4286,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         var smv = z.stX === undefined ? 99 : Math.hypot(z.x - z.stX, z.y - z.stY);
         z.stX = z.x; z.stY = z.y;
         var swant = !bar && mv !== 0 && !(z.boss && (z.warn > 0 || z.rest > 0 || z.breath > 0 || z.dash > 0)) && !(z.gooT > 0) && !dwait && d > stopD + 6;
-        if (swant && smv < 5) { z.stN = (z.stN || 0) + 1; z.stL = (z.stL || 0) + 0.5; } else { z.stN = 0; if (smv > 14) z.stL = 0; }
+        if (swant && smv < 5) { z.stN = (z.stN || 0) + 1; z.stL = (z.stL || 0) + 0.5; } else { z.stN = 0; if (smv > 14) { z.stL = 0; z.stR = 0; } }
         if (z.stN >= 3) {
-          z.stN = 0; z.rtT = 1.1; z.rtD = Math.random() < 0.5 ? 1 : -1; z.navT = 0; z.nvOk = false; z.side = -(z.side || 1); z.stick = 0;
+          z.stN = 0; z.stR = (z.stR || 0) + 1; z.rtT = 1.1; z.rtD = Math.random() < 0.5 ? 1 : -1; z.navT = 0; z.nvOk = false; z.side = -(z.side || 1); z.stick = 0;
         }
       }
       // outside the map, or stuck for ages far from everyone: remove it quietly so the wave can end
       // (no route to any player for a few seconds means it is walled off or outside the map)
       if (navOn && !bar && !z.nvOk && !z.boss && !dclosed) z.stO = (z.stO || 0) + dt; else z.stO = 0;
-      if (z.stO > 3 || (!z.boss && (z.stL || 0) >= 12 && pdist > 250)) { queue.push(z.type); zombies.splice(i, 1); i--; continue; }   // a replacement spawns, so it is never a free kill
+      // only ever while nobody can see it, and only after it has tried a new route three times (or has no route at all)
+      var zseen = false, zk;
+      for (zk = 0; zk < players.length && !zseen; zk++) { var zp = players[zk]; if (!zp.down && Math.abs(zp.x - z.x) < Math.max(W, 700) / zoom / 2 + 120 && Math.abs(zp.y - z.y) < Math.max(H, 400) / zoom / 2 + 120) zseen = true; }
+      if (!zseen && !z.boss && (z.stO > 3 || ((z.stL || 0) >= 6 && (z.stR || 0) >= 3 && pdist > 250))) { queue.push(z.type); zombies.splice(i, 1); i--; continue; }   // a replacement spawns, so it is never a free kill
       if (bar && distRect(z.x, z.y, bar) < z.r + 4) {
         bar.acc += z.dmg * 0.4 * dt;
         if (bar.acc >= 10) { bar.acc -= 10; bar.planks--; snoise(0.1, 900, 0.07); stone(140, 80, 0.1, 'square', 0.05); addFx(bar.cx, bar.cy, 5, 90, 0.3, 2.5, '170,120,70'); }
@@ -4672,7 +4684,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 172';
+  var updMsg = '', VERSION = 'Version 173';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
