@@ -3773,12 +3773,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         z.x += tdx * z.side * z.spd * 0.8 * dt; z.y += tdy * z.side * z.spd * 0.8 * dt;
       }
       // stuck check every half second: not getting anywhere while it should be walking
+      // waiting at a shut door (or in the queue behind it) is not being stuck
+      var dwait = false, dclosed = false, dk;
+      for (dk = 0; dk < DOORS.length; dk++) if (!DOORS[dk].open) { dclosed = true; if (distRect(z.x, z.y, DOORS[dk]) < 150) dwait = true; }
+      if (dwait) { z.stN = 0; z.stL = 0; z.stO = 0; }
       z.stT = (z.stT || 0) - dt;
       if (z.stT <= 0) {
         z.stT = 0.5;
         var smv = z.stX === undefined ? 99 : Math.hypot(z.x - z.stX, z.y - z.stY);
         z.stX = z.x; z.stY = z.y;
-        var swant = !bar && mv !== 0 && !(z.boss && (z.warn > 0 || z.rest > 0 || z.breath > 0 || z.dash > 0)) && !(z.gooT > 0) && d > stopD + 6;
+        var swant = !bar && mv !== 0 && !(z.boss && (z.warn > 0 || z.rest > 0 || z.breath > 0 || z.dash > 0)) && !(z.gooT > 0) && !dwait && d > stopD + 6;
         if (swant && smv < 5) { z.stN = (z.stN || 0) + 1; z.stL = (z.stL || 0) + 0.5; } else { z.stN = 0; if (smv > 14) z.stL = 0; }
         if (z.stN >= 3) {
           z.stN = 0; z.rtT = 1.1; z.rtD = Math.random() < 0.5 ? 1 : -1; z.navT = 0; z.nvOk = false; z.side = -(z.side || 1); z.stick = 0;
@@ -3786,7 +3790,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
       // outside the map, or stuck for ages far from everyone: remove it quietly so the wave can end
       // (no route to any player for a few seconds means it is walled off or outside the map)
-      if (navOn && !bar && !z.nvOk && !z.boss) z.stO = (z.stO || 0) + dt; else z.stO = 0;
+      if (navOn && !bar && !z.nvOk && !z.boss && !dclosed) z.stO = (z.stO || 0) + dt; else z.stO = 0;
       if (z.stO > 3 || (!z.boss && (z.stL || 0) >= 12 && pdist > 250)) { queue.push(z.type); zombies.splice(i, 1); i--; continue; }   // a replacement spawns, so it is never a free kill
       if (bar && distRect(z.x, z.y, bar) < z.r + 4) {
         bar.acc += z.dmg * 0.4 * dt;
@@ -4174,7 +4178,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 165';
+  var updMsg = '', VERSION = 'Version 166';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
