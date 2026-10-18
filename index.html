@@ -2260,6 +2260,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     return hit;
   }
+  // zombies bump into walls as if they were the size of a player, so every zombie fits through any gap a player can. They still look their real size
+  function collideZ(z) { var r0 = z.r; if (r0 > PR - 1) z.r = PR - 1; var h = collide(z); z.r = r0; return h; }
   // anything dropped inside a sealed pen gets moved out in front of the barrier
   function evictFromPockets(o, push) {
     for (var i = 0; i < BLD.length; i++) {
@@ -4547,7 +4549,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
       z.x += z.vx * dt; z.y += z.vy * dt;
       var damp = Math.pow(0.02, dt); z.vx *= damp; z.vy *= damp;
-      var wh = collide(z);
+      var wh = collideZ(z);
       if (wh && z.dash > 0) { z.dash = 0; z.rest = 1.4; z.next = z.t + 4.5; shakeAt(z.x, z.y, 5); snoise(0.12, 600, 0.1); }
       if (wh && !bar && !wh.door) {
         var tdx = -wh.ny, tdy = wh.nx, tdot = tdx * Math.cos(ma) + tdy * Math.sin(ma);
@@ -4610,7 +4612,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
       if (z.ghost) continue;
-      collide(z);
+      collideZ(z);
       z.x = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.x));
       z.y = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.y));
     }
@@ -4968,7 +4970,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 180';
+  var updMsg = '', VERSION = 'Version 181';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
