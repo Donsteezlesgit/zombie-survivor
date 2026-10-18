@@ -2410,26 +2410,44 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       hapEl.click();
     } catch (e) {}
   }
+  // iPhone only allows its tick from inside a touch or click handler (or a timer started by one, for about a second).
+  // So on iPhone a buzz is queued and sent from the next touch event. Android uses a real vibration pattern.
+  var hapQ = [], hapGest = 0, hapTap = 0;
+  function hapFlush() {
+    var now = performance.now(), i = 0, did = false;
+    while (i < hapQ.length) {
+      if (now - hapQ[i] > 220) { hapQ.splice(i, 1); continue; }
+      if (!did && hapQ[i] <= now && now - hapLast >= 28) { hapQ.splice(i, 1); hapLast = now; hapTick(); did = true; continue; }
+      i++;
+    }
+  }
   function hap(p) {
     if (!hapOn || !p) return;
-    var now = performance.now();
-    if (now - hapLast < 28) return;
-    hapLast = now;
+    var now = performance.now(), t = 0, i;
     if (typeof p === 'number') p = [p];
     try {
-      if (navigator.vibrate) { navigator.vibrate(p); return; }
-      var t = 0, i;
+      if (navigator.vibrate) { if (now - hapLast < 28) return; hapLast = now; navigator.vibrate(p); return; }
       for (i = 0; i < p.length; i += 2) {
-        if (t === 0) hapTick(); else setTimeout(hapTick, t);
+        hapQ.push(now + t);
+        if (t > 0) setTimeout(function () { if (performance.now() - hapGest < 900) hapFlush(); }, t);
         t += p[i] + (p[i + 1] || 0);
       }
+      if (hapQ.length > 8) hapQ.splice(0, hapQ.length - 8);
+      if (now - hapGest < 900) hapFlush();
     } catch (e) {}
   }
   function buzz(ms) { hap(ms); }
   function hapFor(P, k) { if (P && HAPG[k]) priv(P, ['hp', k]); }
-  document.addEventListener('pointerdown', function (e) {
-    var t = e.target, b = t && t.closest ? t.closest('button, [data-a], .tab') : null;
-    if (b && !b.disabled && !b.closest('#btnEd')) hap(HAPG.tap);
+  function hapIsBtn(e) { var t = e.target, b = t && t.closest ? t.closest('button, [data-a], .tab') : null; return b && !b.disabled && !b.closest('#btnEd'); }
+  ['touchstart', 'touchmove'].forEach(function (ev) { document.addEventListener(ev, function () { if (hapQ.length) hapFlush(); }, { capture: true, passive: true }); });
+  document.addEventListener('touchend', function (e) {
+    hapGest = performance.now();
+    if (hapIsBtn(e)) { hapTap = hapGest; hap(HAPG.tap); } else if (hapQ.length) hapFlush();
+  }, { capture: true, passive: true });
+  document.addEventListener('click', function (e) {
+    if (hapEl && hapEl.contains(e.target)) return;
+    var now = performance.now(); hapGest = now;
+    if (now - hapTap > 500 && hapIsBtn(e)) hap(HAPG.tap); else if (hapQ.length) hapFlush();
   }, true);
   var killSnd = 0, coinSnd = 0, shotN = 0;
 
@@ -4917,6 +4935,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
+      h += '<button class="go alt" data-a="haptest" type="button">Test haptics</button>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
       h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
@@ -4969,7 +4988,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 177';
+  var updMsg = '', VERSION = 'Version 178';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5167,6 +5186,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'hap') {
       hapOn = !hapOn; try { localStorage.setItem('zs-hap', hapOn ? '1' : '0'); } catch (e) {}
       renderScreen(); if (hapOn) hap([20]);
+    }
+    else if (a === 'haptest') {
+      updMsg = 'Taps: now, again after 1.5 seconds, again after 4 seconds. Tell Claude which ones you felt.';
+      hapTick(); setTimeout(hapTick, 1500); setTimeout(hapTick, 4000); renderScreen();
     }
     else if (a === 'btnedit') openBtnEd();
     else if (a === 'mute') {
