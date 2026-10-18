@@ -167,6 +167,11 @@ body {
 }
 }
 .boxbtn:disabled { opacity: 0.45; cursor: default; }
+.btned { position: absolute; inset: 0; z-index: 60; background: rgba(10, 8, 7, 0.95); touch-action: none; user-select: none; -webkit-user-select: none; }
+.btned[hidden] { display: none; }
+.btned p { position: absolute; left: 24px; right: 24px; top: calc(env(safe-area-inset-top, 0px) + 18px); margin: 0; text-align: center; color: var(--bone); font: 600 15px/1.35 var(--face-ui); }
+.btned .edrow { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); display: flex; gap: 10px; justify-content: center; }
+.btned .edbtn { visibility: visible !important; transform: translate(-50%, -50%); right: auto; touch-action: none; box-shadow: 0 0 0 2px rgba(242, 193, 78, 0.85); }
 .boxui { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 8, 7, 0.9); }
 .boxcard { width: min(100%, 360px); padding: 18px; background: rgba(43, 37, 32, 0.95); border: 1px solid var(--gold); border-radius: 6px; display: flex; flex-direction: column; gap: 10px; }
 .boxcard h2 { margin: 0; font: 400 28px/1.05 var(--face-display); }
@@ -596,6 +601,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   </div>
 
   <div class="overlay" id="ov" hidden></div>
+  <div class="btned" id="btnEd" hidden><p>Drag the buttons where your thumbs like them</p><div class="edrow"><button class="chip" id="edReset" type="button">Reset</button><button class="chip" id="edCancel" type="button">Cancel</button><button class="go" id="edDone" type="button">Done</button></div></div>
 </div>
 
 <script src="peerjs.min.js"></script>
@@ -2355,7 +2361,47 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       s2.connect(f2); f2.connect(g2); g2.connect(actx.destination); s2.start(now, Math.random() * 0.5); s2.stop(now + 0.05);
     } catch (e) {}
   }
-  function buzz(ms) { try { if (!muted && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+  // ---------- haptics ----------
+  // Android vibrates with a pattern. iPhone has no vibrate, so a hidden switch is tapped for a light tick instead (needs iOS 17.4 or newer)
+  var hapOn = true, hapEl = null, hapLast = 0;
+  try { hapOn = localStorage.getItem('zs-hap') !== '0'; } catch (e) {}
+  // [on, off, on, ...] in milliseconds. Every gun gets its own feel
+  var HAPG = {
+    tap: [7], pistol: [14], smg: [6], rifle: [18], lmg: [9], shotgun: [40, 28, 20], sniper: [55, 80, 14],
+    flame: [5], rocket: [50, 30, 30], zap: [9], ray: [12], ghost: [8],
+    gren: [22], boom: [60, 40, 30], stim: [16, 50, 16], wave: [30, 70, 30, 70, 50], down: [90, 60, 60]
+  };
+  function hapTick() {
+    try {
+      if (!hapEl) {
+        var l = document.createElement('label'), i = document.createElement('input');
+        l.setAttribute('aria-hidden', 'true'); l.style.cssText = 'position:fixed;left:-99px;top:-99px;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden';
+        i.type = 'checkbox'; i.setAttribute('switch', ''); l.appendChild(i); document.body.appendChild(l); hapEl = l;
+      }
+      hapEl.click();
+    } catch (e) {}
+  }
+  function hap(p) {
+    if (!hapOn || !p) return;
+    var now = performance.now();
+    if (now - hapLast < 28) return;
+    hapLast = now;
+    if (typeof p === 'number') p = [p];
+    try {
+      if (navigator.vibrate) { navigator.vibrate(p); return; }
+      var t = 0, i;
+      for (i = 0; i < p.length; i += 2) {
+        if (t === 0) hapTick(); else setTimeout(hapTick, t);
+        t += p[i] + (p[i + 1] || 0);
+      }
+    } catch (e) {}
+  }
+  function buzz(ms) { hap(ms); }
+  function hapFor(P, k) { if (P && HAPG[k]) priv(P, ['hp', k]); }
+  document.addEventListener('pointerdown', function (e) {
+    var t = e.target, b = t && t.closest ? t.closest('button, [data-a], .tab') : null;
+    if (b && !b.disabled && !b.closest('#btnEd')) hap(HAPG.tap);
+  }, true);
   var killSnd = 0, coinSnd = 0, shotN = 0;
 
   // ---------- game state ----------
@@ -2991,6 +3037,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       case 'sh': if (me && Math.hypot(me.x - e[2], me.y - e[3]) < 520) shake = Math.max(shake, e[1]); break;
       case 'H': hurtFlash = 0.35; shake = Math.min(9, 4 + e[1] * 0.2); tone(120, 60, 0.15, 'square', 0.09); noise(0.08, 500, 0.07); buzz(35); break;
       case 'V': buzz(e[1]); break;
+      case 'hp': hap(HAPG[e[1]]); break;
       case 'K': feedAdd(e[1], e[2]); break;
     }
   }
@@ -3143,6 +3190,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // health and ammo left on the floor vanish when the next wave begins
     pickups = pickups.filter(function (q) { return q.kind !== 'health' && q.kind !== 'ammo'; });
     wave = n; queue = buildQueue(n);
+    for (var hw = 0; hw < players.length; hw++) hapFor(players[hw], 'wave');
     phase = 'spawning'; spawnTimer = 1.2;
     var boss = n % 5 === 0 && !isGhostWave(n), bi, i;
     // barriers stay as they were between waves; only a new game rebuilds them
@@ -3410,7 +3458,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } else {
       P.hp = Math.min(maxHpNow(P), P.hp + maxHpNow(P) * TUNE.stim.heal); P.stimCd = TUNE.stim.cd; P.sb = TUNE.stim.boost;
     }
-    ptone(P, 300, 900, 0.18, 'sine', 0.07); ptone(P, 600, 1200, 0.12, 'square', 0.04, 0.12);
+    ptone(P, 300, 900, 0.18, 'sine', 0.07); ptone(P, 600, 1200, 0.12, 'square', 0.04, 0.12); hapFor(P, 'stim');
   }
   // ---------- grenades: two per player, each comes back 60 seconds after it is thrown ----------
   // damage is worked out so a walker or runner always dies to one, up to wave 4; later waves have more health than that
@@ -3457,7 +3505,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var e = grenStop(P.x, P.y, tx, ty);
     P.gr[slot] = G.cd; if (pvp) P.inv = 0;
     grenades.push({ x: P.x, y: P.y, sx: P.x, sy: P.y, tx: e.x, ty: e.y, t: 0, T: Math.max(0.3, G.fly * Math.min(1, Math.hypot(e.x - P.x, e.y - P.y) / G.range + 0.3)), fuse: G.fuse, owner: P.id });
-    ptone(P, 420, 220, 0.08, 'triangle', 0.06); ptone(P, 900, 500, 0.05, 'square', 0.03, 0.04);
+    ptone(P, 420, 220, 0.08, 'triangle', 0.06); ptone(P, 900, 500, 0.05, 'square', 0.03, 0.04); hapFor(P, 'gren');
   }
   function grenBoom(g) {
     var G = TUNE.gren, R = G.R, dmg = grenDmg(), j, z, d, nx, ny, kb, i, Q, f, K;
@@ -3478,6 +3526,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     addFx(g.x, g.y, 34, 280, 0.55, 5, '255,150,50'); addFx(g.x, g.y, 12, 130, 0.45, 7, '255,235,160'); addFx(g.x, g.y, 10, 60, 0.7, 9, '70,60,55');
     sscorch(g.x, g.y, R * 0.75); shakeAt(g.x, g.y, 7);
+    for (i = 0; i < players.length; i++) if (Math.hypot(players[i].x - g.x, players[i].y - g.y) < 300) hapFor(players[i], 'boom');
     snoise(0.35, 420, 0.14); stone(100, 36, 0.35, 'sawtooth', 0.11);
   }
   function updateGrenades(dt) {
@@ -3766,7 +3815,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (P.hp <= 0) { P.hp = 0; downPlayer(P); }
   }
   function downPlayer(P) {
-    P.down = true; P.rev = 0; P.tgt = null; P.inx = P.iny = 0; P.boxPrize = null;
+    P.down = true; P.rev = 0; P.tgt = null; P.inx = P.iny = 0; P.boxPrize = null; hapFor(P, 'down');
     if (!pvp) { for (var uk in P.upg) P.upg[uk] = 0; P.dtT = TUNE.downT; P.dead = false; }   // going down wipes every bought upgrade (guns and armour stay)
     gbDropCarried(P);
     if (allDown()) { gameOver(); return; }
@@ -3912,6 +3961,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     P.flash = 0.06;
     shotN++;
     var id = d.sid || ref.id, cls = d.cls;
+    hapFor(P, d.special ? id : cls);
     if (AM & 4) { if (shotN % 2 === 0) snoise(0.03, 1500, 0.02); }
     else if (GUNSND[cls]) sgun(cls);
     else if (id === 'ray') { stone(1000, 220, 0.2, 'sawtooth', 0.06); snoise(0.05, 3500, 0.04); }
@@ -4201,8 +4251,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
   }
 
+  var bloodAge = 0;
   function updateFx(dt) {
     var i;
+    // old blood slowly fades away so the floor does not stay red all game
+    if (bloodOn && (bloodAge += dt) > 5) { bloodAge = 0; var bx = bloodL.x; bx.save(); bx.globalCompositeOperation = 'destination-out'; bx.fillStyle = 'rgba(0,0,0,0.07)'; bx.fillRect(0, 0, WORLD, WORLD); bx.restore(); }
     for (i = parts.length - 1; i >= 0; i--) {
       var p = parts[i];
       p.x += p.vx * dt; p.y += p.vy * dt;
@@ -4720,6 +4773,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     } else if (screen === 'settings') {
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
+      h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
+      h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
       h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
       h += '<div class="swipe">' + (net.mode !== 'off' ? 'Online games use two thumbs: left walks, right aims' : (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic')) + '</div>';
@@ -4771,7 +4826,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 174';
+  var updMsg = '', VERSION = 'Version 175';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -4965,6 +5020,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'leave') leaveGame();
     else if (a === 'again') { if (net.mode === 'host') hostStart(); else startOffline(mapId); }
     else if (a === 'back') showScreen(b.dataset.to);
+    else if (a === 'hap') {
+      hapOn = !hapOn; try { localStorage.setItem('zs-hap', hapOn ? '1' : '0'); } catch (e) {}
+      renderScreen(); if (hapOn) hap([20]);
+    }
+    else if (a === 'btnedit') openBtnEd();
     else if (a === 'mute') {
       muted = !muted; ensureAudio();
       try { localStorage.setItem('zs-muted', muted ? '1' : '0'); } catch (e) {}
@@ -5056,7 +5116,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'Grenades: 2 per player, one button under the stim. Each recharges 60 seconds after you throw it. They hurt other players too, and a little less if it is your own.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.'] },
     { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones every 12 hours (at midnight and midday), shown on the main menu. Finish all three for 1 more.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Every gun that is not already in the PvP list has a Use in PvP option on its screen. Buy it once and you can pick that gun in PvP. Weak guns are cheap, the strongest cost a lot.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
-    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, controls, a game guide, Update game, and a link to share the game.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
+    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, haptics, Move buttons, controls, a game guide, Update game, and a link to share the game.', 'Move buttons: drag the reload, stim and grenade buttons wherever your thumbs like. It is saved for portrait and landscape separately, and Reset puts them back.', 'Haptics: guns, grenades, hits and menu taps buzz a little, and each gun feels different. Turn it off in Settings. iPhone needs iOS 17.4 or newer, and gives lighter taps than Android.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
     list = list || HELP; title = title || 'How to play';
@@ -5405,6 +5465,48 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   fastTap(stimGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('stim'); });
   fastTap(grenGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('gren'); });
 
+  // ---------- move the buttons: reload, stim and grenade can be dragged anywhere, saved per phone and per screen direction ----------
+  var btnPos = { p: {}, l: {} }, BTNS = [['rl', swapGo], ['st', stimGo], ['gr', grenGo]], btnEd = $('btnEd'), edPos = null;
+  try { var bpz = JSON.parse(localStorage.getItem('zs-btnpos') || 'null'); if (bpz && bpz.p && bpz.l) btnPos = bpz; } catch (e) {}
+  function btnOr() { return window.innerWidth > window.innerHeight ? 'l' : 'p'; }
+  function applyBtnPos() {
+    var o = btnPos[btnOr()], i, el, v;
+    for (i = 0; i < BTNS.length; i++) {
+      el = BTNS[i][1]; v = o[BTNS[i][0]];
+      if (v) { el.style.left = Math.round(v[0] * window.innerWidth) + 'px'; el.style.top = Math.round(v[1] * window.innerHeight) + 'px'; el.style.right = 'auto'; el.style.transform = 'translate(-50%,-50%)'; }
+      else { el.style.left = ''; el.style.transform = ''; }
+    }
+  }
+  function btnDefault() {
+    var W = window.innerWidth, H = window.innerHeight, small = H <= 520, bh = small ? 42 : 50, off = small ? 50 : 58, f = small ? 0.58 : 0.54, x = (W - 8 - bh / 2) / W;
+    return { rl: [x, f + bh / 2 / H], st: [x, f - off / H + bh / 2 / H], gr: [x, f + off / H + bh / 2 / H] };
+  }
+  function closeBtnEd() { btnEd.hidden = true; var o = btnEd.querySelectorAll('.edbtn'), i; for (i = 0; i < o.length; i++) btnEd.removeChild(o[i]); edPos = null; }
+  function openBtnEd() {
+    var o = btnPos[btnOr()], d = btnDefault();
+    edPos = {};
+    BTNS.forEach(function (b) {
+      var k = b[0], el = b[1].cloneNode(true), drag = null;
+      el.removeAttribute('id'); el.hidden = false; el.classList.add('edbtn'); el.classList.remove('low');
+      edPos[k] = (o[k] || d[k]).slice();
+      el.style.left = Math.round(edPos[k][0] * window.innerWidth) + 'px'; el.style.top = Math.round(edPos[k][1] * window.innerHeight) + 'px';
+      el.addEventListener('pointerdown', function (e) { e.preventDefault(); drag = e.pointerId; try { el.setPointerCapture(e.pointerId); } catch (x) {} hap([10]); });
+      el.addEventListener('pointermove', function (e) {
+        if (drag !== e.pointerId) return;
+        var W = window.innerWidth, H = window.innerHeight, x = Math.max(30, Math.min(W - 30, e.clientX)), y = Math.max(30, Math.min(H - 30, e.clientY));
+        el.style.left = x + 'px'; el.style.top = y + 'px'; edPos[k] = [x / W, y / H];
+      });
+      el.addEventListener('pointerup', function () { drag = null; });
+      el.addEventListener('pointercancel', function () { drag = null; });
+      btnEd.appendChild(el);
+    });
+    btnEd.hidden = false;
+  }
+  ['touchstart', 'touchmove'].forEach(function (ev) { btnEd.addEventListener(ev, function (e) { e.stopPropagation(); if (e.cancelable) e.preventDefault(); }, { passive: false }); });
+  $('edDone').addEventListener('click', function () { if (edPos) { btnPos[btnOr()] = edPos; try { localStorage.setItem('zs-btnpos', JSON.stringify(btnPos)); } catch (e) {} applyBtnPos(); } closeBtnEd(); });
+  $('edCancel').addEventListener('click', closeBtnEd);
+  $('edReset').addEventListener('click', function () { btnPos[btnOr()] = {}; try { localStorage.setItem('zs-btnpos', JSON.stringify(btnPos)); } catch (e) {} applyBtnPos(); hudCache.lay = 0; closeBtnEd(); });
+
   // ---------- shop ----------
   var shopBtn = $('shopBtn'), lastShopKey = '';
   function openShop() {
@@ -5662,6 +5764,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
           stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px'; grenGo.style.top = (st0 + 2 * (bh + 8)) + 'px';
         } else { stimGo.style.top = ''; swapGo.style.top = ''; grenGo.style.top = ''; }
       }
+      applyBtnPos();
     }
     if (showStim) {
       var gk2 = g0 + ',' + g1;
