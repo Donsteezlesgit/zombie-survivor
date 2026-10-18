@@ -4096,7 +4096,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       else a = P.ang + rnd(-d.spread * sprF / 2, d.spread * sprF / 2);
       crit = Math.random() < critP;
       bullets.push({
-        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 26 : undefined, vh: fph ? Math.tan(fpPitch) : undefined, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
+        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 26 : undefined, vh: fph ? Math.tan(fpPitch) : undefined, vy: fph ? 38 * Math.sin(fpPitch) - 10 * Math.cos(fpPitch) : undefined, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * pm * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
         cen: (!pvp && !d.kind && P.cone && P.aimAng !== null && P.aimAng !== undefined) ? 1 : 0, ax: P.x, ay: P.y, aa: P.aimAng,
         kind: d.kind || 'bullet', bt: d.kind ? 0 : btI, blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
@@ -4998,7 +4998,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 186';
+  var updMsg = '', VERSION = 'Version 187';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -7042,7 +7042,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.fm = [];
     var fmat = new T.MeshLambertMaterial({ color: 0xffffff }), n;
     for (n = 0; n < names.length; n++) { var im = new T.InstancedMesh(box, fmat, NF); im.frustumCulled = false; im.count = 0; im.setColorAt(0, v3col('#ffffff')); sc.add(im); V.fm.push(im); }
-    V.gun = new T.InstancedMesh(box, fmat, 16); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
+    V.gun = new T.InstancedMesh(box, fmat, 48); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
     V.sh = new T.InstancedMesh(disc, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), NF); V.sh.frustumCulled = false; V.sh.count = 0; sc.add(V.sh);
     var bm = new T.MeshBasicMaterial({ color: 0xffffff });
     V.cu = new T.InstancedMesh(box, bm, 400); V.cu.frustumCulled = false; V.cu.count = 0; V.cu.setColorAt(0, v3col('#fff')); sc.add(V.cu);
@@ -7109,6 +7109,35 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function v3put(im, n, x, y, z, ry, sx, sy, sz, colr) {
     var d = V.d; d.position.set(x, y, z); d.rotation.set(0, ry, 0); d.scale.set(sx, sy, sz); d.updateMatrix(); im.setMatrixAt(n, d.matrix); if (colr) im.setColorAt(n, colr);
   }
+  // ---- your own gun in first person: built from the same side-view art as the 2D guns, so EVERY gun and attachment is there in 3D.
+  // It sits in the camera's frame, so it tilts and turns with the view. f = forward, u = up, r = right (from the eye).
+  function v3loc(f, u, r) {
+    var cy = Math.cos(fpYaw), sy = Math.sin(fpYaw), cp = Math.cos(fpPitch), sp = Math.sin(fpPitch), X = f * cp - u * sp, Y = f * sp + u * cp;
+    return { x: V.ge[0] + X * cy - r * sy, y: V.ge[1] + Y, z: V.ge[2] + X * sy + r * cy };
+  }
+  function v3gpart(f, u, r, lx, ly, lz, colr) {
+    if (V.gn >= 47) return;
+    var d = V.d, q = v3loc(f, u, r);
+    d.position.set(q.x, q.y, q.z); d.rotation.order = 'YZX'; d.rotation.set(0, -fpYaw, fpPitch); d.scale.set(lx, ly, lz); d.updateMatrix(); d.rotation.order = 'XYZ';
+    V.gun.setMatrixAt(V.gn, d.matrix); V.gun.setColorAt(V.gn, colr); V.gn++;
+  }
+  function v3viewgun(gd, lo, kick, dip) {
+    var S = 0.55, art = GART[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GART.rifle, kx = (gd.len + 5) / art.tip;
+    var skC = lo && lo[1] ? GSKIN[lo[1]].c : null, AT = lo ? lo[0] : 0, mz = gd.len + 5;
+    var f0 = 38 - mz * S - kick, u0 = -11 - dip, r0 = 9;
+    art.p.forEach(function (q, qi) {
+      var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
+      v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, r0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), v3col(col));
+    });
+    function A(x, y, w, h, col) { v3gpart(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, r0, w * S, h * S, Math.max(1.3, h * S * 0.95), v3col(col)); }
+    if (AT & 4) { A(mz - 1, -3, 9, 4, '#25262a'); A(mz + 1, -2.6, 1.2, 3.2, '#3a3c42'); A(mz + 4, -2.6, 1.2, 3.2, '#3a3c42'); }
+    if (AT & 1) { A(gd.len * 0.35, -8, 8, 3.2, '#1a1c20'); A(gd.len * 0.35 + 5.4, -7.4, 1.8, 1.8, '#ff4a3a'); }
+    if (AT & 2) { A(gd.len * 0.3, 3, 4, 10, '#3a3a40'); A(gd.len * 0.3, 11, 4, 1.4, '#d4a52e'); }
+    if (AT & 8) A(gd.len * 0.62, 3, 3, 6, '#2e2a26');
+    if (AT & 16) { A(mz - 7, 2, 5, 2.2, '#ff3a3a'); A(mz - 8, 1.6, 1.6, 3, '#7a1a1a'); }
+    if (AT & 32) { A(gd.len * 0.12, -5.4, 3.4, 2, '#d4a52e'); A(gd.len * 0.12 + 0.6, -5, 1.2, 1, '#ffeaa0'); }
+    V.mz = (AT & 4) ? 9 * S : 0;
+  }
   function render3d(vw, vh, sx, sy) {
     var T = THREE, i, z, P, rr, n, d = V.d;
     if (V.map !== mapId) v3setup();
@@ -7119,6 +7148,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var eyeY = (me && me.down) ? 9 : 26, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
     V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
     var cpch = Math.cos(fpPitch), spch = Math.sin(fpPitch);
+    V.ge = [focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3]; V.mz = 0;
     V.cam.lookAt(focus.x + sx * 0.3 + fcx * cpch * 100, eyeY + spch * 100, focus.y + sy * 0.3 + fcz * cpch * 100);
     // lighting: sunset outside, dimmer and lamp-lit indoors, nearly black at night with a torch
     var ins = (me && v3inside(me.x, me.y)) ? 1 : 0, cp = V.cam.position;
@@ -7128,7 +7158,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.sdisc.visible = !night; V.sdisc.position.set(cp.x - 2000, cp.y + 880, cp.z + 800); V.sdisc.lookAt(cp);
     V.hemi.intensity = night ? 0.4 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.05 : 1.7 - V.li * 1.5;
     V.pl.intensity = night ? 3.2 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
-    V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; V.mf.position.set(focus.x + fcx * 42 - fcz * 10, 16, focus.y + fcz * 42 + fcx * 10);
+    V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     V.torch.intensity = (night && me && !me.down) ? 6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
@@ -7153,8 +7183,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3put(V.sh, n, P.x, 0.7, P.y, 0, 10, 1, 10); n++;
     }
     // your own gun, low on the right of the view
-    if (me && !me.down && V.gn < 15) {
-      v3put(V.gun, V.gn++, focus.x + fcx * 31 - fcz * 10, 15, focus.y + fcz * 31 + fcx * 10, -fpYaw, 14, 2.4, 2.4, v3col('#34363a'));
+    if (me && !me.down) {
+      var gref = curRef(me), gdd = gref && defOf(gref);
+      if (gdd) v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), me.flash > 0 ? 1.6 : 0, (gref.reload > 0) ? 5 : 0);
     }
     for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
     V.gun.count = V.gn; V.gun.instanceMatrix.needsUpdate = true; if (V.gun.instanceColor) V.gun.instanceColor.needsUpdate = true;
@@ -7174,7 +7205,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < bullets.length && cn < 390; i++) {
       var bu = bullets[i], bx0 = bu.x, by0 = bu.y, vf = 0, yb = 21;
       if (bu.vox !== undefined) { vf = Math.max(0, 1 - bu.dist / 80); bx0 += bu.vox * vf; by0 += bu.voy * vf; yb = 21 - 4 * vf; }
-      if (bu.vh !== undefined) yb = bu.h0 + bu.vh * bu.dist - 10 * vf;   // first person: rises or falls along the crosshair line   // first person: it leaves the gun, then settles onto its true line
+      if (bu.vh !== undefined) yb = bu.h0 + bu.vh * bu.dist + bu.vy * vf;   // first person: rises or falls along the crosshair line   // first person: it leaves the gun, then settles onto its true line
       if (bu.kind === 'fire') { var ff = Math.min(1, bu.dist / bu.max); v3put(V.or, on++, bx0, yb, by0, 0, 3 + ff * 8, 3 + ff * 8, 3 + ff * 8, v3col('#ff9a30')); }
       else if (bu.kind === 'goo') v3put(V.or, on++, bx0, yb, by0, 0, 5, 5, 5, v3col('#5dff8a'));
       else if (bu.kind === 'rocket') v3put(V.or, on++, bx0, yb, by0, 0, 5, 5, 5, v3col('#ff8a3a'));
@@ -7184,7 +7215,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         v3put(V.cu, cn++, bx0, yb, by0, -Math.atan2(bu.dy, bu.dx), bu.kind === 'ray' ? 34 : (bu.long ? 20 : 11), bu.crit ? 2.4 : 1.7, bu.crit ? 2.4 : 1.7, tc ? v3col(tc) : c3);
       }
     }
-    if (me && me.flash > 0 && !me.down) v3put(V.or, on++, focus.x + fcx * 40 - fcz * 10, 16, focus.y + fcz * 40 + fcx * 10, 0, 3.2, 3.2, 3.2, v3col('#ffe3a6'));
+    if (me && me.flash > 0 && !me.down) { var fzp = v3loc(40 + V.mz, -10, 9); v3put(V.or, on++, fzp.x, fzp.y, fzp.z, 0, 3.2, 3.2, 3.2, v3col('#ffe3a6')); }
     for (i = 0; i < ebullets.length; i++) { e = ebullets[i]; v3put(V.or, on++, e.x, e.r + 6, e.y, 0, e.r * 1.2, e.r * 1.2, e.r * 1.2, v3col('#7b736a')); }
     for (i = 0; i < grenades.length; i++) {
       var g = grenades[i], gp = Math.min(1, g.t / g.T), gh = Math.sin(gp * Math.PI) * 30 * (gp < 1 ? 1 : 0);
