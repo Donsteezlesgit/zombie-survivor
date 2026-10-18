@@ -4998,7 +4998,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 187';
+  var updMsg = '', VERSION = 'Version 188';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -7042,6 +7042,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.fm = [];
     var fmat = new T.MeshLambertMaterial({ color: 0xffffff }), n;
     for (n = 0; n < names.length; n++) { var im = new T.InstancedMesh(box, fmat, NF); im.frustumCulled = false; im.count = 0; im.setColorAt(0, v3col('#ffffff')); sc.add(im); V.fm.push(im); }
+    V.ex = new T.InstancedMesh(box, fmat, 6000); V.ex.frustumCulled = false; V.ex.count = 0; V.ex.setColorAt(0, v3col('#fff')); sc.add(V.ex);
+    V.eb = new T.InstancedMesh(box, new T.MeshBasicMaterial({ color: 0xffffff }), 2500); V.eb.frustumCulled = false; V.eb.count = 0; V.eb.setColorAt(0, v3col('#fff')); sc.add(V.eb);
+    V.eg = new T.InstancedMesh(box, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.78, depthWrite: false }), 200); V.eg.frustumCulled = false; V.eg.count = 0; V.eg.setColorAt(0, v3col('#fff')); sc.add(V.eg);
+    V.dr = new T.InstancedMesh(box, new T.MeshLambertMaterial({ color: 0xffffff, map: v3tex('wood') }), 80); V.dr.frustumCulled = false; V.dr.count = 0; V.dr.setColorAt(0, v3col('#fff')); sc.add(V.dr);
+    V.en = V.ebn = V.egn = V.shn = 0; V.fl = 0; V.rs = true; V.slow = 0; V.ft = 0; V.tp = 0; V.sf = 0;
+    /* real shadows from the sun, drawn every other frame, with an automatic fall-back to blob shadows if the phone struggles */
+    r.shadowMap.enabled = true; r.shadowMap.type = 1; r.shadowMap.autoUpdate = false;
+    sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); var shc = sun.shadow.camera; shc.left = -460; shc.right = 460; shc.top = 460; shc.bottom = -460; shc.near = 20; shc.far = 2800; shc.updateProjectionMatrix();
+    sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.6; sc.add(sun.target);
+    for (n = 0; n < 6; n++) V.fm[n].castShadow = true;
+    V.ex.castShadow = true; V.dr.castShadow = true; V.dr.receiveShadow = true;
     V.gun = new T.InstancedMesh(box, fmat, 48); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
     V.sh = new T.InstancedMesh(disc, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), NF); V.sh.frustumCulled = false; V.sh.count = 0; sc.add(V.sh);
     var bm = new T.MeshBasicMaterial({ color: 0xffffff });
@@ -7073,16 +7084,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (V.walls) { sc3rm(V.walls); V.walls.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
     if (V.ground) { sc3rm(V.ground); V.gTex.dispose(); V.ground.geometry.dispose(); }
     if (V.blood) { sc3rm(V.blood); V.bTex.dispose(); V.blood.geometry.dispose(); }
-    V.walls = v3walls(); V.sc.add(V.walls);
+    V.walls = v3walls(); V.sc.add(V.walls); V.walls.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     V.gTex = new T.CanvasTexture(groundL.c); V.gTex.colorSpace = T.SRGBColorSpace; V.gTex.minFilter = T.LinearFilter; V.gTex.generateMipmaps = false;
     V.ground = new T.Mesh(new T.PlaneGeometry(WORLD, WORLD), new T.MeshLambertMaterial({ map: V.gTex }));
-    V.ground.rotation.x = -Math.PI / 2; V.ground.position.set(WORLD / 2, 0, WORLD / 2); V.sc.add(V.ground);
+    V.ground.rotation.x = -Math.PI / 2; V.ground.position.set(WORLD / 2, 0, WORLD / 2); V.ground.receiveShadow = true; V.sc.add(V.ground);
     V.bTex = new T.CanvasTexture(bloodL.c); V.bTex.colorSpace = T.SRGBColorSpace; V.bTex.minFilter = T.LinearFilter; V.bTex.generateMipmaps = false;
     V.blood = new T.Mesh(new T.PlaneGeometry(WORLD, WORLD), new T.MeshLambertMaterial({ map: V.bTex, transparent: true, depthWrite: false }));
     V.blood.rotation.x = -Math.PI / 2; V.blood.position.set(WORLD / 2, 0.4, WORLD / 2); V.blood.visible = false; V.sc.add(V.blood);
     var nb = 0, i; for (i = 0; i < BLD.length; i++) nb += BLD[i].bar.max;
     if (V.bars) { sc3rm(V.bars); }
-    V.bars = new T.InstancedMesh(V.box, new T.MeshLambertMaterial({ color: 0xb08050, map: v3tex('wood') }), Math.max(1, nb)); V.bars.frustumCulled = false; V.sc.add(V.bars);
+    V.bars = new T.InstancedMesh(V.box, new T.MeshLambertMaterial({ color: 0xb08050, map: v3tex('wood') }), Math.max(1, nb)); V.bars.frustumCulled = false; V.bars.castShadow = true; V.bars.receiveShadow = true; V.sc.add(V.bars);
     V.map = mapId; V.bT = 99;
   }
   function sc3rm(o) { if (o.parent) o.parent.remove(o); }
@@ -7094,16 +7105,226 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.M.multiplyMatrices(V.F, V.A); V.M.multiply(V.B);
     im.setMatrixAt(n, V.M); im.setColorAt(n, colr);
   }
-  function v3fig(n, x, z, ang, s, step, mv, skin, cloth, pants, down, gun) {
+  // ---- extra boxes on figures, pets, items and so on: position is in the thing's own frame (x forward, y up, z sideways), colours are hex strings.
+  // fl: 1 = unlit (glows), 2 = keep its colour when a zombie flashes, 4 = see-through ghost sheet
+  function v3frame(x, y, z, ang, s) { var d = V.d; d.position.set(x, y, z); d.rotation.set(0, -ang, 0); d.scale.set(s || 1, s || 1, s || 1); d.updateMatrix(); V.F.copy(d.matrix); }
+  function v3x(px, py, pz, sx, sy, sz, col, fl, rx, ry, rz) {
+    fl = fl | 0;
+    var im, n, d = V.d;
+    if (fl & 4) { if (V.egn >= 200) return; im = V.eg; n = V.egn++; }
+    else if (fl & 1) { if (V.ebn >= 2500) return; im = V.eb; n = V.ebn++; }
+    else { if (V.en >= 6000) return; im = V.ex; n = V.en++; }
+    if (V.fl && !(fl & 2) && !(fl & 4)) col = V.fl === 2 ? '#c4302a' : '#e8dccb';
+    d.position.set(px, py, pz); d.rotation.set(rx || 0, ry || 0, rz || 0); d.scale.set(sx, sy, sz); d.updateMatrix();
+    V.M.multiplyMatrices(V.F, d.matrix); im.setMatrixAt(n, V.M); im.setColorAt(n, v3col(col));
+  }
+  // a gun held in front of a figure (other players and bots): same art as the 2D guns, with attachments and skin
+  function v3figgun(gd, lo) {
+    var S = 0.6, art = GART[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GART.rifle, kx = (gd.len + 5) / art.tip, mz = gd.len + 5;
+    var skC = lo && lo[1] ? GSKIN[lo[1]].c : null, AT = lo ? lo[0] : 0, f0 = 9, u0 = 22.5;
+    art.p.forEach(function (q, qi) {
+      var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
+      v3x(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, 0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), col, 2);
+    });
+    function A(x, y, w, h, col) { v3x(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, 0, w * S, h * S, Math.max(1.3, h * S * 0.95), col, 2); }
+    if (AT & 4) A(mz - 1, -3, 9, 4, '#25262a');
+    if (AT & 1) { A(gd.len * 0.35, -8, 8, 3.2, '#1a1c20'); A(gd.len * 0.35 + 5.4, -7.4, 1.8, 1.8, '#ff4a3a'); }
+    if (AT & 2) { A(gd.len * 0.3, 3, 4, 10, '#3a3a40'); A(gd.len * 0.3, 11, 4, 1.4, '#d4a52e'); }
+    if (AT & 8) A(gd.len * 0.62, 3, 3, 6, '#2e2a26');
+    if (AT & 16) A(mz - 7, 2, 5, 2.2, '#ff3a3a');
+    if (AT & 32) A(gd.len * 0.12, -5.4, 3.4, 2, '#d4a52e');
+  }
+  // zombies: a face, torn clothes, hands, and something different for every kind
+  function v3zom(k, step, seed, za) {
+    var cc = ZCOL[k] || ZCOL.walker, boss = (k === 'boss' || k === 'bossRun' || k === 'bossThrow' || k === 'bossFire'), sk = cc.skin, cl = cc.cloth, i, ecol = (k === 'boss' || k === 'bossRun' || k === 'bossFire') ? '#ff3a2a' : '#ffe45a';
+    var tx = 12 * Math.cos(za), ty = 24.5 + 12 * Math.sin(za);
+    // hands at the end of the arms
+    v3x(tx + 0.8, ty, 6.6, 3.6, 3.6, 3.6, sk); v3x(tx + 0.8, ty, -6.6, 3.6, 3.6, 3.6, sk);
+    // ragged hem and a torn chest with blood
+    for (i = 0; i < 4; i++) v3x(0, 12.4 + (i % 2) * 0.9, -4.6 + i * 3.1, 6.9, 2.2, 2.6, shade(cl, -18));
+    v3x(3.3, 21.5, 2.2, 0.4, 4, 3.4, shade(sk, -12)); v3x(3.35, 18, -2, 0.5, 2.4, 2.8, '#6b1d1a'); v3x(3.35, 22.8, -3, 0.5, 1.2, 2.2, '#6b1d1a');
+    if (k === 'walker' || k === 'runner') { v3x(2, 25.5, 6.6, 4.4, 4.6, 4.6, cl); v3x(2, 25.5, -6.6, 4.4, 4.6, 4.6, cl); }
+    if (k === 'walker' || k === 'runner' || k === 'bossRun') {   // hair
+      v3x(0.2, 33.6, 0, 8.2, 2.2, 8.2, '#2a2418'); v3x(-3.5, 30.5, 0, 1.6, 5.4, 7.8, '#2a2418');
+    }
+    if (k !== 'armoured') {
+      v3x(4.5, 30.8, 1.9, 0.5, 1.6, 1.6, ecol, 3); v3x(4.5, 30.8, -1.9, 0.5, 1.6, 1.6, ecol, 3);
+      v3x(4.5, 27.4, 0, 0.5, 1.4, 4.2, '#2a0c0a'); v3x(4.7, 27.9, 1.2, 0.5, 0.7, 0.8, '#d8d0b4', 2); v3x(4.7, 27.9, -1.2, 0.5, 0.7, 0.8, '#d8d0b4', 2);
+    }
+    if (k === 'tank') {
+      v3x(0, 28.2, 8.8, 5.2, 4, 5.6, shade(cl, 18)); v3x(0, 28.2, -8.8, 5.2, 4, 5.6, shade(cl, 18));
+      v3x(2.9, 15.5, 0, 3, 7.5, 10.8, shade(sk, -14)); v3x(3.4, 20, 0, 0.5, 1.6, 9.6, '#6a2a22');
+    } else if (k === 'armoured') {
+      v3x(0.6, 34.2, 0, 8.8, 4.6, 8.8, '#4a545a'); v3x(0.6, 32.2, 0, 9.8, 1.1, 9.8, '#3a4348'); v3x(4.55, 30.8, 0, 0.5, 1.5, 7.4, '#0d1114', 2);
+      v3x(4.7, 30.8, 1.8, 0.45, 0.9, 1.3, '#ff5a3a', 3); v3x(4.7, 30.8, -1.8, 0.45, 0.9, 1.3, '#ff5a3a', 3);
+      v3x(3.6, 21, 0, 1.4, 9, 11.2, '#707c84'); v3x(4.2, 19.5, 0, 0.5, 0.8, 9.6, '#4a545a'); v3x(4.2, 22.5, 0, 0.5, 0.8, 9.6, '#4a545a');
+      v3x(0, 27.6, 8.4, 5, 3.4, 5.6, '#5a666e'); v3x(0, 27.6, -8.4, 5, 3.4, 5.6, '#5a666e');
+    } else if (k === 'boss') {
+      for (i = -1; i <= 1; i += 2) { v3x(0, 31.4, 7.4 * i, 1.8, 5.4, 1.8, '#d8cfb8'); v3x(0, 30, 4.6 * i, 1.6, 4.4, 1.6, '#d8cfb8'); }
+      for (i = -1; i <= 1; i++) v3x(0.6, 36.2, 3 * i, 1.4, 4.6, 1.4, '#d8cfb8');
+      v3x(0, 12.6, 0, 7.2, 2.4, 11.6, '#3a2a22'); v3x(3.3, 21, 0, 0.5, 1.1, 10.6, '#a02a1c');
+    } else if (k === 'bossRun') {
+      for (i = 0; i < 3; i++) v3x(3.4, 22.5 - i * 3, 0, 0.5, 0.8, 8.4 - i * 0.8, '#d8cfb8');
+      for (i = -1; i <= 1; i++) { v3x(tx + 3.2, ty, 6.6 + i * 1.1, 3.4, 0.6, 0.6, '#e8e0cc'); v3x(tx + 3.2, ty, -6.6 + i * 1.1, 3.4, 0.6, 0.6, '#e8e0cc'); }
+    } else if (k === 'bossThrow') {
+      v3x(3.5, 20.5, 0, 0.7, 17, 1.8, '#6a5a3a', 2, 0.6); v3x(3.5, 14.5, 3.6, 1.6, 3.2, 3, '#7a7466', 2); v3x(3.4, 26.2, 0, 0.8, 1.3, 11.6, '#6a5a3a', 2);
+      v3x(tx + 3.4, ty + 1.6, 6.6, 5.6, 5.6, 5.6, '#8a8478', 2); v3x(tx + 3.4, ty + 3.8, 6.6, 2.4, 1.2, 2.4, '#5a564c', 2);
+    } else if (k === 'bossFire') {
+      for (i = -2; i <= 2; i++) { var fw = Math.sin(time * 9 + i * 1.7 + seed) * 1.4; v3x(0.2, 36.6 + fw * 0.5, i * 1.9, 1.7, 5 + (i % 2 ? 0 : 2) + fw, 1.7, '#ff9a2a', 3); v3x(0.2, 36 + fw * 0.4, i * 1.9, 0.9, 3 + fw, 0.9, '#ffd25a', 3); }
+      v3x(3.5, 21, 0, 0.6, 6, 6, '#7a2a14', 2); v3x(3.8, 21, 0, 0.5, 3.4, 3.4, '#ffb13a', 3);
+      v3x(0, 28.6, 8.4, 3, 2.4, 3, '#ff7a1c', 3); v3x(0, 28.6, -8.4, 3, 2.4, 3, '#ff7a1c', 3);
+    }
+  }
+  function v3ghost(z, fl, ang) {
+    var bob = 5 + Math.sin(time * 4 + z.seed) * 2.2, w = Math.sin(time * 6 + z.seed) * 1.3, c1 = fl ? '#ffffff' : '#b8d8ee', c2 = fl ? '#ffffff' : '#a8c8e0', i;
+    V.fl = 0; v3frame(z.x, bob, z.y, ang, ZSZ.ghost[0]);
+    v3x(0, 25, 0, 7.8, 9, 10.4, c1, 6); v3x(0, 15, 0, 8.6, 12, 11.6, c1, 6); v3x(0, 6, 0, 9, 7, 12, c2, 6);
+    for (i = 0; i < 4; i++) v3x(0, 1.6 + (i % 2) * w, -4.4 + i * 2.9, 8, 3, 2.7, c2, 6);
+    v3x(0, 21, 8, 3, 3, 8, c1, 6, 0, 0, -0.5 - w * 0.2); v3x(0, 21, -8, 3, 3, 8, c1, 6, 0, 0, -0.5 + w * 0.2);
+    v3x(4.3, 26, 2.2, 0.5, 3.4, 2, '#10202e', 3); v3x(4.3, 26, -2.2, 0.5, 3.4, 2, '#10202e', 3); v3x(5.2, 19.5, 0, 0.5, 4.2, 2.6, '#10202e', 3);
+  }
+  // other players and bots: hair, hat, face, jacket, pack, armour
+  function v3ply(L, ar, P) {
+    var hs = L.hs | 0, hat = L.h | 0, hair = HAIRC[L.hc] || HAIRC[1], hk = L.hk ? ACOLS[L.hk - 1][1] : null, pk = L.kc ? ACOLS[L.kc - 1][1] : '#3a342c', i, hc;
+    V.fl = 0;
+    // jacket
+    if (L.j === 1) { v3x(3.3, 23, 2.4, 0.4, 3.6, 3.6, '#3a4a2c'); v3x(3.3, 17.5, -2.6, 0.4, 3, 4, '#5a4a2a'); v3x(-3.3, 21.5, -1.5, 0.4, 3.4, 4, '#2a3420'); }
+    if (L.j === 2) { v3x(0, 16.6, 0, 6.8, 1.7, 11.3, '#d8e84a'); v3x(0, 22, 0, 6.8, 1.7, 11.3, '#d8e84a'); }
+    if (ar.body > 0 || L.j === 3) { hc = ar.body > 0 ? TIERCOL[ar.body] : '#5d6670'; v3x(0.4, 20.5, 0, 7.2, 10, 9.8, hc); v3x(3.9, 18.4, 0, 0.5, 1.1, 8, '#2a2f34'); v3x(3.9, 22, 0, 0.5, 1.1, 8, '#2a2f34'); }
+    if (L.n) v3x(0.4, 26.2, 0, 7.4, 2.2, 8.2, '#d6452e');
+    if (P && !P.down && P.hp > 0 && P.mhp > 0 && P.hp < P.mhp * 0.5) { v3x(3.4, 19, 2.6, 0.5, 3.4, 3.2, '#aa1014'); v3x(3.4, 23, -2.4, 0.5, 2.6, 3.8, '#781008'); }
+    // back: pack or cape
+    if (L.k === 1) v3x(-4.8, 19.5, 0, 3.4, 9.4, 7.6, pk);
+    else if (L.k === 2) { v3x(-5.4, 19, 0, 4.6, 12, 9.6, L.kc ? pk : '#5a4a2a'); v3x(-7.8, 19, 0, 0.6, 3, 1.2, '#c9a24a'); v3x(-5.4, 25.8, 0, 4.2, 1.4, 9, shade(L.kc ? pk : '#5a4a2a', -20)); }
+    else if (L.k === 3) { v3x(-3.8, 18, 0, 0.8, 22, 11.6, '#b02a2a'); v3x(-4.6, 11, 0, 0.8, 5, 14, '#b02a2a'); }
+    // hair
+    if (hs === 0) { v3x(0.2, 33.7, 0, 8.2, 2.4, 8.2, hair); v3x(-3.6, 30.6, 0, 1.4, 4.4, 8, hair); }
+    else if (hs === 1) { v3x(0.2, 33.7, 0, 8.2, 2.4, 8.2, hair); v3x(-3.9, 27.5, 0, 1.8, 12, 9, hair); v3x(0.2, 29, 4.4, 7.4, 8, 1.4, hair); v3x(0.2, 29, -4.4, 7.4, 8, 1.4, hair); }
+    else if (hs === 2) { v3x(0.4, 35.2, 0, 8, 3.6, 1.9, hair); v3x(0.4, 33.2, 0, 8, 0.8, 4, hair); }
+    else if (hs === 4) { v3x(0.2, 33.7, 0, 8.2, 2.4, 8.2, hair); v3x(-3.6, 30.6, 0, 1.4, 4.4, 8, hair); v3x(-5, 29.5, 0, 2.2, 7, 2.4, hair); v3x(-4.6, 32, 0, 1.4, 1.4, 3.2, '#d6452e'); }
+    else if (hs === 5) { v3x(-0.2, 32.4, 0, 11.2, 9.6, 11.4, hair); }
+    // face
+    if (L.f === 1) v3x(4.6, 30.8, 0, 0.8, 1.9, 7.8, '#101418');
+    else { v3x(4.5, 30.8, 1.9, 0.5, 1.5, 1.5, '#14100d'); v3x(4.5, 30.8, -1.9, 0.5, 1.5, 1.5, '#14100d'); }
+    if (L.f === 2) { v3x(5.6, 28, 0, 2.8, 3.8, 5.2, '#4a5560'); v3x(7.4, 27.2, 0, 2.2, 2.4, 2.4, '#222a30'); }
+    // hat or helmet
+    if (ar.head > 0) { hc = TIERCOL[ar.head]; v3x(0.6, 34.2, 0, 8.8, 4.4, 8.8, hc); v3x(0.6, 32.4, 0, 9.8, 1.1, 9.8, shade(hc, -25)); }
+    else if (hat === 1) { hc = hk || '#6b7352'; v3x(0.6, 34.5, 0, 8.5, 3.2, 8.5, hc); v3x(6.2, 33.2, 0, 4, 0.9, 7, shade(hc, -20)); }
+    else if (hat === 2) { hc = hk || '#e8e1d2'; v3x(0.6, 34.8, 0, 8.6, 4, 8.6, hc); v3x(0.6, 33.6, 0, 8.9, 1.2, 8.9, hk ? shade(hk, -45) : '#d6452e'); v3x(0.6, 37.6, 0, 2.6, 2.6, 2.6, hc); }
+    else if (hat === 3) { v3x(0.6, 33.2, 0, 8, 1.9, 8, hk || '#d6452e'); v3x(-4.8, 32, 0, 1.6, 3.4, 2.4, hk || '#d6452e'); }
+    else if (hat === 4) { v3x(0.6, 34.6, 0, 9, 4.6, 9, '#4a5a3a'); v3x(0.6, 32.6, 0, 10.4, 1, 10.4, '#3a4a2c'); }
+    else if (hat === 5) { v3x(0.6, 33.5, 0, 13, 1.2, 13, '#2a1a3a'); v3x(0.6, 36.4, 0, 7.2, 5, 7.2, '#2a1a3a'); v3x(0.6, 41, 0, 4.8, 4.4, 4.8, '#2a1a3a'); v3x(0.6, 44.6, 0, 2.2, 3.4, 2.2, '#2a1a3a'); v3x(0.6, 35, 0, 7.5, 1.4, 7.5, '#b46bff'); }
+    else if (hat === 6) { v3x(0.6, 34.2, 0, 8.4, 2.4, 8.4, '#f2c14e'); [[-3.2, -3.2], [3.2, -3.2], [-3.2, 3.2], [3.2, 3.2], [0, 0]].forEach(function (p, ii) { v3x(0.6 + p[0], 36.4 + (ii === 4 ? 0.8 : 0), p[1], 1.7, 3.2, 1.7, '#f2c14e'); }); v3x(4.9, 34.2, 0, 0.5, 1.4, 1.4, '#d6452e', 1); }
+    else if (hat === 7) { v3x(0.6, 34.6, 0, 8.7, 3.6, 8.7, '#f2f2f2'); v3x(5.1, 34.7, 0, 0.5, 3.6, 1.2, '#d6252e', 1); v3x(5.1, 34.7, 0, 0.5, 1.2, 3.6, '#d6252e', 1); }
+    else if (hat === 8) {
+      v3x(0.6, 31.6, 0, 11.4, 10.8, 11.4, '#e8821e'); v3x(0.6, 37.8, 0, 2.2, 3, 2.2, '#4a6a2a');
+      v3x(5.7, 32.6, 2.5, 0.6, 2.2, 2.2, '#ffd25a', 1); v3x(5.7, 32.6, -2.5, 0.6, 2.2, 2.2, '#ffd25a', 1); v3x(5.7, 28.6, 0, 0.6, 1.6, 5.2, '#ffd25a', 1);
+    }
+  }
+  // pets (the same animals as in the 2D game, built from boxes)
+  var PETQ = {
+    1: { B: '#8a847a', L: '#6f6a62', E: '#d6a6a6', M: '#9a948a', ear: 'round', tail: 'thin', bl: 4.8, bh: 2.6, hr: 2.1, nose: '#d98c8c' },
+    2: { B: '#c98a4b', L: '#a8703a', E: '#c98a4b', M: '#ecd0a8', ear: 'point', tail: 'cat', bl: 5.6, bh: 3.2, hr: 2.9, stripe: 1 },
+    3: { B: '#1b1714', L: '#b87a3c', E: '#0e0b09', M: '#b87a3c', ear: 'flop', tail: 'up', bl: 6.2, bh: 3.5, hr: 3.1, chest: '#b87a3c' },
+    4: { B: '#e6d3a7', L: '#f1e4c4', E: '#caae78', M: '#f6ecd2', ear: 'flop', tail: 'up', bl: 6.2, bh: 3.5, hr: 3.1 }
+  };
+  function v3pet(S) {
+    var pt = S.pt, U = 1.3, sw = S.mv ? Math.sin(S.ph) : 0, hop = S.mv ? Math.abs(Math.sin(S.ph)) * 0.9 : 0, br = S.mv ? 0 : Math.sin(S.ph * 0.4) * 0.25, Q = PETQ[pt], i;
+    V.fl = 0; v3frame(S.x, hop, S.y, S.hd, 1);
+    v3blob(S.x, S.y, Q ? 8 : 5, Q ? 8 : 5);
+    if (pt === 7) {   // little ghost
+      var gb = 6 + Math.sin(S.ph * 0.5) * 1.4;
+      v3x(0, gb + 5, 0, 5.4, 7, 6.4, '#eaf2f6', 4); v3x(0, gb + 10, 0, 4.6, 4.6, 5.6, '#eaf2f6', 4); for (i = 0; i < 3; i++) v3x(0, gb + 0.6 + (i % 2) * 0.8, -2 + i * 2, 5, 1.8, 1.8, '#eaf2f6', 4);
+      v3x(2.4, gb + 10.4, 1.4, 0.4, 1.4, 1, '#1b2733', 1); v3x(2.4, gb + 10.4, -1.4, 0.4, 1.4, 1, '#1b2733', 1); v3x(2.6, gb + 7.6, 0, 0.4, 1.2, 1, '#1b2733', 1);
+      return;
+    }
+    if (pt === 5 || pt === 6) {   // chicken and crow
+      var ch = pt === 5, BB = ch ? '#f3efe6' : '#1a191e', WG = ch ? '#e1d9c6' : '#2d2d38', BK = ch ? '#e8a62b' : '#55524f', LG = ch ? '#e8a62b' : '#3b3a3f', by = 4.2 + hop;
+      v3x(0.5 + sw * 0.8, 1.8, 1.4, 0.9, 3.6, 0.9, LG); v3x(0.5 - sw * 0.8, 1.8, -1.4, 0.9, 3.6, 0.9, LG);
+      v3x(0, by + 3 + br, 0, ch ? 9.2 : 9.6, ch ? 6.6 : 5.4, 6.4, BB);
+      v3x(-0.5, by + 3, 3.4, 5.6, 3.2, 0.9, WG); v3x(-0.5, by + 3, -3.4, 5.6, 3.2, 0.9, WG);
+      if (ch) v3x(-5, by + 5.4, 0, 1.6, 5.4, 3.4, '#dcd5c4', 0, 0, 0, 0.3); else v3x(-6, by + 3, 0, 5.4, 1, 3.4, '#121115');
+      v3x(4.6, by + 7.4, 0, 3.8, 3.8, 3.6, BB); v3x(7.2, by + 6.8, 0, 2.4, 1.1, 1.5, BK);
+      if (ch) { v3x(4.6, by + 9.8, 0, 1.8, 1.8, 0.8, '#d23a2e'); v3x(7, by + 5.6, 0, 0.8, 1.2, 0.8, '#d23a2e'); }
+      v3x(6.3, by + 8, 1.6, 0.5, 0.8, 0.8, ch ? '#111' : '#d9d9e2', 1); v3x(6.3, by + 8, -1.6, 0.5, 0.8, 0.8, ch ? '#111' : '#d9d9e2', 1);
+      return;
+    }
+    if (!Q) return;
+    var bl = Q.bl * U, bh = Q.bh * U, hr = Q.hr * U, lh = 5, bw = bh * 2.1, by2 = lh + bh + br, hx = bl + hr * 0.45, hy = lh + bh * 1.8 + br, wag = Math.sin(S.ph * 1.7) * 0.25;
+    v3x(bl * 0.62 + sw * 2.2, lh / 2, bw * 0.34, 2.4, lh, 2.4, Q.L); v3x(bl * 0.62 - sw * 2.2, lh / 2, -bw * 0.34, 2.4, lh, 2.4, Q.L);
+    v3x(-bl * 0.62 - sw * 2.2, lh / 2, bw * 0.34, 2.4, lh, 2.4, Q.L); v3x(-bl * 0.62 + sw * 2.2, lh / 2, -bw * 0.34, 2.4, lh, 2.4, Q.L);
+    v3x(0, by2, 0, bl * 2, bh * 2, bw, Q.B);
+    if (Q.chest) v3x(bl * 0.88, by2 - bh * 0.1, 0, 1.6, bh * 1.4, bw * 0.62, Q.chest);
+    if (Q.stripe) for (i = 0; i < 3; i++) v3x(-2 + i * 2.4, by2 + bh + 0.1, 0, 0.9, 0.5, bw * 0.96, '#8a5a2a');
+    v3x(hx, hy, 0, hr * 2.1, hr * 2, hr * 2, Q.B); v3x(hx + hr * 1.25, hy - hr * 0.4, 0, hr * 1.2, hr * 0.9, hr * 1.1, Q.M);
+    v3x(hx + hr * 1.9, hy - hr * 0.25, 0, 0.9, 0.8, 1.4, Q.nose || '#111');
+    var ec = pt === 2 ? '#a6dc6e' : '#111'; v3x(hx + hr * 1.06, hy + hr * 0.2, hr * 0.55, 0.5, 0.9, 0.9, ec, 1); v3x(hx + hr * 1.06, hy + hr * 0.2, -hr * 0.55, 0.5, 0.9, 0.9, ec, 1);
+    if (Q.ear === 'flop') { v3x(hx - 0.4, hy - 0.2, hr * 1.1, 1.3, 3.6, 1, Q.E); v3x(hx - 0.4, hy - 0.2, -hr * 1.1, 1.3, 3.6, 1, Q.E); }
+    else if (Q.ear === 'point') { v3x(hx - 0.4, hy + hr * 1.2, hr * 0.6, 1.3, 2.8, 1.3, Q.E); v3x(hx - 0.4, hy + hr * 1.2, -hr * 0.6, 1.3, 2.8, 1.3, Q.E); }
+    else { v3x(hx - 0.4, hy + hr * 0.95, hr * 0.7, 1.7, 1.7, 0.9, Q.E); v3x(hx - 0.4, hy + hr * 0.95, -hr * 0.7, 1.7, 1.7, 0.9, Q.E); }
+    if (Q.tail === 'thin') v3x(-bl - 3, lh + 1.2, wag * 3, 6, 0.8, 0.8, '#d9a0a0');
+    else if (Q.tail === 'cat') v3x(-bl - 1, by2 + 3, wag * 3, 1.5, 7, 1.5, Q.B, 0, 0, 0, 0.3);
+    else v3x(-bl - 0.6, by2 + 2.6, wag * 3, 1.5, 5.4, 1.5, Q.B, 0, 0, 0, 0.55);
+  }
+  function v3bat(b) {
+    var fl = Math.sin(b.ph) * 0.9, w = 7 + Math.sin(b.ph) * 4;
+    V.fl = 0; v3frame(b.x, 38 + Math.sin(b.ph * 0.3) * 4, b.y, b.a, 1);
+    v3x(0, 0, 0, 3.8, 2.4, 2.8, '#0c0810'); v3x(1.8, 1.7, 0.9, 0.8, 1.6, 0.8, '#0c0810'); v3x(1.8, 1.7, -0.9, 0.8, 1.6, 0.8, '#0c0810');
+    v3x(0, w * 0.5 * Math.sin(fl), 1.2 + w * 0.5 * Math.cos(fl), 3.4, 0.5, w, '#150e1c', 0, fl); v3x(0, w * 0.5 * Math.sin(fl), -1.2 - w * 0.5 * Math.cos(fl), 3.4, 0.5, w, '#150e1c', 0, -fl);
+    v3x(2, 0.4, 0.5, 0.4, 0.5, 0.5, '#ff3a2a', 1); v3x(2, 0.4, -0.5, 0.4, 0.5, 0.5, '#ff3a2a', 1);
+  }
+  // things lying about: first-aid kits, ammo boxes, crates, gems, treasure chests, coins
+  function v3item(kind, x, z, i) {
+    var bob = Math.sin(time * 3 + i) * 2, sp = time * 1.2 + i * 1.7;
+    V.fl = 0; v3blob(x, z, 8, 8);
+    if (kind === 'health') {
+      v3frame(x, 0, z, sp * 0.4, 1);
+      v3x(0, 4.5, 0, 12, 9, 10, '#f2f2f2', 2); v3x(0, 4.5, 0, 12.2, 1.4, 10.2, '#cfd4d8', 2); v3x(0, 9.3, 0, 7, 0.6, 2.2, '#d6252e', 3); v3x(0, 9.3, 0, 2.2, 0.6, 7, '#d6252e', 3); v3x(0, 9.4, 0, 3, 1.2, 3.4, '#8a8f95', 2);
+    } else if (kind === 'ammo') {
+      v3frame(x, 0, z, sp * 0.4, 1);
+      v3x(0, 4, 0, 13, 8, 9, '#5a6a3a', 2); v3x(0, 4, 0, 13.2, 1.5, 9.2, '#f2c14e', 2);
+      for (var q = 0; q < 3; q++) v3x(-3 + q * 3, 9.8, 0, 1.6, 3.4, 1.6, '#d4a52e', 3);
+    } else if (kind === 'special') {
+      v3frame(x, 0, z, sp * 0.5, 1);
+      v3x(0, 5.6, 0, 12.6, 11, 12.6, '#d2692a', 2); v3x(0, 11.6, 0, 13.4, 2.2, 13.4, '#e8903a', 2); v3x(0, 5.6, 0, 13, 11.2, 2.4, '#8a4018', 2);
+      v3x(0, 18 + bob * 0.5, 0, 3.4, 3.4, 3.4, '#ffd25a', 3, sp, sp * 1.3, 0);
+    } else if (kind === 'perk') {
+      v3frame(x, 0, z, 0, 1);
+      v3x(0, 14 + bob, 0, 7, 7, 7, '#5fd0ff', 3, 0.7, sp * 2, 0.7); v3x(0, 14 + bob, 0, 4.4, 4.4, 4.4, '#d8f6ff', 3, sp, 0.5, sp);
+    } else {   // item / treasure
+      v3frame(x, 0, z, 0, 1);
+      v3x(0, 11 + bob, 0, 8, 8, 8, '#6aff9a', 3, 0.7, sp * 1.6, 0.7); v3x(0, 11 + bob, 0, 5, 5, 5, '#d8ffe4', 3, sp, 0.5, sp);
+    }
+  }
+  function v3chest(x, z) {
+    var sp = time * 1.5;
+    V.fl = 0; v3blob(x, z, 18, 15); v3frame(x, 0, z, 0, 1);
+    v3x(0, 6, 0, 26, 12, 20, '#a8742e', 2); v3x(0, 14.5, 0, 26.6, 6, 20.6, '#c9962e', 2);
+    v3x(7, 9.5, 0, 3, 20, 21, '#f2c14e', 2); v3x(-7, 9.5, 0, 3, 20, 21, '#f2c14e', 2); v3x(13.4, 10, 0, 1.2, 5, 4, '#f2c14e', 2);
+    v3x(0, 24 + Math.sin(sp * 2) * 1.5, 0, 4.4, 4.4, 4.4, '#ffe68a', 3, sp, sp * 1.4, 0);
+  }
+  function v3coin(x, z, i) {
+    var sp = time * 3 + i * 1.3;
+    V.fl = 0; v3frame(x, 0, z, sp, 1);
+    v3x(0, 6 + Math.sin(time * 4 + i) * 1.2, 0, 1.1, 5.4, 5.4, '#f2c14e', 3); v3x(0.3, 6 + Math.sin(time * 4 + i) * 1.2, 0, 1.1, 3.4, 3.4, '#ffe68a', 3);
+  }
+  function v3blob(x, z, rx, rz) { if (!V.rs && V.shn < 600) v3put(V.sh, V.shn++, x, 0.7, z, 0, rx, 1, rz); }
+  function v3fig(n, x, z, ang, s, step, mv, skin, cloth, pants, down, gun, ext) {
     var d = V.d, f = V.fm, sw = Math.sin(step) * 0.75 * mv;
     d.position.set(x, down ? 5 : 0, z); d.rotation.set(0, -ang, down ? 1.5708 : 0); d.scale.set(s, s, s); d.updateMatrix(); V.F.copy(d.matrix);
     v3part(f[0], n, 0, 19.5, 0, 0, 0, 0, 0, 6.5, 13, 11, cloth);
     v3part(f[1], n, 0.6, 29.5, 0, 0, 0, 0, 0, 7.6, 8, 7.6, skin);
     v3part(f[2], n, 0, 13, 2.8, sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
     v3part(f[3], n, 0, 13, -2.8, -sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
-    v3part(f[4], n, 0, 24.5, 6.6, 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
-    v3part(f[5], n, 0, 24.5, -6.6, -0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
-    if (gun) { var gi = V.gn++; v3part(V.gun, gi, 0, 23.5, 0, 0, 11, 0, 0, 16, 3.4, 3.4, v3col('#262626')); }
+    var za = (ext && ext.k) ? 0.3 + 0.08 * Math.sin(step * 0.5) : 0;
+    v3part(f[4], n, 0, 24.5, 6.6, za + 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+    v3part(f[5], n, 0, 24.5, -6.6, za - 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+    if (ext && !ext.lod) {
+      V.fl = ext.fl | 0;
+      if (ext.k) v3zom(ext.k, step, ext.seed || 0, za);
+      else { v3ply(ext.L, ext.ar, ext.P); if (gun && ext.gd) v3figgun(ext.gd, ext.glo); }
+      V.fl = 0;
+    }
   }
   function v3proj(x, h, z) { V.v.set(x, h, z).project(V.cam); return { x: (V.v.x * 0.5 + 0.5) * W, y: (-V.v.y * 0.5 + 0.5) * H, ok: V.v.z < 1 }; }
   function v3put(im, n, x, y, z, ry, sx, sy, sz, colr) {
@@ -7159,28 +7380,39 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.hemi.intensity = night ? 0.4 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.05 : 1.7 - V.li * 1.5;
     V.pl.intensity = night ? 3.2 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
+    var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
+    if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
+    V.sun.target.position.set(focus.x, 0, focus.y); V.sun.position.set(focus.x - 1000, 440, focus.y + 400);
+    V.r.shadowMap.needsUpdate = V.rs && !night && ((V.sf++ & 1) === 0);
     V.torch.intensity = (night && me && !me.down) ? 6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
     // figures
-    n = 0; V.gn = 0;
+    n = 0; V.gn = 0; V.en = V.ebn = V.egn = V.shn = 0;
     var ZS = ZSZ, sh = 0, ds = d, cl;
     for (i = 0; i < zombies.length && n < 470; i++) {
       z = zombies[i];
       if (z.x < focus.x - 900 || z.x > focus.x + 900 || z.y < focus.y - 1000 || z.y > focus.y + 700) continue;
       var k = z.type, S = ZS[k] || ZS.walker, cc = ZCOL[k] || ZCOL.walker, fl = z.flash > 0 ? (z.cf ? 2 : 1) : 0;
+      if (k === 'ghost') { v3ghost(z, fl, z.ang); v3blob(z.x, z.y, 8, 8); continue; }
       var sk = fl === 2 ? '#e8403a' : fl ? '#f4ece0' : (k === 'ghost' ? '#bcd8ee' : cc.skin), cth = fl === 2 ? '#c4302a' : fl ? '#e8dccb' : (k === 'ghost' ? '#a8c8e0' : cc.cloth), pn = fl === 2 ? '#9a2420' : fl ? '#d8ccbb' : (k === 'ghost' ? '#a8c8e0' : cc.pants);
       if (z.stun > 0 && !fl) { sk = '#9fc4e8'; }
-      v3fig(n, z.x, z.y, z.ang, S[0] * 1.02, time * (3 + ((TYPES[k] || {}).spd || 60) * 0.075) + z.seed * 3, 1, v3col(sk), v3col(cth), v3col(pn), false, false);
-      v3put(V.sh, n, z.x, 0.7, z.y, 0, Math.max(8, z.r * 1.15), 1, Math.max(8, z.r * 1.15)); n++;
+      v3fig(n, z.x, z.y, z.ang, S[0] * 1.02, time * (3 + ((TYPES[k] || {}).spd || 60) * 0.075) + z.seed * 3, 1, v3col(sk), v3col(cth), v3col(pn), false, false, { k: k, fl: fl, seed: z.seed, lod: ((z.x - focus.x) * (z.x - focus.x) + (z.y - focus.y) * (z.y - focus.y)) > 640000 });
+      v3blob(z.x, z.y, Math.max(8, z.r * 1.15), Math.max(8, z.r * 1.15)); n++;
     }
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
       if (pvp && P.down) continue;
       if (P === me) continue;   // first person: you never see your own body
       var L = P.look || {}, mv = (P._v3s !== undefined && Math.abs(P.step - P._v3s) > 0.003) ? 1 : 0; P._v3s = P.step;
-      v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(LOOK_COLS[L.c] || LOOK_COLS[0]), v3col('#2b2f3a'), !!P.down, !P.down);
-      v3put(V.sh, n, P.x, 0.7, P.y, 0, 10, 1, 10); n++;
+      var pAr = P.armor || { head: 0, body: 0, legs: 0 }, pJc = L.j === 1 ? '#5a6a3a' : (L.j === 2 ? '#f2a02a' : (LOOK_COLS[L.c] || LOOK_COLS[0])), pLg = pAr.legs > 0 ? TIERCOL[pAr.legs] : (PANTS[L.pn] || PANTS[0]);
+      var pgd = rr && defOf(rr), pgl = (pgd && !pgd.special) ? gunLo(L, pgd.id) : null;
+      v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(pJc), v3col(pLg), !!P.down, !P.down, { L: L, ar: pAr, P: P, gd: pgd, glo: pgl });
+      v3blob(P.x, P.y, 10, 10); n++;
+    }
+    for (i = 0; i < players.length; i++) {   // pets
+      P = players[i]; if (P.down && !P.look) continue;
+      if (!pvp || P === me) { var pS = petUpdate(P, performance.now()); if (pS) v3pet(pS); }
     }
     // your own gun, low on the right of the view
     if (me && !me.down) {
@@ -7189,7 +7421,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
     V.gun.count = V.gn; V.gun.instanceMatrix.needsUpdate = true; if (V.gun.instanceColor) V.gun.instanceColor.needsUpdate = true;
-    V.sh.count = n; V.sh.instanceMatrix.needsUpdate = true;
     // planks on the barricades
     var bn = 0, b, kk, seg, bw;
     for (i = 0; i < BLD.length; i++) {
@@ -7221,13 +7452,39 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var g = grenades[i], gp = Math.min(1, g.t / g.T), gh = Math.sin(gp * Math.PI) * 30 * (gp < 1 ? 1 : 0);
       v3put(V.or, on++, g.x, 5 + gh, g.y, 0, 4.8, 4.8, 4.8, v3col(GREN_COL[g.k | 0]));
     }
-    for (i = 0; i < coins.length && on < 690; i++) { e = coins[i]; v3put(V.or, on++, e.x, 5 + Math.sin(time * 4 + i) * 1.2, e.y, 0, 3.8, 3.8, 3.8, v3col('#f2c14e')); }
-    var PKC = { health: '#ff4a4a', ammo: '#f2c14e', special: '#d2692a', perk: '#5fd0ff', item: '#6aff9a' }, pn2 = 0;
-    for (i = 0; i < pickups.length && pn2 < 78; i++) { e = pickups[i]; v3put(V.pk, pn2++, e.x, 10 + Math.sin(time * 3 + i) * 2, e.y, time * 1.5, 12, 12, 12, v3col(PKC[e.kind] || '#fff')); }
-    for (i = 0; i < boxes.length && pn2 < 78; i++) { e = boxes[i]; v3put(V.pk, pn2++, e.x, 11, e.y, 0, 26, 20, 20, v3col('#f2c14e')); }
+    var fcx2 = focus.x, fcy2 = focus.y;
+    for (i = 0; i < coins.length && i < 90; i++) { e = coins[i]; if (Math.abs(e.x - fcx2) < 800 && Math.abs(e.y - fcy2) < 800) v3coin(e.x, e.y, i); }
+    for (i = 0; i < pickups.length && i < 60; i++) { e = pickups[i]; if (Math.abs(e.x - fcx2) < 900 && Math.abs(e.y - fcy2) < 900) v3item(e.kind, e.x, e.y, i); }
+    for (i = 0; i < boxes.length && i < 8; i++) { e = boxes[i]; v3chest(e.x, e.y); }
+    // doors, bats and the glowing bonus room
+    var dn2 = 0, dd2;
+    for (i = 0; i < DOORS.length && dn2 < 70; i++) {
+      dd2 = DOORS[i]; var dhz = dd2.w > dd2.h;
+      if (dd2.open) {
+        if (dhz) { v3put(V.dr, dn2++, dd2.x + 3.5, 17, dd2.cy, 0, 7, 34, dd2.h, v3col('#7a5030')); v3put(V.dr, dn2++, dd2.x + dd2.w - 3.5, 17, dd2.cy, 0, 7, 34, dd2.h, v3col('#7a5030')); }
+        else { v3put(V.dr, dn2++, dd2.cx, 17, dd2.y + 3.5, 0, dd2.w, 34, 7, v3col('#7a5030')); v3put(V.dr, dn2++, dd2.cx, 17, dd2.y + dd2.h - 3.5, 0, dd2.w, 34, 7, v3col('#7a5030')); }
+      } else {
+        v3put(V.dr, dn2++, dd2.cx, 17, dd2.cy, 0, dd2.w, 34, dd2.h, v3col('#8a6038'));
+        if (dhz) { v3put(V.dr, dn2++, dd2.x + dd2.w * 0.3 + 1.5, 17, dd2.cy, 0, 3, 34.4, dd2.h + 0.5, v3col('#26180d')); v3put(V.dr, dn2++, dd2.x + dd2.w * 0.66 + 1.5, 17, dd2.cy, 0, 3, 34.4, dd2.h + 0.5, v3col('#26180d')); }
+        else { v3put(V.dr, dn2++, dd2.cx, 17, dd2.y + dd2.h * 0.3 + 1.5, 0, dd2.w + 0.5, 34.4, 3, v3col('#26180d')); v3put(V.dr, dn2++, dd2.cx, 17, dd2.y + dd2.h * 0.66 + 1.5, 0, dd2.w + 0.5, 34.4, 3, v3col('#26180d')); }
+        v3put(V.dr, dn2++, dd2.cx, 36, dd2.cy, 0, dd2.w + 2, 4, dd2.h + 2, v3col('#d2692a'));
+        V.fl = 0; v3frame(0, 0, 0, 0, 1); v3x(dd2.cx, 16, dd2.cy, 3.2, 3.2, 3.2, '#e8c06a', 1);
+      }
+    }
+    for (i = 0; i < bats.length && i < 10; i++) v3bat(bats[i]);
+    if (bonusRoom >= 0) {
+      var bq = bonusRect(), bpu = 0.5 + 0.5 * Math.sin(time * 3), bhh = 1.5 + bpu * 2.5;
+      V.fl = 0; v3frame(0, 0, 0, 0, 1);
+      v3x(bq.x + bq.w / 2, bhh / 2, bq.y + 2, bq.w, bhh, 4, '#ffd25a', 1); v3x(bq.x + bq.w / 2, bhh / 2, bq.y + bq.h - 2, bq.w, bhh, 4, '#ffd25a', 1);
+      v3x(bq.x + 2, bhh / 2, bq.y + bq.h / 2, 4, bhh, bq.h, '#ffd25a', 1); v3x(bq.x + bq.w - 2, bhh / 2, bq.y + bq.h / 2, 4, bhh, bq.h, '#ffd25a', 1);
+    }
+    V.dr.count = dn2; V.dr.instanceMatrix.needsUpdate = true; if (V.dr.instanceColor) V.dr.instanceColor.needsUpdate = true;
+    V.ex.count = V.en; V.ex.instanceMatrix.needsUpdate = true; if (V.ex.instanceColor) V.ex.instanceColor.needsUpdate = true;
+    V.eb.count = V.ebn; V.eb.instanceMatrix.needsUpdate = true; if (V.eb.instanceColor) V.eb.instanceColor.needsUpdate = true;
+    V.eg.count = V.egn; V.eg.instanceMatrix.needsUpdate = true; if (V.eg.instanceColor) V.eg.instanceColor.needsUpdate = true;
+    V.sh.count = V.shn; V.sh.instanceMatrix.needsUpdate = true; V.pk.count = 0;
     V.cu.count = cn; V.cu.instanceMatrix.needsUpdate = true; if (V.cu.instanceColor) V.cu.instanceColor.needsUpdate = true;
     V.or.count = on; V.or.instanceMatrix.needsUpdate = true; if (V.or.instanceColor) V.or.instanceColor.needsUpdate = true;
-    V.pk.count = pn2; V.pk.instanceMatrix.needsUpdate = true; if (V.pk.instanceColor) V.pk.instanceColor.needsUpdate = true;
     // fire and stun
     for (i = 0; i < 16; i++) {
       var m1 = V.fire[i], m2 = V.stun[i], fp = firePatches[i], sf = stunFx[i];
@@ -7262,6 +7519,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         ctx.fillStyle = z.boss ? '#ff6a2a' : fr > 0.5 ? '#c43a2a' : (fr > 0.25 ? '#d2692a' : '#e8c03a');
         ctx.fillRect(q.x - bw2 / 2, q.y, bw2 * fr, bh2);
       }
+    }
+    for (i = 0; i < DOORS.length; i++) {
+      var dg = DOORS[i]; if (!(dg.prog > 0.05 || dg.zt > 0.05)) continue;
+      q = v3proj(dg.cx, 22, dg.cy); if (!q.ok) continue;
+      if (dg.prog > 0.05) { ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, 15 * zoom * 0.8, -1.571, -1.571 + 6.283 * Math.min(1, dg.prog / 3)); ctx.stroke(); }
+      if (dg.zt > 0.05) { ctx.strokeStyle = '#e8402e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(q.x, q.y, 22 * zoom * 0.8, -1.571, -1.571 + 6.283 * Math.min(1, dg.zt / 5)); ctx.stroke(); }
     }
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
