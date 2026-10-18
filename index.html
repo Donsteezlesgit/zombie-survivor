@@ -105,6 +105,9 @@ body {
 .stats { font: 600 15px/1 var(--face-ui); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); text-shadow: 0 1px 3px #000; }
 .stats b { color: var(--bone); font-weight: 700; }
 .stats b.gold { color: var(--gold); }
+.srow { display: flex; align-items: baseline; gap: 12px; }
+.fps { font: 600 15px/1 var(--face-ui); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); text-shadow: 0 1px 3px #000; }
+.fps b { font-weight: 700; }
 .shopbtn { width: auto; min-width: 56px; padding: 0 10px; font-size: 15px; text-transform: uppercase; color: var(--gold); border-color: #6a5a30; }
 .perks { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
 .perk { padding: 3px 8px; border: 1px solid currentColor; border-radius: 3px; background: rgba(0, 0, 0, 0.6); font: 700 14px/1.1 var(--face-ui); letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
@@ -582,7 +585,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
       <button class="pause shopbtn" id="shopBtn" type="button" aria-label="Open shop">Shop</button>
       <button class="pause" id="pauseBtn" type="button" aria-label="Pause">II</button>
     </div>
-    <div class="stats" id="stats">Coins <b class="gold">0</b> &middot; Kills <b>0</b></div>
+    <div class="srow"><div class="stats" id="stats">Coins <b class="gold">0</b> &middot; Kills <b>0</b></div><div class="fps" id="fps" hidden></div></div>
     <div class="perks" id="perks"></div>
     <div class="team" id="team"></div>
   </div>
@@ -848,6 +851,17 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   var bestWave = 0, muted = false, myName = '', myLook = { c: 0, h: 0, sk: 2, hs: 0, hc: 1, pt: 0, pn: 0, f: 0, j: 0, k: 0, n: 0, a: 0 }, savedLook = null;
   try { bestWave = parseInt(localStorage.getItem('zs-best-wave') || '0', 10) || 0; } catch (e) {}
   try { muted = localStorage.getItem('zs-muted') === '1'; } catch (e) {}
+  var fpsOn = true, fpsEl = null, fpsN = 0, fpsT = 0;   // the little frame-rate counter under the health bar (Settings switches it off)
+  try { fpsOn = localStorage.getItem('zs-fps') !== '0'; } catch (e) {}
+  function fpsTick(now) {
+    if (!fpsEl) fpsEl = document.getElementById('fps');
+    if (!fpsEl) return;
+    if (fpsEl.hidden === fpsOn) fpsEl.hidden = !fpsOn;
+    if (!fpsOn) { fpsN = 0; fpsT = 0; return; }
+    fpsN++;
+    if (!fpsT) { fpsT = now; return; }
+    if (now - fpsT >= 500) { var f = Math.round(fpsN * 1000 / (now - fpsT)); fpsN = 0; fpsT = now; fpsEl.innerHTML = '<b style="color:' + (f >= 50 ? '#78e0a0' : f >= 30 ? '#f2c14e' : '#e8402e') + '">' + f + '</b> FPS'; }
+  }
   try { myName = String(localStorage.getItem('zs-name') || '').slice(0, 12); savedLook = JSON.parse(localStorage.getItem('zs-look') || 'null'); } catch (e) {}
 
   // ---------- world layers ----------
@@ -4946,6 +4960,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
       h += '<button class="go alt" data-a="v3d" type="button">' + (v3off ? '3D maps: off' : '3D maps: on') + '</button>';
+      h += '<button class="go alt" data-a="fps" type="button">' + (fpsOn ? 'FPS counter: on' : 'FPS counter: off') + '</button>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
       h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
@@ -4998,7 +5013,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 188';
+  var updMsg = '', VERSION = 'Version 189';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5198,6 +5213,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       renderScreen(); if (hapOn) hap([20]);
     }
     else if (a === 'v3d') { v3off = !v3off; try { localStorage.setItem('zs-v3d', v3off ? '0' : '1'); } catch (e) {} renderScreen(); }
+    else if (a === 'fps') { fpsOn = !fpsOn; try { localStorage.setItem('zs-fps', fpsOn ? '1' : '0'); } catch (e) {} renderScreen(); }
     else if (a === 'btnedit') openBtnEd();
     else if (a === 'mute') {
       muted = !muted; ensureAudio();
@@ -6422,7 +6438,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       d += seg; px = S.tr[i].x; py = S.tr[i].y; tx = px; ty = py;
     }
     dx = tx - S.x; dy = ty - S.y; dist = Math.hypot(dx, dy);
-    if (dist > (S.mv ? 1.5 : 4)) {
+    var pdist = Math.hypot(P.x - S.x, P.y - S.y), pgo = S.mv ? pdist > 26 : pdist > 46;   // a pet close to you stays put until you really walk off (stops it jittering when you shuffle about)
+    if (pgo && dist > (S.mv ? 1.5 : 4)) {
       st = Math.min(dist, Math.min(dist * 7, 230) * dt); S.x += dx / dist * st; S.y += dy / dist * st; S.mv = 1; S.ph += st * 0.17;
       ta = Math.atan2(dy, dx); da = ta - S.hd; while (da > Math.PI) da -= 6.283; while (da < -Math.PI) da += 6.283; S.hd += da * Math.min(1, dt * 12);
     } else { S.mv = 0; S.ph += dt * 3; }
@@ -7364,7 +7381,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (V.map !== mapId) v3setup();
     if (W !== V.w || H !== V.h || dpr !== V.dpr) { V.r.setPixelRatio(dpr); V.r.setSize(W, H, false); V.w = W; V.h = H; V.dpr = dpr; V.cam.aspect = W / H; V.cam.fov = Math.max(55, Math.min(100, 2 * Math.atan(Math.tan(0.742) / (W / H)) * 57.2958)); V.cam.updateProjectionMatrix(); }   // first person: about 85 degrees across, whatever the screen shape
     if (!V.shown) { V.cvs.style.display = 'block'; V.shown = true; }
-    var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = waveEv === 'night';
+    var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = true;   /* every first-person map is played at night */
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
     var eyeY = (me && me.down) ? 9 : 26, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
     V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
@@ -7377,13 +7394,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x060608 : 0xe0a47c); V.sc.fog.near = night ? 50 : 350; V.sc.fog.far = night ? 560 : 1700; }
     V.sky.position.copy(cp);
     V.sdisc.visible = !night; V.sdisc.position.set(cp.x - 2000, cp.y + 880, cp.z + 800); V.sdisc.lookAt(cp);
-    V.hemi.intensity = night ? 0.4 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.05 : 1.7 - V.li * 1.5;
+    V.hemi.intensity = night ? 0.4 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.55 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0x8fa8d8 : 0xff9a50);   /* at night the 'sun' is cool moonlight, which also casts the shadows */
     V.pl.intensity = night ? 3.2 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
     if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
-    V.sun.target.position.set(focus.x, 0, focus.y); V.sun.position.set(focus.x - 1000, 440, focus.y + 400);
-    V.r.shadowMap.needsUpdate = V.rs && !night && ((V.sf++ & 1) === 0);
+    var snx = Math.round(focus.x / 12) * 12, sny = Math.round(focus.y / 12) * 12; V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 600, 800, sny + 300); else V.sun.position.set(snx - 1000, 440, sny + 400);
+    V.sf++; V.r.shadowMap.needsUpdate = V.rs && (V.sf < 4 || (V.sf & 1) === 0);   /* must render a few times at the start or the shadow map does not exist and the whole scene goes black */
     V.torch.intensity = (night && me && !me.down) ? 6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
@@ -8376,7 +8393,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function loop(now) {
     // 120Hz phones: run at 60 so the phone does half the drawing and stays cooler
     if (now - last < 14) { requestAnimationFrame(loop); return; }
-    var dt = (now - last) / 1000; last = now;
+    var dt = (now - last) / 1000; last = now; fpsTick(now);
     if (dt > 0.05) dt = 0.05;
     if (DEV.on && net.mode !== 'client') { dt *= DEV.ts; devTick(); }
     devUpdateBtn();
