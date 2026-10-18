@@ -2412,54 +2412,23 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       hapEl.click();
     } catch (e) {}
   }
-  // iPhone only allows its tick from inside a touch or click handler (or a timer started by one, for about a second).
-  // So on iPhone a buzz is queued and sent from the next touch event. Android uses a real vibration pattern.
-  var hapQ = [], hapGest = 0, hapTap = 0;
-  function hapFlush() {
-    var now = performance.now(), i = 0, did = false;
-    while (i < hapQ.length) {
-      if (now - hapQ[i] > 220) { hapQ.splice(i, 1); continue; }
-      if (!did && hapQ[i] <= now && now - hapLast >= 28) { hapQ.splice(i, 1); hapLast = now; hapTick(); did = true; continue; }
-      i++;
-    }
-  }
+  // iPhone only allows its tick straight from a tap, so there it is buttons, menus, grenade and stim only.
+  // Android can vibrate any time, so it also gets guns, hits and wave starts.
+  var HAP_VIB = !!navigator.vibrate, hapTap = 0;
   function hap(p) {
     if (!hapOn || !p) return;
-    var now = performance.now(), t = 0, i;
-    if (typeof p === 'number') p = [p];
-    try {
-      if (navigator.vibrate) { if (now - hapLast < 28) return; hapLast = now; navigator.vibrate(p); return; }
-      for (i = 0; i < p.length; i += 2) {
-        hapQ.push(now + t);
-        if (t > 0) setTimeout(function () { if (performance.now() - hapGest < 900) hapFlush(); }, t);
-        t += p[i] + (p[i + 1] || 0);
-      }
-      if (hapQ.length > 8) hapQ.splice(0, hapQ.length - 8);
-      if (now - hapGest < 900) hapFlush();
-    } catch (e) {}
+    var now = performance.now();
+    if (now - hapLast < 28) return;
+    hapLast = now;
+    try { if (HAP_VIB) navigator.vibrate(p); else hapTick(); } catch (e) {}
   }
   function buzz(ms) { hap(ms); }
-  function hapFor(P, k) { if (P && HAPG[k]) priv(P, ['hp', k]); }
+  function hapFor(P, k) { if (P && HAPG[k] && (HAP_VIB || k === 'gren' || k === 'stim')) priv(P, ['hp', k]); }
   function hapIsBtn(e) { var t = e.target, b = t && t.closest ? t.closest('button, [data-a], .tab') : null; return b && !b.disabled && !b.closest('#btnEd'); }
-  // test pad in Settings: a tick on press, one every 150ms while dragging, and one on release, so we can see which touch events iPhone allows
-  var hpadT = 0;
-  function hpadCh(e, ev) {
-    var t = e.target;
-    if (!t || !t.closest || !t.closest('#hpad')) return false;
-    var now = performance.now();
-    if (ev === 'touchmove' && now - hpadT < 150) return true;
-    hpadT = now; hapTick(); return true;
-  }
-  ['touchstart', 'touchmove'].forEach(function (ev) { document.addEventListener(ev, function (e) { if (hpadCh(e, ev)) return; if (hapQ.length) hapFlush(); }, { capture: true, passive: true }); });
-  document.addEventListener('touchend', function (e) {
-    hapGest = performance.now();
-    if (hpadCh(e, 'touchend')) return;
-    if (hapIsBtn(e)) { hapTap = hapGest; hap(HAPG.tap); } else if (hapQ.length) hapFlush();
-  }, { capture: true, passive: true });
+  document.addEventListener('touchend', function (e) { if (hapIsBtn(e)) { hapTap = performance.now(); hap(HAPG.tap); } }, { capture: true, passive: true });
   document.addEventListener('click', function (e) {
     if (hapEl && hapEl.contains(e.target)) return;
-    var now = performance.now(); hapGest = now;
-    if (now - hapTap > 500 && hapIsBtn(e)) hap(HAPG.tap); else if (hapQ.length) hapFlush();
+    if (performance.now() - hapTap > 500 && hapIsBtn(e)) hap(HAPG.tap);
   }, true);
   var killSnd = 0, coinSnd = 0, shotN = 0;
 
@@ -4947,7 +4916,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
-      h += '<div class="hpad" id="hpad">Haptic test pad<small>Press, drag around, then let go</small></div>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
       h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
@@ -5000,7 +4968,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 179';
+  var updMsg = '', VERSION = 'Version 180';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5291,7 +5259,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'Grenades: 2 per player, one button under the stim. Each recharges 60 seconds after you throw it. They hurt other players too, and a little less if it is your own. Sticky, Stun and Fire work in PvP, with lower damage and a short slow instead of a full freeze.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.'] },
     { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones every 12 hours (at midnight and midday), shown on the main menu. Finish all three for 1 more.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Every gun that is not already in the PvP list has a Use in PvP option on its screen. Buy it once and you can pick that gun in PvP. Weak guns are cheap, the strongest cost a lot.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
-    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, haptics, Move buttons, controls, a game guide, Update game, and a link to share the game.', 'Stats on the main menu shows your best wave on each map, total kills, time survived and more.', 'Very rarely a wave has a twist: a horde rush (extra zombies, double coins), a supply drop (a special weapon crate lands near you) or a night wave (much darker).', 'Move buttons: drag the reload, stim and grenade buttons wherever your thumbs like. It is saved for portrait and landscape separately, and Reset puts them back.', 'Haptics: guns, grenades, hits and menu taps buzz a little, and each gun feels different. Turn it off in Settings. iPhone needs iOS 17.4 or newer, and gives lighter taps than Android.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
+    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, haptics, Move buttons, controls, a game guide, Update game, and a link to share the game.', 'Stats on the main menu shows your best wave on each map, total kills, time survived and more.', 'Very rarely a wave has a twist: a horde rush (extra zombies, double coins), a supply drop (a special weapon crate lands near you) or a night wave (much darker).', 'Move buttons: drag the reload, stim and grenade buttons wherever your thumbs like. It is saved for portrait and landscape separately, and Reset puts them back.', 'Haptics: menu and button taps, and the grenade and stim buttons, give a small tap. On Android, guns, hits and wave starts buzz too, and each gun feels different. iPhone only allows a tap from a button press (iOS 17.4 or newer). Turn haptics off in Settings.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
     list = list || HELP; title = title || 'How to play';
