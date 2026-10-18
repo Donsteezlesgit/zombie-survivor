@@ -4980,7 +4980,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 183';
+  var updMsg = '', VERSION = 'Version 184';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5970,7 +5970,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   // ---------- input ----------
   var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
-  function ctrlEff() { return net.mode === 'off' ? ctrlMode : 'two'; }
+  // first person (Bomb Town 3D): fpYaw is where you look, in radians (0 = east, grows clockwise seen from above). Right thumb drags to turn.
+  var fpYaw = 0, FP_SENS = 0.007;
+  function fpOn() { return !!(V && V.shown && v3Active()); }
+  function ctrlEff() { return (net.mode === 'off' && !fpOn()) ? ctrlMode : 'two'; }
   var ctrlMode = 'two';   // 'one' = one finger, auto aim. 'two' = left thumb walks, right thumb aims a cone
   try { if (localStorage.getItem('zs-ctrl') === 'one') ctrlMode = 'one'; } catch (e) {}
   function setCtrl(m) { ctrlMode = m; try { localStorage.setItem('zs-ctrl', m); } catch (e) {} joy.active = false; joy.x = joy.y = 0; aim.active = false; }
@@ -5984,7 +5987,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (bigOpen && x > r.width / 2) return;
     if (ctrlEff() === 'two' && x > r.width / 2) {
       if (aim.active && now() - aim.t < 400) return;
-      aim.active = true; aim.t = now(); aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0;
+      aim.active = true; aim.t = now(); aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0; aim.lx = e.clientX;
     } else {
       if (joy.active && now() - joy.t < 400) return;
       joy.active = true; joy.t = now(); joy.id = e.pointerId; joy.ox = x; joy.oy = y; joy.x = joy.y = 0;
@@ -6019,6 +6022,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       st = (ctrlEff() === 'two' && x > r.width / 2) ? aim : joy;
       if (st.active) continue;
       st.active = true; st.tid = t.identifier; st.ox = x; st.oy = y; st.x = st.y = 0;
+      if (st === aim) aim.lx = t.clientX;
       e.preventDefault();
     }
   }, { passive: false });
@@ -6027,7 +6031,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (var i = 0; i < e.changedTouches.length; i++) {
       var t = e.changedTouches[i];
       if (joy.active && t.identifier === joy.tid) dragStick(joy, t);
-      else if (aim.active && t.identifier === aim.tid) { dragStick(aim, t); if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x); }
+      else if (aim.active && t.identifier === aim.tid) {
+        dragStick(aim, t); if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
+        if (fpOn() && aim.lx !== undefined) fpYaw += (t.clientX - aim.lx) * FP_SENS;
+        aim.lx = t.clientX;
+      }
     }
   }, { passive: true });
   function touchEnd(e) { reconcile(e.touches); }
@@ -6051,6 +6059,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (aim.active && e.pointerId === aim.id) {
       dragStick(aim, e);
       if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
+      if (fpOn() && aim.lx !== undefined) fpYaw += (e.clientX - aim.lx) * FP_SENS;
+      aim.lx = e.clientX;
     }
   });
   function endJoy(e) {
@@ -6086,8 +6096,21 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       mx = joy.x; my = joy.y;
       if (keys.l) mx -= 1; if (keys.r) mx += 1; if (keys.u) my -= 1; if (keys.d) my += 1;
     }
+    var fp = fpOn();
+    if (fp) {
+      // first person: the left stick is relative to where you look (up = forward, sideways = strafe)
+      var fc = Math.cos(fpYaw), fs = Math.sin(fpYaw), rx = mx, ry = my;
+      mx = -rx * fs - ry * fc; my = rx * fc - ry * fs;
+      fpYaw = Math.atan2(Math.sin(fpYaw), Math.cos(fpYaw));
+    }
     me.inx = mx; me.iny = my;
-    me.cone = ctrlEff() === 'two';
+    me.cone = fp || ctrlEff() === 'two';
+    if (fp) {
+      // the aim cone points where the crosshair points; zombies fire on their own, PvP still needs the right thumb down
+      me.aimAng = fpYaw;
+      me.fr = !!(!blocked() && state === 'play' && (!pvp || aim.active));
+      return;
+    }
     if (me.cone) { if (aim.ang !== null) me.aimAng = aim.ang; else if (me.aimAng === null) me.aimAng = me.ang; }
     me.fr = !!(me.cone && aim.active && aim.ang !== null && Math.hypot(aim.x, aim.y) > 0.18 && !blocked() && state === 'play');
   }
@@ -6855,7 +6878,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     try { r = new T.WebGLRenderer({ canvas: cvs, antialias: false, alpha: false, powerPreference: 'high-performance' }); } catch (e) { v3fail = true; return null; }
     if (!r || !r.getContext()) { v3fail = true; return null; }
     cv.parentNode.insertBefore(cvs, cv);
-    var sc = new T.Scene(), cam3 = new T.PerspectiveCamera(40, 1, 20, 5000);
+    var sc = new T.Scene(), cam3 = new T.PerspectiveCamera(70, 1, 2, 3000);
     sc.background = new T.Color(0x14100c);
     var hemi = new T.HemisphereLight(0xffe6c8, 0x6a5440, 2.4), sun = new T.DirectionalLight(0xffb878, 1.2), pl = new T.PointLight(0xffe8c0, 0, 420, 1.2);
     sun.position.set(-300, 500, 250); sc.add(hemi); sc.add(sun); sc.add(pl);
@@ -6929,13 +6952,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function render3d(vw, vh, sx, sy) {
     var T = THREE, i, z, P, rr, n, d = V.d;
     if (V.map !== mapId) v3setup();
-    if (W !== V.w || H !== V.h || dpr !== V.dpr) { V.r.setPixelRatio(dpr); V.r.setSize(W, H, false); V.w = W; V.h = H; V.dpr = dpr; V.cam.aspect = W / H; V.cam.updateProjectionMatrix(); }
+    if (W !== V.w || H !== V.h || dpr !== V.dpr) { V.r.setPixelRatio(dpr); V.r.setSize(W, H, false); V.w = W; V.h = H; V.dpr = dpr; V.cam.aspect = W / H; V.cam.fov = Math.max(55, Math.min(100, 2 * Math.atan(Math.tan(0.742) / (W / H)) * 57.2958)); V.cam.updateProjectionMatrix(); }   // first person: about 85 degrees across, whatever the screen shape
     if (!V.shown) { V.cvs.style.display = 'block'; V.shown = true; }
     var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = waveEv === 'night';
-    // camera: steep tilt, follows the player
-    var tilt = 1.0, dist = Math.max(380, Math.min(1500, vh * 1.3));
-    V.cam.position.set(focus.x + sx, Math.sin(tilt) * dist, focus.y + Math.cos(tilt) * dist + sy);
-    V.cam.lookAt(focus.x + sx, 0, focus.y + sy - 6);
+    // camera: first person, eye height, looking along fpYaw (level, no up/down look)
+    var eyeY = (me && me.down) ? 9 : 26, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
+    V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
+    V.cam.lookAt(focus.x + sx * 0.3 + fcx * 100, eyeY, focus.y + sy * 0.3 + fcz * 100);
     V.hemi.intensity = night ? 0.4 : 2.3; V.sun.intensity = night ? 0.05 : 1.2;
     V.pl.intensity = night ? 3.2 : 0; V.pl.position.set(focus.x, 60, focus.y);
     // blood
@@ -6955,9 +6978,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
       if (pvp && P.down) continue;
+      if (P === me) continue;   // first person: you never see your own body
       var L = P.look || {}, mv = (P._v3s !== undefined && Math.abs(P.step - P._v3s) > 0.003) ? 1 : 0; P._v3s = P.step;
       v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(LOOK_COLS[L.c] || LOOK_COLS[0]), v3col('#2b2f3a'), !!P.down, !P.down);
       v3put(V.sh, n, P.x, 0.7, P.y, 0, 10, 1, 10); n++;
+    }
+    // your own gun, low on the right of the view
+    if (me && !me.down && V.gn < 15) {
+      v3put(V.gun, V.gn++, focus.x + fcx * 16 - fcz * 6, 20, focus.y + fcz * 16 + fcx * 6, -fpYaw, 16, 3.4, 3.4, v3col('#262626'));
     }
     for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
     V.gun.count = V.gn; V.gun.instanceMatrix.needsUpdate = true; if (V.gun.instanceColor) V.gun.instanceColor.needsUpdate = true;
@@ -7036,20 +7064,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       P = players[i]; rr = viewRef(P); if (!rr) continue;
       if (pvp && P.down) continue;
       if (P === me && !P.down && !isSpecialActive(P) && rr.reload > 0 && WEAPONS[rr.id]) {
-        q = v3proj(P.x, 46, P.y); var rf = 1 - rr.reload / WEAPONS[rr.id].reload;
-        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(q.x - 16, q.y, 32, 6); ctx.fillStyle = '#f2c14e'; ctx.fillRect(q.x - 15, q.y + 1, 30 * Math.max(0, Math.min(1, rf)), 4);
+        var rf = 1 - rr.reload / WEAPONS[rr.id].reload;   // first person: the reload bar sits under the crosshair
+        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(W / 2 - 22, H / 2 + 26, 44, 7); ctx.fillStyle = '#f2c14e'; ctx.fillRect(W / 2 - 21, H / 2 + 27, 42 * Math.max(0, Math.min(1, rf)), 5);
       }
-      if (P.down) {
-        q = v3proj(P.x, 10, P.y);
+      if (P.down && P === me) {
+        if (!pvp) { ctx.font = '700 18px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var mtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(mtx, W / 2, H / 2 - 40); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(mtx, W / 2, H / 2 - 40); }
+      } else if (P.down) {
+        q = v3proj(P.x, 10, P.y); if (!q.ok) continue;
         ctx.strokeStyle = P.rev > 0 ? '#78e0a0' : 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.arc(q.x, q.y, 22 * zoom * 0.8, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
         if (!pvp) { ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var dtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(dtx, q.x, q.y - 30); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(dtx, q.x, q.y - 30); }
       } else if (players.length > 1 && P !== me && !pvp) {
-        q = v3proj(P.x, 48, P.y);
+        q = v3proj(P.x, 48, P.y); if (!q.ok) continue;
         ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(P.name, q.x, q.y); ctx.fillStyle = LOOK_COLS[P.look.c]; ctx.fillText(P.name, q.x, q.y);
       }
     }
-    if (me && !me.down && state === 'play' && me.aimAng !== null && me.aimAng !== undefined) {
+    if (false && me && !me.down && state === 'play' && me.aimAng !== null && me.aimAng !== undefined) {   // old tilted-view aim helpers, off in first person
       var a0 = me.aimAng, p0, p1, j, rg = Math.min(420, defOf(viewRef(me)).range);
       if (pvp) {
         p0 = v3proj(me.x, 22, me.y); p1 = v3proj(me.x + Math.cos(a0) * rg, 22, me.y + Math.sin(a0) * rg);
@@ -7062,10 +7092,19 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     if (state === 'play') for (i = 0; i < players.length; i++) {
       var LP = players[i], LR = viewRef(LP);
-      if (LP.down || !LR || !WEAPONS[LR.id] || !(atM(LP, LR.id) & 16) || isSpecialActive(LP) || isGhost(LP)) continue;
+      if (LP === me || LP.down || !LR || !WEAPONS[LR.id] || !(atM(LP, LR.id) & 16) || isSpecialActive(LP) || isGhost(LP)) continue;
       var lan = (!pvp && LP === me && LP.cone && LP.aimAng !== null && LP.aimAng !== undefined) ? LP.aimAng : LP.ang;
       var l0 = v3proj(LP.x + Math.cos(lan) * 24, 23, LP.y + Math.sin(lan) * 24), l1 = v3proj(LP.x + Math.cos(lan) * 320, 23, LP.y + Math.sin(lan) * 320);
+      if (!l0.ok || !l1.ok) continue;
       ctx.strokeStyle = 'rgba(255,60,50,0.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(l0.x, l0.y); ctx.lineTo(l1.x, l1.y); ctx.stroke();
+    }
+    // crosshair, dead centre. Gaps in the middle so it never hides a zombie.
+    if (state === 'play' && me && !me.down) {
+      var cxh = W / 2, cyh = H / 2;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(cxh - 13, cyh); ctx.lineTo(cxh - 5, cyh); ctx.moveTo(cxh + 5, cyh); ctx.lineTo(cxh + 13, cyh); ctx.moveTo(cxh, cyh - 13); ctx.lineTo(cxh, cyh - 5); ctx.moveTo(cxh, cyh + 5); ctx.lineTo(cxh, cyh + 13); ctx.stroke();
+      ctx.strokeStyle = me.fr ? 'rgba(242,193,78,0.95)' : 'rgba(235,227,212,0.85)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cxh - 13, cyh); ctx.lineTo(cxh - 5, cyh); ctx.moveTo(cxh + 5, cyh); ctx.lineTo(cxh + 13, cyh); ctx.moveTo(cxh, cyh - 13); ctx.lineTo(cxh, cyh - 5); ctx.moveTo(cxh, cyh + 5); ctx.lineTo(cxh, cyh + 13); ctx.stroke();
     }
     drawScreenFx();
   }
@@ -7083,7 +7122,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       ctx.fillStyle = 'rgba(235,227,212,0.4)';
       ctx.beginPath(); ctx.arc(joy.ox + joy.x * JR, joy.oy + joy.y * JR, 24, 0, 6.283); ctx.fill();
     }
-    if (aim.active) {
+    if (aim.active && !fpOn()) {
       ctx.fillStyle = 'rgba(242,193,78,0.06)'; ctx.strokeStyle = 'rgba(242,193,78,0.4)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(aim.ox, aim.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
       ctx.fillStyle = 'rgba(242,193,78,0.45)';
