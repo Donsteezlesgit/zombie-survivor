@@ -4089,14 +4089,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var mx = P.x + Math.cos(P.ang) * (d.len + 10), my = P.y + Math.sin(P.ang) * (d.len + 10);
     if (pvp) P.inv = 0;   // spawn protection ends the moment you fire
     var sprF = d.special ? 1 : ((AM & 1) ? 0.75 : 1) * ((AM & 16) ? 0.85 : 1), btI = d.special ? 0 : ((gunLo(P.look, d.id) || [0, 0, 0])[2] | 0);
-    var vox, voy;   // first person: where the barrel tip is, relative to where the shot really starts
+    var vox, voy, fph = !pvp && P === me && fpOn();   // first person: where the barrel tip is, relative to where the shot really starts
     if (P === me && fpOn()) { vox = P.x + Math.cos(fpYaw) * 38 - Math.sin(fpYaw) * 10 - mx; voy = P.y + Math.sin(fpYaw) * 38 + Math.cos(fpYaw) * 10 - my; }
     for (i = 0; d.kind !== 'zap' && i < d.pellets; i++) {
       if (d.pellets > 1) a = P.ang + ((i / (d.pellets - 1)) - 0.5) * d.spread * sprF + rnd(-0.04, 0.04);
       else a = P.ang + rnd(-d.spread * sprF / 2, d.spread * sprF / 2);
       crit = Math.random() < critP;
       bullets.push({
-        x: mx, y: my, vox: vox, voy: voy, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
+        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 26 : undefined, vh: fph ? Math.tan(fpPitch) : undefined, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * pm * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
         cen: (!pvp && !d.kind && P.cone && P.aimAng !== null && P.aimAng !== undefined) ? 1 : 0, ax: P.x, ay: P.y, aa: P.aimAng,
         kind: d.kind || 'bullet', bt: d.kind ? 0 : btI, blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
@@ -4205,7 +4205,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       return;
     }
     // two-thumb mode: a shot at a zombie the aim line runs straight through (dead centre) is a critical hit
-    var cc = !b.crit && b.cen && centred(z, b), dm = b.dmg * (cc ? 2 : 1), ar;
+    var hs = b.vh !== undefined && b.kind === 'bullet' && b.h0 + b.vh * b.dist > zHeight(z) * 0.78;   // first person: a hit up near the head is a critical
+    var cc = !b.crit && ((b.cen && centred(z, b)) || hs), dm = b.dmg * (cc ? 2 : 1), ar;
     if (b.arm && wave >= TUNE.armFrom && !z.ghost) {
       ar = z.boss ? TUNE.armBoss : (z.type === 'tank' ? TUNE.armTank : (z.type === 'armoured' ? TUNE.armArm : 0));
       if (ar) { if (b.pel) ar *= TUNE.armPellet; dm = Math.max(dm - ar, dm * TUNE.armFloor); }
@@ -4219,12 +4220,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (z.hp <= 0) killZombie(j, b.owner);
   }
 
+  // how tall a zombie stands (the 3D figures are about 34 tall at scale 1). First-person shots have a height, so they can pass over a head or into the ground.
+  function zHeight(z) { var S = ZSZ[z.type] || ZSZ.walker; return 34 * S[0] * 1.02; }
   function updateBullets(dt) {
     updateGrenades(dt);
     for (var i = bullets.length - 1; i >= 0; i--) {
       var b = bullets[i], move = b.speed * dt, steps = Math.max(1, Math.ceil(move / 5)), sd = move / steps, dead = false;
       for (var s = 0; s < steps && !dead; s++) {
         b.x += b.dx * sd; b.y += b.dy * sd; b.dist += sd;
+        if (b.vh !== undefined && b.h0 + b.vh * b.dist < 0) { addFx(b.x, b.y, 2, 60, 0.15, 2, '180,170,150'); dead = true; break; }   // into the ground
         if (solidAt(b.x, b.y)) {
           if (b.kind === 'rocket') explode(b.x - b.dx * sd, b.y - b.dy * sd, b.blast, b.dmg, null, false, b.owner, b.kbm);
           else addFx(b.x - b.dx * sd, b.y - b.dy * sd, 2, 70, 0.18, 2, '200,190,170');
@@ -4245,6 +4249,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
           var z = zombies[j];
           if (!z) break;
           if (b.hit.indexOf(z) >= 0) continue;
+          if (b.vh !== undefined) { var bhh = b.h0 + b.vh * b.dist; if (bhh < -3 || bhh > zHeight(z) + 3) continue; }   // over its head or under its feet
           if (Math.hypot(z.x - b.x, z.y - b.y) < z.r + b.r) {
             if (b.kind === 'rocket') { explode(b.x, b.y, b.blast, b.dmg, null, false, b.owner, b.kbm); dead = true; break; }
             if (b.kind === 'ray') {
@@ -4340,13 +4345,24 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var ref = curRef(P), st = wstats(P, ref), rng = st.d.range;
     var tgt = null, bd = rng * rng;
     var useCone = P.cone && P.aimAng !== null && P.aimAng !== undefined;
-    for (i = 0; i < zombies.length; i++) {
+    var fpAim = !pvp && P === me && fpOn();
+    if (fpAim) {
+      // first person: NO aim assist. The gun only fires when the crosshair really is on a zombie (right direction, right height)
+      var fcy = Math.cos(fpYaw), fsy = Math.sin(fpYaw), ftp = Math.tan(fpPitch), fbest = rng + 1;
+      for (i = 0; i < zombies.length; i++) {
+        z = zombies[i];
+        var fdx = z.x - P.x, fdy = z.y - P.y, fal = fdx * fcy + fdy * fsy;
+        if (fal <= 0 || fal >= fbest || Math.abs(-fdx * fsy + fdy * fcy) > z.r + 3) continue;
+        var fhh = 26 + ftp * fal; if (fhh < -3 || fhh > zHeight(z) + 3) continue;
+        if (shotClear(P.x, P.y, z.x, z.y)) { fbest = fal; tgt = z; }
+      }
+    } else for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
       var ddx = z.x - P.x, ddy = z.y - P.y, dd = ddx * ddx + ddy * ddy;
       if (dd < bd && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF) && shotClear(P.x, P.y, z.x, z.y)) { bd = dd; tgt = z; }
     }
     // two-thumb zombies: the gun only fires while the right thumb is held, still at zombies inside the cone
-    if (!pvp && useCone && !P.fr) tgt = null;
+    if (!pvp && useCone && !P.fr && !fpAim) tgt = null;
     P.tgt = tgt;
     // PvP: no auto aim at all. The gun fires straight along the aim stick while it is held
     var pvFire = pvp && !!P.fr && useCone;
@@ -4386,7 +4402,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
 
     if (tgt || pvFire) {
-      P.ang = pvFire ? P.aimAng : Math.atan2(tgt.y - P.y, tgt.x - P.x);
+      P.ang = pvFire ? P.aimAng : (fpAim ? fpYaw : Math.atan2(tgt.y - P.y, tgt.x - P.x));
       P.fireCd -= dt;
       if (canFire) {
         if (P.fireCd <= 0) {
@@ -4982,7 +4998,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 185';
+  var updMsg = '', VERSION = 'Version 186';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5973,7 +5989,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- input ----------
   var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
   // first person (Bomb Town 3D): fpYaw is where you look, in radians (0 = east, grows clockwise seen from above). Right thumb drags to turn.
-  var fpYaw = 0, FP_SENS = 0.007;
+  var fpYaw = 0, fpPitch = 0, FP_SENS = 0.007;   // fpPitch: up (+) / down (-) in radians, kept within about 50 degrees
   function fpOn() { return !!(V && V.shown && v3Active()); }
   function ctrlEff() { return (net.mode === 'off' && !fpOn()) ? ctrlMode : 'two'; }
   var ctrlMode = 'two';   // 'one' = one finger, auto aim. 'two' = left thumb walks, right thumb aims a cone
@@ -5989,7 +6005,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (bigOpen && x > r.width / 2) return;
     if (ctrlEff() === 'two' && x > r.width / 2) {
       if (aim.active && now() - aim.t < 400) return;
-      aim.active = true; aim.t = now(); aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0; aim.lx = e.clientX;
+      aim.active = true; aim.t = now(); aim.id = e.pointerId; aim.ox = x; aim.oy = y; aim.x = aim.y = 0; aim.lx = e.clientX; aim.ly = e.clientY;
     } else {
       if (joy.active && now() - joy.t < 400) return;
       joy.active = true; joy.t = now(); joy.id = e.pointerId; joy.ox = x; joy.oy = y; joy.x = joy.y = 0;
@@ -6024,7 +6040,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       st = (ctrlEff() === 'two' && x > r.width / 2) ? aim : joy;
       if (st.active) continue;
       st.active = true; st.tid = t.identifier; st.ox = x; st.oy = y; st.x = st.y = 0;
-      if (st === aim) aim.lx = t.clientX;
+      if (st === aim) { aim.lx = t.clientX; aim.ly = t.clientY; }
       e.preventDefault();
     }
   }, { passive: false });
@@ -6035,8 +6051,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (joy.active && t.identifier === joy.tid) dragStick(joy, t);
       else if (aim.active && t.identifier === aim.tid) {
         dragStick(aim, t); if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
-        if (fpOn() && aim.lx !== undefined) fpYaw += (t.clientX - aim.lx) * FP_SENS;
-        aim.lx = t.clientX;
+        if (fpOn() && aim.lx !== undefined) { fpYaw += (t.clientX - aim.lx) * FP_SENS; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (t.clientY - aim.ly) * FP_SENS)); }
+        aim.lx = t.clientX; aim.ly = t.clientY;
       }
     }
   }, { passive: true });
@@ -6061,8 +6077,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (aim.active && e.pointerId === aim.id) {
       dragStick(aim, e);
       if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
-      if (fpOn() && aim.lx !== undefined) fpYaw += (e.clientX - aim.lx) * FP_SENS;
-      aim.lx = e.clientX;
+      if (fpOn() && aim.lx !== undefined) { fpYaw += (e.clientX - aim.lx) * FP_SENS; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (e.clientY - aim.ly) * FP_SENS)); }
+      aim.lx = e.clientX; aim.ly = e.clientY;
     }
   });
   function endJoy(e) {
@@ -7102,7 +7118,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
     var eyeY = (me && me.down) ? 9 : 26, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
     V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
-    V.cam.lookAt(focus.x + sx * 0.3 + fcx * 100, eyeY, focus.y + sy * 0.3 + fcz * 100);
+    var cpch = Math.cos(fpPitch), spch = Math.sin(fpPitch);
+    V.cam.lookAt(focus.x + sx * 0.3 + fcx * cpch * 100, eyeY + spch * 100, focus.y + sy * 0.3 + fcz * cpch * 100);
     // lighting: sunset outside, dimmer and lamp-lit indoors, nearly black at night with a torch
     var ins = (me && v3inside(me.x, me.y)) ? 1 : 0, cp = V.cam.position;
     V.li += (ins - V.li) * 0.15;
@@ -7147,23 +7164,24 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < BLD.length; i++) {
       b = BLD[i].bar;
       for (kk = 0; kk < b.planks; kk++) {
-        if (b.hz) { seg = b.h / b.max; v3put(V.bars, bn++, b.x + b.w / 2, 15, b.y + seg * (kk + 0.5), 0, b.w - 1, 28, seg - 1.5); }
-        else { seg = b.w / b.max; v3put(V.bars, bn++, b.x + seg * (kk + 0.5), 15, b.y + b.h / 2, 0, seg - 1.5, 28, b.h - 1); }
+        if (b.hz) { seg = b.h / b.max; v3put(V.bars, bn++, b.x + b.w / 2, 8, b.y + seg * (kk + 0.5), 0, b.w - 1, 16, seg - 1.5); }
+        else { seg = b.w / b.max; v3put(V.bars, bn++, b.x + seg * (kk + 0.5), 8, b.y + b.h / 2, 0, seg - 1.5, 16, b.h - 1); }
       }
     }
     V.bars.count = bn; V.bars.instanceMatrix.needsUpdate = true;
     // cubes: bullets and crates. orbs: round things.
     var cn = 0, on = 0, e, c3 = V.C;
     for (i = 0; i < bullets.length && cn < 390; i++) {
-      var bu = bullets[i], bx0 = bu.x, by0 = bu.y;
-      if (bu.vox !== undefined) { var vf = Math.max(0, 1 - bu.dist / 80); bx0 += bu.vox * vf; by0 += bu.voy * vf; }   // first person: it leaves the gun, then settles onto its true line
-      if (bu.kind === 'fire') { var ff = Math.min(1, bu.dist / bu.max); v3put(V.or, on++, bx0, 20, by0, 0, 3 + ff * 8, 3 + ff * 8, 3 + ff * 8, v3col('#ff9a30')); }
-      else if (bu.kind === 'goo') v3put(V.or, on++, bx0, 20, by0, 0, 5, 5, 5, v3col('#5dff8a'));
-      else if (bu.kind === 'rocket') v3put(V.or, on++, bx0, 20, by0, 0, 5, 5, 5, v3col('#ff8a3a'));
+      var bu = bullets[i], bx0 = bu.x, by0 = bu.y, vf = 0, yb = 21;
+      if (bu.vox !== undefined) { vf = Math.max(0, 1 - bu.dist / 80); bx0 += bu.vox * vf; by0 += bu.voy * vf; yb = 21 - 4 * vf; }
+      if (bu.vh !== undefined) yb = bu.h0 + bu.vh * bu.dist - 10 * vf;   // first person: rises or falls along the crosshair line   // first person: it leaves the gun, then settles onto its true line
+      if (bu.kind === 'fire') { var ff = Math.min(1, bu.dist / bu.max); v3put(V.or, on++, bx0, yb, by0, 0, 3 + ff * 8, 3 + ff * 8, 3 + ff * 8, v3col('#ff9a30')); }
+      else if (bu.kind === 'goo') v3put(V.or, on++, bx0, yb, by0, 0, 5, 5, 5, v3col('#5dff8a'));
+      else if (bu.kind === 'rocket') v3put(V.or, on++, bx0, yb, by0, 0, 5, 5, 5, v3col('#ff8a3a'));
       else {
         var tc = bu.crit ? '#ffffff' : (bu.explosive ? '#ff7a3a' : (bu.kind === 'ray' ? '#ff4a5a' : '#ffd089'));
         if (bu.bt && !bu.crit && typeof BTRAIL !== 'undefined' && BTRAIL[bu.bt]) { var bc = BTRAIL[bu.bt].c; if (bc === 'rainbow') { c3.setHSL(((performance.now() / 4 + bu.x + bu.y) % 360) / 360, 0.9, 0.62); tc = null; } else tc = bc; }
-        v3put(V.cu, cn++, bx0, 18, by0, -Math.atan2(bu.dy, bu.dx), bu.kind === 'ray' ? 34 : (bu.long ? 20 : 11), bu.crit ? 2.4 : 1.7, bu.crit ? 2.4 : 1.7, tc ? v3col(tc) : c3);
+        v3put(V.cu, cn++, bx0, yb, by0, -Math.atan2(bu.dy, bu.dx), bu.kind === 'ray' ? 34 : (bu.long ? 20 : 11), bu.crit ? 2.4 : 1.7, bu.crit ? 2.4 : 1.7, tc ? v3col(tc) : c3);
       }
     }
     if (me && me.flash > 0 && !me.down) v3put(V.or, on++, focus.x + fcx * 40 - fcz * 10, 16, focus.y + fcz * 40 + fcx * 10, 0, 3.2, 3.2, 3.2, v3col('#ffe3a6'));
