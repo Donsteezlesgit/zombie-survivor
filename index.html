@@ -85,6 +85,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .game { position: fixed; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; background: var(--ground); }
+#c3 { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
 .hud { position: absolute; left: 0; right: 0; top: 0; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
@@ -614,6 +615,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   <div class="btned" id="btnEd" hidden><p>Drag the buttons where your thumbs like them</p><div class="edrow"><button class="chip" id="edReset" type="button">Reset</button><button class="chip" id="edCancel" type="button">Cancel</button><button class="go" id="edDone" type="button">Done</button></div></div>
 </div>
 
+<script src="three.min.js"></script>
 <script src="peerjs.min.js"></script>
 <script>
 (function () {
@@ -2211,7 +2213,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { id: 'beginners', name: 'Beginners Ground', blurb: 'Open ground, four spawn buildings. Learn the ropes.', world: 1500, gs: 1.5, build: buildBeginners, ground: paintGround, bld: paintBuildings, cfg: { sx: 750, sy: 750, nav: false } },
     { id: 'haunted', name: 'Haunted House', blurb: 'Rooms, corridors and doors. Something is stirring in the cauldron.', world: 2000, gs: 1, build: buildHaunted, ground: paintHauntedGround, bld: paintHauntedBld, cfg: { sx: 1000, sy: 960, nav: true } },
     { id: 'hangar', name: 'The Hangar', blurb: 'Pitch dark. You only see by your torch. Built for PvP, great for zombies too.', world: 1400, gs: 1.5, build: buildHangar, ground: paintHangarGround, bld: paintHangarBld, cfg: { sx: 700, sy: 700, nav: true }, need: { map: 'beginners', wave: 10 } },
-    { id: 'dummytown', name: 'Bomb Town', blurb: 'Sunset. Two houses face each other across a long street. Built for PvP, great for zombies too.', world: 1800, gs: 1.1, build: buildDummy, ground: paintDummyGround, bld: paintDummyBld, cfg: { sx: 700, sy: 880, nav: true, day: true, pvg: true, b: { x0: 10, y0: 400, x1: 1790, y1: 1400 } }, need: { map: 'beginners', wave: 10 } }
+    { id: 'dummytown', name: 'Bomb Town', blurb: 'Sunset. Two houses face each other across a long street. Built for PvP, great for zombies too.', world: 1800, gs: 1.1, v3d: true, build: buildDummy, ground: paintDummyGround, bld: paintDummyBld, cfg: { sx: 700, sy: 880, nav: true, day: true, pvg: true, b: { x0: 10, y0: 400, x1: 1790, y1: 1400 } }, need: { map: 'beginners', wave: 10 } }
   ];
   function mapDef(id) { for (var i = 0; i < MAPS.length; i++) if (MAPS[i].id === id) return MAPS[i]; return MAPS[0]; }
   var mapId = '';
@@ -4925,6 +4927,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
+      h += '<button class="go alt" data-a="v3d" type="button">' + (v3off ? '3D maps: off' : '3D maps: on') + '</button>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
       h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
@@ -4977,7 +4980,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 182';
+  var updMsg = '', VERSION = 'Version 183';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5176,6 +5179,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       hapOn = !hapOn; try { localStorage.setItem('zs-hap', hapOn ? '1' : '0'); } catch (e) {}
       renderScreen(); if (hapOn) hap([20]);
     }
+    else if (a === 'v3d') { v3off = !v3off; try { localStorage.setItem('zs-v3d', v3off ? '0' : '1'); } catch (e) {} renderScreen(); }
     else if (a === 'btnedit') openBtnEd();
     else if (a === 'mute') {
       muted = !muted; ensureAudio();
@@ -5268,7 +5272,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Playing together', art: 'team', b: ['One player hosts and gets a 4-letter code. Up to four players join with it.', 'Everyone has their own coins, guns, armour and upgrades.', 'More players means more zombies, and tougher ones.', 'The game does not pause when anyone opens the shop. Get covered first.', 'Downed? You lose every upgrade you bought, but keep your guns and armour. A teammate standing next to you for 3 seconds revives you, and you have 20 seconds.', 'Not revived in time and you are dead: you lose everything (guns, armour, coins). You come back at the start of the next wave with a Colt Python at full ammo and 200 coins, or 1,000 coins after wave 15.', 'Game over when everyone is down or dead. Friends can join mid-game, starting with fresh gear and some coins.', 'The host runs the game, so the host should keep the app open.'] },
     { t: 'PvP mode', art: 'team', b: ['Online only. The host picks PvP on the host screen, then any map. 2 to 4 players, no zombies, everyone for themselves.', 'First to 15 kills wins. Your kills and everyone else\'s show at the top left.', 'Before the round you pick 2 guns from 6 mid-range ones (MP5, AK-47, M4A1, Python, Desert Eagle, Benelli). Seven more (SCAR-H, Vector, AUG, Val, Striker 12, AA-12, Dragunov) can be unlocked in the Armoury. You start with one magazine per gun. Ammo crates appear around the map every so often; walk over one to get a magazine for each gun (3 spare at most).', 'Stim button: tap it to get back to full health with a short speed boost. It takes a minute to recharge, and it is ready again when you respawn.', 'Grenades: 2 per player, one button under the stim. Each recharges 60 seconds after you throw it. They hurt other players too, and a little less if it is your own. Sticky, Stun and Fire work in PvP, with lower damage and a short slow instead of a full freeze.', 'There is no auto aim. Hold the right thumb and point the thin line at someone: your gun fires only while another player is on the line. Let go and you stop.', 'Die and you respawn after 3 seconds, far from the others, with 2 seconds of protection. While you wait you can change your guns. Firing ends the protection.', 'Everyone has the same health. A UAV ping shows every other player on the minimap for 1.5 seconds, every 5 seconds.'] },
     { t: 'Armoury and Z-bucks', art: 'upgrade', b: ['Z-bucks are a second currency. They save on this phone and you only get them by playing.', 'Every Zombies game, offline or online: 1 Z-buck each time you pass another 10 waves (10, 20, 30...) and another for every 500 kills in that game.', 'Win a PvP match: 4 Z-bucks.', 'Daily quests: 3 new ones every 12 hours (at midnight and midday), shown on the main menu. Finish all three for 1 more.', 'The Armoury on the main menu lists every gun. Tap one to buy and fit its attachments and skins. Each gun has its own, and you can fit all of them at once.', 'Attachments: Red dot sight, Extended mag, Suppressor, Foregrip, Laser sight, Hollow points. They work in Zombies and in PvP.', 'Every gun that is not already in the PvP list has a Use in PvP option on its screen. Buy it once and you can pick that gun in PvP. Weak guns are cheap, the strongest cost a lot.', 'Each gun also has bullet trails, bought and fitted the same way. Other players see your skins and trails online.'] },
-    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, haptics, Move buttons, controls, a game guide, Update game, and a link to share the game.', 'Stats on the main menu shows your best wave on each map, total kills, time survived and more.', 'Very rarely a wave has a twist: a horde rush (extra zombies, double coins), a supply drop (a special weapon crate lands near you) or a night wave (much darker).', 'Move buttons: drag the reload, stim and grenade buttons wherever your thumbs like. It is saved for portrait and landscape separately, and Reset puts them back.', 'Haptics: menu and button taps, and the grenade and stim buttons, give a small tap. On Android, guns, hits and wave starts buzz too, and each gun feels different. iPhone only allows a tap from a button press (iOS 17.4 or newer). Turn haptics off in Settings.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
+    { t: 'Saving and settings', art: 'save', b: ['Offline games save on this phone after every wave. Use Continue on the Offline screen.', 'Online games do not save.', 'Your name and look are set in Your player. Name is optional and defaults to Player 1 to 4.', 'Settings has sound, haptics, Move buttons, controls, a game guide, Update game, and a link to share the game.', 'Stats on the main menu shows your best wave on each map, total kills, time survived and more.', 'Very rarely a wave has a twist: a horde rush (extra zombies, double coins), a supply drop (a special weapon crate lands near you) or a night wave (much darker).', 'Move buttons: drag the reload, stim and grenade buttons wherever your thumbs like. It is saved for portrait and landscape separately, and Reset puts them back.', '3D maps: Bomb Town is a 3D test. Settings has a 3D maps switch if it runs badly on your phone.', 'Haptics: menu and button taps, and the grenade and stim buttons, give a small tap. On Android, guns, hits and wave starts buzz too, and each gun feels different. iPhone only allows a tap from a button press (iOS 17.4 or newer). Turn haptics off in Settings.', 'On menu screens, swipe right from the very left edge of the screen to go back.', 'Update game fetches the newest version from GitHub. Check the version number in Settings.'] }
   ];
   function helpHtml(list, title, footer) {
     list = list || HELP; title = title || 'How to play';
@@ -6804,6 +6808,290 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (sy + sh > img.height) { cut = sy + sh - img.height; sh -= cut; dh -= cut / GS; }
     if (sw > 0 && sh > 0) ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
   }
+  // ---------- 3D renderer (prototype). Only maps with v3d:true use it. The game itself is unchanged, this just draws it differently. ----------
+  var V = null, v3fail = false, v3off = false;
+  try { v3off = localStorage.getItem('zs-v3d') === '0'; } catch (e) {}
+  function v3Active() { return !v3fail && !v3off && !!window.THREE && !!mapDef(mapId).v3d; }
+  var V3C = {};
+  function v3col(s) { var c = V3C[s]; if (!c) { c = V3C[s] = new THREE.Color(); c.set(s); } return c; }
+  function v3box(G, x, z, w, d, y0, hh, c) {
+    var x1 = x + w, z1 = z + d, y1 = y0 + hh, b = G.p.length / 3, k, s, F = [
+      [x, y1, z1, x1, y1, z1, x1, y1, z, x, y1, z, 0, 1, 0, 1.12],
+      [x, y0, z1, x1, y0, z1, x1, y1, z1, x, y1, z1, 0, 0, 1, 0.95],
+      [x1, y0, z, x, y0, z, x, y1, z, x1, y1, z, 0, 0, -1, 0.8],
+      [x1, y0, z1, x1, y0, z, x1, y1, z, x1, y1, z1, 1, 0, 0, 0.88],
+      [x, y0, z, x, y0, z1, x, y1, z1, x, y1, z, -1, 0, 0, 0.84]];
+    for (k = 0; k < F.length; k++) {
+      var f = F[k], q = G.p.length / 3; s = f[15];
+      for (var v = 0; v < 4; v++) { G.p.push(f[v * 3], f[v * 3 + 1], f[v * 3 + 2]); G.n.push(f[12], f[13], f[14]); G.c.push(Math.min(1, c[0] * s), Math.min(1, c[1] * s), Math.min(1, c[2] * s)); }
+      G.i.push(q, q + 1, q + 2, q, q + 2, q + 3);
+    }
+  }
+  function v3walls() {
+    var T = THREE, G = { p: [], n: [], c: [], i: [] }, O = typeof DT_OY === 'number' ? DT_OY : 0, hgt = {}, i, r, key, hg, col, h;
+    if (typeof DT_SH !== 'undefined') for (i = 0; i < DT_SH.length; i++) { var s = DT_SH[i]; if (s.t === 'r') hgt[s.x + ',' + (s.y + O) + ',' + s.w + ',' + s.h] = s.hg; }
+    var pal = [[0.75, 0.2, 0.18], [0.2, 0.35, 0.6], [0.7, 0.68, 0.62], [0.25, 0.28, 0.3], [0.62, 0.5, 0.2], [0.35, 0.5, 0.35]];
+    for (i = 0; i < RECTS.length; i++) {
+      r = RECTS[i];
+      if (r.bar || r.w >= 1000 || r.h >= 1000) continue;
+      key = r.x + ',' + r.y + ',' + r.w + ',' + r.h; hg = hgt[key];
+      var thin = Math.min(r.w, r.h) <= 8;
+      if (r.wl) { h = 40; col = [0.84, 0.78, 0.68]; }
+      else if (r.side) { h = 34; col = [0.8, 0.74, 0.64]; }
+      else if (r.furn && thin) { h = 11; col = [0.93, 0.9, 0.82]; }
+      else if (r.furn) { h = hg ? Math.min(hg, 24) : 16; col = pal[(Math.floor(r.x / 10) + Math.floor(r.y / 10)) % pal.length]; }
+      else if (Math.min(r.w, r.h) === 26) { h = 22; col = [0.22, 0.4, 0.18]; }
+      else { h = hg ? Math.min(hg, 56) : 36; col = pal[(Math.floor(r.x / 10) + Math.floor(r.y / 10)) % pal.length]; }
+      v3box(G, r.x, r.y, r.w, r.h, 0, h, col);
+    }
+    var g = new T.BufferGeometry();
+    g.setAttribute('position', new T.Float32BufferAttribute(G.p, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(G.n, 3)); g.setAttribute('color', new T.Float32BufferAttribute(G.c, 3));
+    g.setIndex(G.i);
+    return new T.Mesh(g, new T.MeshLambertMaterial({ vertexColors: true }));
+  }
+  function v3init() {
+    var T = THREE, cvs = document.createElement('canvas'), r;
+    cvs.id = 'c3';
+    try { r = new T.WebGLRenderer({ canvas: cvs, antialias: false, alpha: false, powerPreference: 'high-performance' }); } catch (e) { v3fail = true; return null; }
+    if (!r || !r.getContext()) { v3fail = true; return null; }
+    cv.parentNode.insertBefore(cvs, cv);
+    var sc = new T.Scene(), cam3 = new T.PerspectiveCamera(40, 1, 20, 5000);
+    sc.background = new T.Color(0x14100c);
+    var hemi = new T.HemisphereLight(0xffe6c8, 0x6a5440, 2.4), sun = new T.DirectionalLight(0xffb878, 1.2), pl = new T.PointLight(0xffe8c0, 0, 420, 1.2);
+    sun.position.set(-300, 500, 250); sc.add(hemi); sc.add(sun); sc.add(pl);
+    var box = new T.BoxGeometry(1, 1, 1), sph = new T.SphereGeometry(1, 8, 6), disc = new T.CircleGeometry(1, 20);
+    disc.rotateX(-Math.PI / 2);
+    var V = { cvs: cvs, r: r, sc: sc, cam: cam3, hemi: hemi, sun: sun, pl: pl, map: '', walls: null, gTex: null, ground: null, bTex: null, blood: null, bT: 0, shown: true, w: 0, h: 0, box: box, sph: sph, disc: disc };
+    var NF = 480, names = ['body', 'head', 'legL', 'legR', 'armL', 'armR'];
+    V.fm = [];
+    var fmat = new T.MeshLambertMaterial({ color: 0xffffff }), n;
+    for (n = 0; n < names.length; n++) { var im = new T.InstancedMesh(box, fmat, NF); im.frustumCulled = false; im.count = 0; im.setColorAt(0, v3col('#ffffff')); sc.add(im); V.fm.push(im); }
+    V.gun = new T.InstancedMesh(box, fmat, 16); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
+    V.sh = new T.InstancedMesh(disc, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), NF); V.sh.frustumCulled = false; V.sh.count = 0; sc.add(V.sh);
+    var bm = new T.MeshBasicMaterial({ color: 0xffffff });
+    V.cu = new T.InstancedMesh(box, bm, 400); V.cu.frustumCulled = false; V.cu.count = 0; V.cu.setColorAt(0, v3col('#fff')); sc.add(V.cu);
+    V.or = new T.InstancedMesh(sph, bm, 700); V.or.frustumCulled = false; V.or.count = 0; V.or.setColorAt(0, v3col('#fff')); sc.add(V.or);
+    V.pk = new T.InstancedMesh(box, new T.MeshLambertMaterial({ color: 0xffffff }), 80); V.pk.frustumCulled = false; V.pk.count = 0; V.pk.setColorAt(0, v3col('#6b4a2c')); sc.add(V.pk);
+    V.fire = []; V.stun = [];
+    var k, m;
+    for (k = 0; k < 16; k++) {
+      m = new T.Mesh(disc, new T.MeshBasicMaterial({ color: 0xff7a22, transparent: true, opacity: 0.5, depthWrite: false, blending: T.AdditiveBlending })); m.visible = false; m.position.y = 1.2; sc.add(m); V.fire.push(m);
+      m = new T.Mesh(disc, new T.MeshBasicMaterial({ color: 0x82c8ff, transparent: true, opacity: 0.3, depthWrite: false, blending: T.AdditiveBlending })); m.visible = false; m.position.y = 1.4; sc.add(m); V.stun.push(m);
+    }
+    var NP = 500, pg = new T.BufferGeometry();
+    V.pp = new Float32Array(NP * 3); V.pc = new Float32Array(NP * 3);
+    pg.setAttribute('position', new T.BufferAttribute(V.pp, 3)); pg.setAttribute('color', new T.BufferAttribute(V.pc, 3)); pg.setDrawRange(0, 0);
+    V.pts = new T.Points(pg, new T.PointsMaterial({ size: 6, vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); V.pts.frustumCulled = false; sc.add(V.pts);
+    V.d = new T.Object3D(); V.F = new T.Matrix4(); V.A = new T.Matrix4(); V.B = new T.Matrix4(); V.M = new T.Matrix4(); V.C = new T.Color(); V.v = new T.Vector3();
+    return V;
+  }
+  function v3setup() {
+    var T = THREE;
+    if (V.walls) { sc3rm(V.walls); V.walls.geometry.dispose(); }
+    if (V.ground) { sc3rm(V.ground); V.gTex.dispose(); V.ground.geometry.dispose(); }
+    if (V.blood) { sc3rm(V.blood); V.bTex.dispose(); V.blood.geometry.dispose(); }
+    V.walls = v3walls(); V.sc.add(V.walls);
+    V.gTex = new T.CanvasTexture(groundL.c); V.gTex.colorSpace = T.SRGBColorSpace; V.gTex.minFilter = T.LinearFilter; V.gTex.generateMipmaps = false;
+    V.ground = new T.Mesh(new T.PlaneGeometry(WORLD, WORLD), new T.MeshLambertMaterial({ map: V.gTex }));
+    V.ground.rotation.x = -Math.PI / 2; V.ground.position.set(WORLD / 2, 0, WORLD / 2); V.sc.add(V.ground);
+    V.bTex = new T.CanvasTexture(bloodL.c); V.bTex.colorSpace = T.SRGBColorSpace; V.bTex.minFilter = T.LinearFilter; V.bTex.generateMipmaps = false;
+    V.blood = new T.Mesh(new T.PlaneGeometry(WORLD, WORLD), new T.MeshLambertMaterial({ map: V.bTex, transparent: true, depthWrite: false }));
+    V.blood.rotation.x = -Math.PI / 2; V.blood.position.set(WORLD / 2, 0.4, WORLD / 2); V.blood.visible = false; V.sc.add(V.blood);
+    var nb = 0, i; for (i = 0; i < BLD.length; i++) nb += BLD[i].bar.max;
+    if (V.bars) { sc3rm(V.bars); }
+    V.bars = new T.InstancedMesh(V.box, new T.MeshLambertMaterial({ color: 0x8a5e36 }), Math.max(1, nb)); V.bars.frustumCulled = false; V.sc.add(V.bars);
+    V.map = mapId; V.bT = 99;
+  }
+  function sc3rm(o) { if (o.parent) o.parent.remove(o); }
+  // one part of a figure: pivot (px,py,pz), swing rz about the pivot, then a box centred at offset (ox,oy,oz) with size (sx,sy,sz)
+  function v3part(im, n, px, py, pz, rz, ox, oy, oz, sx, sy, sz, colr) {
+    var d = V.d;
+    d.position.set(px, py, pz); d.rotation.set(0, 0, rz); d.scale.set(1, 1, 1); d.updateMatrix(); V.A.copy(d.matrix);
+    V.B.makeScale(sx, sy, sz); V.B.setPosition(ox, oy, oz);
+    V.M.multiplyMatrices(V.F, V.A); V.M.multiply(V.B);
+    im.setMatrixAt(n, V.M); im.setColorAt(n, colr);
+  }
+  function v3fig(n, x, z, ang, s, step, mv, skin, cloth, pants, down, gun) {
+    var d = V.d, f = V.fm, sw = Math.sin(step) * 0.75 * mv;
+    d.position.set(x, down ? 5 : 0, z); d.rotation.set(0, -ang, down ? 1.5708 : 0); d.scale.set(s, s, s); d.updateMatrix(); V.F.copy(d.matrix);
+    v3part(f[0], n, 0, 19.5, 0, 0, 0, 0, 0, 6.5, 13, 11, cloth);
+    v3part(f[1], n, 0.6, 29.5, 0, 0, 0, 0, 0, 7.6, 8, 7.6, skin);
+    v3part(f[2], n, 0, 13, 2.8, sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
+    v3part(f[3], n, 0, 13, -2.8, -sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
+    v3part(f[4], n, 0, 24.5, 6.6, 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+    v3part(f[5], n, 0, 24.5, -6.6, -0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+    if (gun) { var gi = V.gn++; v3part(V.gun, gi, 0, 23.5, 0, 0, 11, 0, 0, 16, 3.4, 3.4, v3col('#262626')); }
+  }
+  function v3proj(x, h, z) { V.v.set(x, h, z).project(V.cam); return { x: (V.v.x * 0.5 + 0.5) * W, y: (-V.v.y * 0.5 + 0.5) * H, ok: V.v.z < 1 }; }
+  function v3put(im, n, x, y, z, ry, sx, sy, sz, colr) {
+    var d = V.d; d.position.set(x, y, z); d.rotation.set(0, ry, 0); d.scale.set(sx, sy, sz); d.updateMatrix(); im.setMatrixAt(n, d.matrix); if (colr) im.setColorAt(n, colr);
+  }
+  function render3d(vw, vh, sx, sy) {
+    var T = THREE, i, z, P, rr, n, d = V.d;
+    if (V.map !== mapId) v3setup();
+    if (W !== V.w || H !== V.h || dpr !== V.dpr) { V.r.setPixelRatio(dpr); V.r.setSize(W, H, false); V.w = W; V.h = H; V.dpr = dpr; V.cam.aspect = W / H; V.cam.updateProjectionMatrix(); }
+    if (!V.shown) { V.cvs.style.display = 'block'; V.shown = true; }
+    var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = waveEv === 'night';
+    // camera: steep tilt, follows the player
+    var tilt = 1.0, dist = Math.max(380, Math.min(1500, vh * 1.3));
+    V.cam.position.set(focus.x + sx, Math.sin(tilt) * dist, focus.y + Math.cos(tilt) * dist + sy);
+    V.cam.lookAt(focus.x + sx, 0, focus.y + sy - 6);
+    V.hemi.intensity = night ? 0.4 : 2.3; V.sun.intensity = night ? 0.05 : 1.2;
+    V.pl.intensity = night ? 3.2 : 0; V.pl.position.set(focus.x, 60, focus.y);
+    // blood
+    if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0) { V.bTex.needsUpdate = true; V.bT = 1.2; } } else V.blood.visible = false;
+    // figures
+    n = 0; V.gn = 0;
+    var ZS = ZSZ, sh = 0, ds = d, cl;
+    for (i = 0; i < zombies.length && n < 470; i++) {
+      z = zombies[i];
+      if (z.x < focus.x - 900 || z.x > focus.x + 900 || z.y < focus.y - 1000 || z.y > focus.y + 700) continue;
+      var k = z.type, S = ZS[k] || ZS.walker, cc = ZCOL[k] || ZCOL.walker, fl = z.flash > 0 ? (z.cf ? 2 : 1) : 0;
+      var sk = fl === 2 ? '#e8403a' : fl ? '#f4ece0' : (k === 'ghost' ? '#bcd8ee' : cc.skin), cth = fl === 2 ? '#c4302a' : fl ? '#e8dccb' : (k === 'ghost' ? '#a8c8e0' : cc.cloth), pn = fl === 2 ? '#9a2420' : fl ? '#d8ccbb' : (k === 'ghost' ? '#a8c8e0' : cc.pants);
+      if (z.stun > 0 && !fl) { sk = '#9fc4e8'; }
+      v3fig(n, z.x, z.y, z.ang, S[0] * 1.02, time * (3 + ((TYPES[k] || {}).spd || 60) * 0.075) + z.seed * 3, 1, v3col(sk), v3col(cth), v3col(pn), false, false);
+      v3put(V.sh, n, z.x, 0.7, z.y, 0, Math.max(8, z.r * 1.15), 1, Math.max(8, z.r * 1.15)); n++;
+    }
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; rr = viewRef(P); if (!rr) continue;
+      if (pvp && P.down) continue;
+      var L = P.look || {}, mv = (P._v3s !== undefined && Math.abs(P.step - P._v3s) > 0.003) ? 1 : 0; P._v3s = P.step;
+      v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(LOOK_COLS[L.c] || LOOK_COLS[0]), v3col('#2b2f3a'), !!P.down, !P.down);
+      v3put(V.sh, n, P.x, 0.7, P.y, 0, 10, 1, 10); n++;
+    }
+    for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
+    V.gun.count = V.gn; V.gun.instanceMatrix.needsUpdate = true; if (V.gun.instanceColor) V.gun.instanceColor.needsUpdate = true;
+    V.sh.count = n; V.sh.instanceMatrix.needsUpdate = true;
+    // planks on the barricades
+    var bn = 0, b, kk, seg, bw;
+    for (i = 0; i < BLD.length; i++) {
+      b = BLD[i].bar;
+      for (kk = 0; kk < b.planks; kk++) {
+        if (b.hz) { seg = b.h / b.max; v3put(V.bars, bn++, b.x + b.w / 2, 15, b.y + seg * (kk + 0.5), 0, b.w - 1, 28, seg - 1.5); }
+        else { seg = b.w / b.max; v3put(V.bars, bn++, b.x + seg * (kk + 0.5), 15, b.y + b.h / 2, 0, seg - 1.5, 28, b.h - 1); }
+      }
+    }
+    V.bars.count = bn; V.bars.instanceMatrix.needsUpdate = true;
+    // cubes: bullets and crates. orbs: round things.
+    var cn = 0, on = 0, e, c3 = V.C;
+    for (i = 0; i < bullets.length && cn < 390; i++) {
+      var bu = bullets[i];
+      if (bu.kind === 'fire') { var ff = Math.min(1, bu.dist / bu.max); v3put(V.or, on++, bu.x, 20, bu.y, 0, 3 + ff * 8, 3 + ff * 8, 3 + ff * 8, v3col('#ff9a30')); }
+      else if (bu.kind === 'goo') v3put(V.or, on++, bu.x, 20, bu.y, 0, 5, 5, 5, v3col('#5dff8a'));
+      else if (bu.kind === 'rocket') v3put(V.or, on++, bu.x, 20, bu.y, 0, 5, 5, 5, v3col('#ff8a3a'));
+      else {
+        var tc = bu.crit ? '#ffffff' : (bu.explosive ? '#ff7a3a' : (bu.kind === 'ray' ? '#ff4a5a' : '#ffd089'));
+        if (bu.bt && !bu.crit && typeof BTRAIL !== 'undefined' && BTRAIL[bu.bt]) { var bc = BTRAIL[bu.bt].c; if (bc === 'rainbow') { c3.setHSL(((performance.now() / 4 + bu.x + bu.y) % 360) / 360, 0.9, 0.62); tc = null; } else tc = bc; }
+        v3put(V.cu, cn++, bu.x, 22, bu.y, -Math.atan2(bu.dy, bu.dx), bu.kind === 'ray' ? 34 : (bu.long ? 20 : 11), bu.crit ? 2.4 : 1.7, bu.crit ? 2.4 : 1.7, tc ? v3col(tc) : c3);
+      }
+    }
+    for (i = 0; i < ebullets.length; i++) { e = ebullets[i]; v3put(V.or, on++, e.x, e.r + 6, e.y, 0, e.r * 1.2, e.r * 1.2, e.r * 1.2, v3col('#7b736a')); }
+    for (i = 0; i < grenades.length; i++) {
+      var g = grenades[i], gp = Math.min(1, g.t / g.T), gh = Math.sin(gp * Math.PI) * 30 * (gp < 1 ? 1 : 0);
+      v3put(V.or, on++, g.x, 5 + gh, g.y, 0, 4.8, 4.8, 4.8, v3col(GREN_COL[g.k | 0]));
+    }
+    for (i = 0; i < coins.length && on < 690; i++) { e = coins[i]; v3put(V.or, on++, e.x, 5 + Math.sin(time * 4 + i) * 1.2, e.y, 0, 3.8, 3.8, 3.8, v3col('#f2c14e')); }
+    var PKC = { health: '#ff4a4a', ammo: '#f2c14e', special: '#d2692a', perk: '#5fd0ff', item: '#6aff9a' }, pn2 = 0;
+    for (i = 0; i < pickups.length && pn2 < 78; i++) { e = pickups[i]; v3put(V.pk, pn2++, e.x, 10 + Math.sin(time * 3 + i) * 2, e.y, time * 1.5, 12, 12, 12, v3col(PKC[e.kind] || '#fff')); }
+    for (i = 0; i < boxes.length && pn2 < 78; i++) { e = boxes[i]; v3put(V.pk, pn2++, e.x, 11, e.y, 0, 26, 20, 20, v3col('#f2c14e')); }
+    V.cu.count = cn; V.cu.instanceMatrix.needsUpdate = true; if (V.cu.instanceColor) V.cu.instanceColor.needsUpdate = true;
+    V.or.count = on; V.or.instanceMatrix.needsUpdate = true; if (V.or.instanceColor) V.or.instanceColor.needsUpdate = true;
+    V.pk.count = pn2; V.pk.instanceMatrix.needsUpdate = true; if (V.pk.instanceColor) V.pk.instanceColor.needsUpdate = true;
+    // fire and stun
+    for (i = 0; i < 16; i++) {
+      var m1 = V.fire[i], m2 = V.stun[i], fp = firePatches[i], sf = stunFx[i];
+      if (fp) { m1.visible = true; m1.position.x = fp.x; m1.position.z = fp.y; m1.scale.set(fp.r, 1, fp.r); m1.material.opacity = 0.45 * Math.min(1, fp.t / 0.8) * (0.85 + 0.15 * Math.sin(time * 12 + i)); } else m1.visible = false;
+      if (sf) { var se = Math.min(1, (sf.T - sf.t) / 0.25), sr = sf.r * (0.4 + 0.6 * se); m2.visible = true; m2.position.x = sf.x; m2.position.z = sf.y; m2.scale.set(sr, 1, sr); m2.material.opacity = 0.3 * Math.min(1, sf.t / 0.6); } else m2.visible = false;
+    }
+    // sparks and bits
+    var pc = 0, pp = V.pp, pcc = V.pc;
+    for (i = 0; i < fx.length && pc < 499; i++) {
+      e = fx[i]; if (!e._c) { var sp = e.c.split(','); e._c = [sp[0] / 255, sp[1] / 255, sp[2] / 255]; }
+      var lf = Math.max(0, e.life / e.max);
+      pp[pc * 3] = e.x; pp[pc * 3 + 1] = 16; pp[pc * 3 + 2] = e.y;
+      pcc[pc * 3] = e._c[0] * lf; pcc[pc * 3 + 1] = e._c[1] * lf; pcc[pc * 3 + 2] = e._c[2] * lf; pc++;
+    }
+    V.pts.geometry.setDrawRange(0, pc); V.pts.geometry.attributes.position.needsUpdate = true; V.pts.geometry.attributes.color.needsUpdate = true;
+    V.sc.background.set(night ? 0x050506 : 0x14100c);
+    V.r.render(V.sc, V.cam);
+
+    // flat 2D overlay on top: health bars, names, reload, aim helpers, then the usual screen effects
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = 'round';
+    var q;
+    for (i = 0; i < zombies.length; i++) {
+      z = zombies[i];
+      if (z.x < focus.x - 700 || z.x > focus.x + 700 || z.y < focus.y - 800 || z.y > focus.y + 600) continue;
+      if (z.hp < z.maxhp || z.type === 'tank' || z.type === 'armoured' || z.type === 'ghost' || z.boss) {
+        var zs2 = (ZS[z.type] || ZS.walker)[0];
+        q = v3proj(z.x, 40 * zs2, z.y); if (!q.ok) continue;
+        var bw2 = (z.boss ? 56 : z.r * 2 + 6) * zoom * 0.8, bh2 = (z.boss ? 5 : 3.5) * zoom * 0.8, fr = Math.max(0, z.hp / z.maxhp);
+        ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(q.x - bw2 / 2 - 1, q.y - 1, bw2 + 2, bh2 + 2);
+        ctx.fillStyle = z.boss ? '#ff6a2a' : fr > 0.5 ? '#c43a2a' : (fr > 0.25 ? '#d2692a' : '#e8c03a');
+        ctx.fillRect(q.x - bw2 / 2, q.y, bw2 * fr, bh2);
+      }
+    }
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; rr = viewRef(P); if (!rr) continue;
+      if (pvp && P.down) continue;
+      if (P === me && !P.down && !isSpecialActive(P) && rr.reload > 0 && WEAPONS[rr.id]) {
+        q = v3proj(P.x, 46, P.y); var rf = 1 - rr.reload / WEAPONS[rr.id].reload;
+        ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(q.x - 16, q.y, 32, 6); ctx.fillStyle = '#f2c14e'; ctx.fillRect(q.x - 15, q.y + 1, 30 * Math.max(0, Math.min(1, rf)), 4);
+      }
+      if (P.down) {
+        q = v3proj(P.x, 10, P.y);
+        ctx.strokeStyle = P.rev > 0 ? '#78e0a0' : 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(q.x, q.y, 22 * zoom * 0.8, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
+        if (!pvp) { ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var dtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(dtx, q.x, q.y - 30); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(dtx, q.x, q.y - 30); }
+      } else if (players.length > 1 && P !== me && !pvp) {
+        q = v3proj(P.x, 48, P.y);
+        ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(P.name, q.x, q.y); ctx.fillStyle = LOOK_COLS[P.look.c]; ctx.fillText(P.name, q.x, q.y);
+      }
+    }
+    if (me && !me.down && state === 'play' && me.aimAng !== null && me.aimAng !== undefined) {
+      var a0 = me.aimAng, p0, p1, j, rg = Math.min(420, defOf(viewRef(me)).range);
+      if (pvp) {
+        p0 = v3proj(me.x, 22, me.y); p1 = v3proj(me.x + Math.cos(a0) * rg, 22, me.y + Math.sin(a0) * rg);
+        ctx.strokeStyle = 'rgba(242,193,78,0.35)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      } else if (me.cone) {
+        p0 = v3proj(me.x, 1, me.y); ctx.fillStyle = me.fr ? 'rgba(242,193,78,0.2)' : 'rgba(242,193,78,0.09)'; ctx.beginPath(); ctx.moveTo(p0.x, p0.y);
+        for (j = 0; j <= 10; j++) { var aa = a0 - CONE_HALF + CONE_HALF * 2 * j / 10; p1 = v3proj(me.x + Math.cos(aa) * rg, 1, me.y + Math.sin(aa) * rg); ctx.lineTo(p1.x, p1.y); }
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    if (state === 'play') for (i = 0; i < players.length; i++) {
+      var LP = players[i], LR = viewRef(LP);
+      if (LP.down || !LR || !WEAPONS[LR.id] || !(atM(LP, LR.id) & 16) || isSpecialActive(LP) || isGhost(LP)) continue;
+      var lan = (!pvp && LP === me && LP.cone && LP.aimAng !== null && LP.aimAng !== undefined) ? LP.aimAng : LP.ang;
+      var l0 = v3proj(LP.x + Math.cos(lan) * 24, 23, LP.y + Math.sin(lan) * 24), l1 = v3proj(LP.x + Math.cos(lan) * 320, 23, LP.y + Math.sin(lan) * 320);
+      ctx.strokeStyle = 'rgba(255,60,50,0.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(l0.x, l0.y); ctx.lineTo(l1.x, l1.y); ctx.stroke();
+    }
+    drawScreenFx();
+  }
+  function drawScreenFx() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.hypot(W, H) * 0.62);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.7)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    var low = state === 'play' && me && (me.down || me.hp / maxHpNow(me) < 0.3);
+    var ha = Math.max(0, hurtFlash) * 0.9 + (low ? 0.1 + 0.07 * Math.sin(time * 6) : 0);
+    if (ha > 0.01) { ctx.fillStyle = 'rgba(150,10,10,' + ha.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    if (joy.active) {
+      ctx.fillStyle = 'rgba(235,227,212,0.06)'; ctx.strokeStyle = 'rgba(235,227,212,0.35)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(joy.ox, joy.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(235,227,212,0.4)';
+      ctx.beginPath(); ctx.arc(joy.ox + joy.x * JR, joy.oy + joy.y * JR, 24, 0, 6.283); ctx.fill();
+    }
+    if (aim.active) {
+      ctx.fillStyle = 'rgba(242,193,78,0.06)'; ctx.strokeStyle = 'rgba(242,193,78,0.4)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(aim.ox, aim.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(242,193,78,0.45)';
+      ctx.beginPath(); ctx.arc(aim.ox + aim.x * JR, aim.oy + aim.y * JR, 24, 0, 6.283); ctx.fill();
+    }
+    if (state === 'play' && me) { drawMini(); if (bigOpen) drawBig(); } else if (bigOpen) closeBig();
+  }
+
   function render() {
     var vw = W / zoom, vh = H / zoom;
     var sx = shake && !reduceMotion ? rnd(-shake, shake) : 0, sy = shake && !reduceMotion ? rnd(-shake, shake) : 0;
@@ -6811,6 +7099,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     cam.x = focus.x - vw / 2 + sx;   // the player always stays in the middle; past the map edge you just see black
     cam.y = focus.y - vh / 2 - insT / (2 * zoom) + sy;
     var i, P, rr;
+    if (v3Active()) {
+      try { if (!V) V = v3init(); if (V) { render3d(vw, vh, sx, sy); return; } }
+      catch (err) { v3fail = true; try { console.error('3D off', err); } catch (e2) {} }
+    }
+    if (V && V.shown) { V.cvs.style.display = 'none'; V.shown = false; }
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0c0a08'; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -7136,27 +7429,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     ctx.globalCompositeOperation = 'source-over';
 
-    // screen space
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.hypot(W, H) * 0.62);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.7)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
-    var low = state === 'play' && me && (me.down || me.hp / maxHpNow(me) < 0.3);
-    var ha = Math.max(0, hurtFlash) * 0.9 + (low ? 0.1 + 0.07 * Math.sin(time * 6) : 0);
-    if (ha > 0.01) { ctx.fillStyle = 'rgba(150,10,10,' + ha.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
-    if (joy.active) {
-      ctx.fillStyle = 'rgba(235,227,212,0.06)'; ctx.strokeStyle = 'rgba(235,227,212,0.35)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(joy.ox, joy.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(235,227,212,0.4)';
-      ctx.beginPath(); ctx.arc(joy.ox + joy.x * JR, joy.oy + joy.y * JR, 24, 0, 6.283); ctx.fill();
-    }
-    if (aim.active) {
-      ctx.fillStyle = 'rgba(242,193,78,0.06)'; ctx.strokeStyle = 'rgba(242,193,78,0.4)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(aim.ox, aim.oy, JR, 0, 6.283); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = 'rgba(242,193,78,0.45)';
-      ctx.beginPath(); ctx.arc(aim.ox + aim.x * JR, aim.oy + aim.y * JR, 24, 0, 6.283); ctx.fill();
-    }
-    if (state === 'play' && me) { drawMini(); if (bigOpen) drawBig(); } else if (bigOpen) closeBig();
+    drawScreenFx();
   }
 
 
