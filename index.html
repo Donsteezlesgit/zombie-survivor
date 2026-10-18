@@ -625,7 +625,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     coinWave: 0.06, magBase: 80,
     dropTank: 0.015, rareSpec: 0.04, crateLife: 15,
     stim: { cd: 120, heal: 0.5, boost: 3 },
-    evChance: 0.07,
+    evChance: 0.07, centreK: 0.6, centreMin: 5,   // two-thumb crits: the aim line must pass within this of a zombie's centre
+
     gren: { cd: 60, R: 74, fly: 0.6, fuse: 0.18, range: 260, rangeMax: 330, pvp: 75, pvpEdge: 0.4, pvpSelf: 0.5 },
     downT: 20, deadCoins: 200, deadCoinsLate: 1000, deadLateWave: 15,
     dropHealth: 0.005, healAmount: 30, bossHeal: 50, healLife: 18, dropBossSpecial: 0.15, bossCrate: 0.25, bossCrateLife: 25,
@@ -4093,6 +4094,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       bullets.push({
         x: mx, y: my, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * pm * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
+        cen: (!pvp && !d.kind && P.cone && P.aimAng !== null && P.aimAng !== undefined) ? 1 : 0, ax: P.x, ay: P.y, aa: P.aimAng,
         kind: d.kind || 'bullet', bt: d.kind ? 0 : btI, blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
         long: d.cls === 'rifle' || d.cls === 'sniper', explosive: expl && !d.kind, arm: !d.special, pel: d.pellets > 1, kbm: (d.special ? TUNE.kbSpec[d.id] : TUNE.kb[d.cls]) != null ? (d.special ? TUNE.kbSpec[d.id] : TUNE.kb[d.cls]) : 1
       });
@@ -4184,6 +4186,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ebullets.splice(k, 1);
   }
 
+  function centred(z, b) {
+    var ca = Math.cos(b.aa), sa = Math.sin(b.aa), qx = z.x - b.ax, qy = z.y - b.ay;
+    return qx * ca + qy * sa > 0 && Math.abs(-qx * sa + qy * ca) <= Math.max(TUNE.centreMin, z.r * TUNE.centreK);
+  }
   function damageZombie(j, b) {
     var z = zombies[j];
     if (b.kind === 'goo') {
@@ -4194,15 +4200,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (z.hp <= 0) killZombie(j, b.owner);
       return;
     }
-    var dm = b.dmg, ar;
+    // two-thumb mode: a shot at a zombie the aim line runs straight through (dead centre) is a critical hit
+    var cc = !b.crit && b.cen && centred(z, b), dm = b.dmg * (cc ? 2 : 1), ar;
     if (b.arm && wave >= TUNE.armFrom && !z.ghost) {
       ar = z.boss ? TUNE.armBoss : (z.type === 'tank' ? TUNE.armTank : (z.type === 'armoured' ? TUNE.armArm : 0));
       if (ar) { if (b.pel) ar *= TUNE.armPellet; dm = Math.max(dm - ar, dm * TUNE.armFloor); }
     }
-    z.hp -= dm; z.flash = b.crit ? 0.16 : 0.08; z.cf = !!b.crit;
+    z.hp -= dm; z.flash = (b.crit || cc) ? 0.16 : 0.08; z.cf = !!(b.crit || cc);
     var kb = (b.kind === 'fire' ? 20 : 90) * (b.kbm == null ? 1 : b.kbm) * (10 / z.r); z.vx += b.dx * kb; z.vy += b.dy * kb;
     addBlood(b.x, b.y, b.dx, b.dy, b.kind === 'fire' ? 1 : 3, 160);
-    if (b.crit) addFx(b.x, b.y, 5, 160, 0.25, 2, '255,255,255');
+    if (b.crit || cc) addFx(b.x, b.y, 5, 160, 0.25, 2, '255,255,255');
     if (b.kind !== 'fire' && Math.random() < 0.35) ssplat(z.x, z.y, z.r * 0.6, 0.3);
     if (b.kind !== 'fire') snoise(0.04, 600, 0.05);
     if (z.hp <= 0) killZombie(j, b.owner);
@@ -4970,7 +4977,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 181';
+  var updMsg = '', VERSION = 'Version 182';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5238,7 +5245,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   var GUIDE = [
     { t: 'The goal', art: 'swarm', b: ['Survive as many waves as you can. Zombies pour out of four buildings and head for you.', 'Your character aims and shoots by itself. You walk, spend coins, and stay alive.', 'The game ends when you go down (offline) or when everyone is down (online).', 'Your best wave is remembered on your phone.'] },
-    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. Tap it to swap guns. The round button beside it (under it when held upright) tops up your mag.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
+    { t: 'Controls', art: 'hud', b: ['Two thumbs (default): left half walks, right half aims a faint yellow cone. Hold the right thumb to shoot. The gun only fires at zombies inside the cone.', 'Critical hits in two-thumb mode: aim dead centre. If the line from your gun runs straight through a zombie, the hit does double damage. You cannot see the line without a Laser sight from the Armoury. One-finger mode has no centre crits.', 'One finger (switch in Settings, offline only): drag anywhere to walk. Auto-aim picks the closest zombie in range. Online games always use two thumbs.', 'If you lift your right thumb, the gun stops firing and the cone stays where you last aimed.', 'Under the minimap: your gun and ammo. Tap it to swap guns. The round button beside it (under it when held upright) tops up your mag.', 'Top bar: health, wave, zombies left, Shop and Pause.'] },
     { t: 'Waves and breaks', art: 'wave', b: ['Wave 1 is already 15 zombies, and every wave adds 6 more. They get tougher as you go.', 'Offline there is no real break: the next wave starts 2 seconds after the last zombie dies. Shop and rebuild barriers while you fight.', 'Online you still get a break when the last zombie dies: 15 seconds early on. From wave 8 it shrinks to 10 seconds by wave 20, then to 8 seconds by wave 30. Use it for shopping and rebuilding barriers.', 'Nothing refills between waves. Ammo only comes from pickups and the Max ammo power-up, so grab what you can. Run dry and you are back on the Glock.', 'Every 5th wave has a boss.', 'From wave 15 zombies toughen faster every wave, and from wave 20 armoured zombies join in.'] },
     { t: 'Zombies', art: 'zombies', b: ['Walker: slow, 40 health, the bulk of every wave.', 'Runner: fast but fragile, 24 health.', 'Tank: slow and heavy, 200 health. Drops better loot.', 'Armoured: a few from wave 15, many from wave 20. 420 health and hits hard.', 'From wave 10, tanks, armoured zombies and bosses shrug off a little damage from every bullet. Weak guns suffer most, so carry something heavy.', 'Health and damage rise every wave. They show a health bar once hurt.', 'Zombies pick the nearest living player to chase.'] },
     { t: 'Bosses', art: 'boss', b: ['Brute: slow and very heavy.', 'Sprinter: shows a red lane, locks its direction, then charges. It is dizzy for a moment afterwards, so shoot it then.', 'Thrower: keeps its distance and throws rocks. You can shoot rocks down if you are lucky.', 'Pyro: breathes a cone of fire in short range. Stay out of the cone.', 'Bosses always drop a big med kit and lots of coins. Sometimes a special weapon crate lands near you at the start of a boss wave, and bosses sometimes drop one too.', 'Later waves bring more than one boss.'] },
@@ -7063,9 +7070,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (state === 'play') for (i = 0; i < players.length; i++) {
       var LP = players[i], LR = viewRef(LP);
       if (LP.down || !LR || !WEAPONS[LR.id] || !(atM(LP, LR.id) & 16) || isSpecialActive(LP) || isGhost(LP)) continue;
-      var lax = LP.x + Math.cos(LP.ang) * 24, lay = LP.y + Math.sin(LP.ang) * 24, lgr = ctx.createLinearGradient(lax, lay, lax + Math.cos(LP.ang) * 320, lay + Math.sin(LP.ang) * 320);
+      var lan = (!pvp && LP === me && LP.cone && LP.aimAng !== null && LP.aimAng !== undefined) ? LP.aimAng : LP.ang;
+      var lax = LP.x + Math.cos(lan) * 24, lay = LP.y + Math.sin(lan) * 24, lgr = ctx.createLinearGradient(lax, lay, lax + Math.cos(lan) * 320, lay + Math.sin(lan) * 320);
       lgr.addColorStop(0, 'rgba(255,60,50,0.55)'); lgr.addColorStop(1, 'rgba(255,60,50,0)');
-      ctx.strokeStyle = lgr; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(lax, lay); ctx.lineTo(lax + Math.cos(LP.ang) * 320, lay + Math.sin(LP.ang) * 320); ctx.stroke();
+      ctx.strokeStyle = lgr; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(lax, lay); ctx.lineTo(lax + Math.cos(lan) * 320, lay + Math.sin(lan) * 320); ctx.stroke();
     }
     // muzzle flashes, reload bar, revive rings, names
     for (i = 0; i < players.length; i++) {
