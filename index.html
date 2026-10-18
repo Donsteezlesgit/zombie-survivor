@@ -5013,7 +5013,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 189';
+  var updMsg = '', VERSION = 'Version 190';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -7246,7 +7246,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     4: { B: '#e6d3a7', L: '#f1e4c4', E: '#caae78', M: '#f6ecd2', ear: 'flop', tail: 'up', bl: 6.2, bh: 3.5, hr: 3.1 }
   };
   function v3pet(S) {
-    var pt = S.pt, U = 1.3, sw = S.mv ? Math.sin(S.ph) : 0, hop = S.mv ? Math.abs(Math.sin(S.ph)) * 0.9 : 0, br = S.mv ? 0 : Math.sin(S.ph * 0.4) * 0.25, Q = PETQ[pt], i;
+    S.a3 = (S.a3 || 0) + ((S.mv ? 1 : 0) - (S.a3 || 0)) * 0.2;   /* eased walking amount, and a much slower walk cycle than the flat 2D one, which looked like fast shaking in 3D */
+    var pt = S.pt, U = 1.3, ph3 = S.ph * 0.3, sw = Math.sin(ph3) * S.a3, hop = Math.abs(Math.sin(ph3)) * 0.5 * S.a3, br = Math.sin(S.ph * 0.4) * 0.25 * (1 - S.a3), Q = PETQ[pt], i;
     V.fl = 0; v3frame(S.x, hop, S.y, S.hd, 1);
     v3blob(S.x, S.y, Q ? 8 : 5, Q ? 8 : 5);
     if (pt === 7) {   // little ghost
