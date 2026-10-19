@@ -4730,6 +4730,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         br.rt += dt;
         if (br.rt >= TUNE.rebuildTime) {
           br.rt = 0; br.planks++; br.acc = 0;
+          addFx(br.x + rnd(0, br.w), br.y + rnd(0, br.h), 7, 70, 0.45, 3, '255,214,90'); if (br.planks >= br.max) addFx(br.x + br.w / 2, br.y + br.h / 2, 16, 110, 0.7, 4, '255,226,130');   /* a gold flash as each plank goes up */
           var rf0 = 150 + 330 * (br.planks / br.max);
           stone(rf0, rf0 * 0.78, 0.17, 'triangle', 0.14); stone(rf0 * 2, rf0 * 1.6, 0.06, 'square', 0.03); snoise(0.05, 900, 0.06);
           if (br.planks >= br.max) { stone(660, 990, 0.2, 'square', 0.06, 0.08); stone(990, 1320, 0.25, 'square', 0.05, 0.2); }
@@ -4976,7 +4977,6 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>' + (net.mode === 'off' ? 'Paused' : 'Menu') + '</h1>';
       h += '<p>' + (pvp ? 'PvP' : 'Wave <b>' + wave + '</b>') + ' · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : (hostPaused ? 'The game is paused for everyone.' : 'The game keeps running while this is open.')) + '</p>';
       h += '<button class="go" data-a="resume" type="button">Resume</button>';
-      h += '<div class="sens"><label for="sensR">Turn speed <b id="sensV">' + Math.round(sensMul * 100) + '%</b></label><input id="sensR" class="sensr" type="range" min="30" max="250" step="5" value="' + Math.round(sensMul * 100) + '"></div>';
       if (net.mode === 'host') h += hostPaused ? '<button class="go alt" data-a="hunpause" type="button">Resume for everyone</button>' : '<button class="go alt" data-a="hpause" type="button">Pause for everyone</button>';
       h += '<button class="go alt" data-a="help" type="button">How to play</button>';
       h += '<button class="go alt" data-a="settings" type="button">Settings</button>';
@@ -5035,6 +5035,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<div class="sens"><label for="sensR">Turn speed <b id="sensV">' + Math.round(sensMul * 100) + '%</b></label><input id="sensR" class="sensr" type="range" min="30" max="250" step="5" value="' + Math.round(sensMul * 100) + '"></div>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
       h += '<div class="swipe">' + (net.mode !== 'off' ? 'Online games use two thumbs: left walks, right aims' : (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic')) + '</div>';
+      h += '<button class="go alt" data-a="fpmode" type="button">' + (fpMode === 'hold' ? 'Scope: hold shoot to scope' : 'Scope: separate button') + '</button>';
+      h += '<div class="swipe">' + (fpMode === 'hold' ? 'Holding the shoot button also looks down the sights' : 'Tap the scope button to aim, shoot button to fire') + '</div>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
       h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'set_graphics') {
@@ -5096,7 +5098,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 207';
+  var updMsg = '', VERSION = 'Version 208';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5254,6 +5256,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var ok = function () { updMsg = 'Link copied. Send it to a friend or paste it into Safari.'; if (screen === 'set_data') renderScreen(); };
       var bad = function () { updMsg = 'Could not copy. The link is donsteezlesgit.github.io/zombie-survivor'; if (screen === 'set_data') renderScreen(); };
       try { navigator.clipboard.writeText(lk).then(ok, bad); } catch (e) { bad(); }
+    } else if (a === 'fpmode') { fpMode = fpMode === 'sep' ? 'hold' : 'sep'; try { localStorage.setItem('zs-fpmode', fpMode); } catch (er) {} hudCache.scK = -1; if (SC.on) scopeEnd(); renderScreen();
     } else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
     else if (a === 'backup') showScreen('backup');
     else if (a === 'bkcopy') {
@@ -6029,7 +6032,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var showStim = playing && !shopOpen && !me.down && (!pvp || pvPhase === 'play'), stTot = pvp ? TUNE.pvp.stimCd : TUNE.stim.cd, sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / stTot)) : 100;
     if (hudCache.stimShow !== showStim) { hudCache.stimShow = showStim; stimGo.hidden = !showStim; grenGo.hidden = !showStim; }
     var scK = (playing && !blocked() && !me.down && !shopOpen && fpOn()) ? scopeKind() : 0;
-    if (hudCache.scK !== scK) { hudCache.scK = scK; scopeGo.hidden = !scK; if (!scK && SC.on) scopeEnd(); }
+    if (hudCache.scK !== scK) { hudCache.scK = scK; scopeGo.hidden = !scK || fpMode === 'hold'; if (!scK && SC.on) scopeEnd(); }
     var frK = (playing && !blocked() && !me.down && !shopOpen && fpOn()) ? 1 : 0;
     if (hudCache.frK !== frK) { hudCache.frK = frK; fireGo.hidden = !frK; if (!frK && FIRE.on) fireEnd(); }
     var gc = grenCd(me), g0 = me.gr && me.gr[0] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[0] / gc))) : 100, g1 = me.gr && me.gr[1] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[1] / gc))) : 100;
@@ -6109,6 +6112,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
   // first person (Bomb Town 3D): fpYaw is where you look, in radians (0 = east, grows clockwise seen from above). Right thumb drags to turn.
   /* ---- scope: hold the button to look down the sights (you can still slide that thumb to steer). Snipers only fire when you let go. */
+  var fpMode = 'sep'; try { if (localStorage.getItem('zs-fpmode') === 'hold') fpMode = 'hold'; } catch (e) {}   // 'sep' = scope button and shoot button, 'hold' = holding shoot also scopes in
   var SC = { on: false, lock: false, lt: 0, tid: null, pid: null, t0: 0, lx: 0, ly: 0, amt: 0, zm: 1, kind: 0, tn: 0 }, scopeGo = $('scopeGo');
   function scopeKind() {   // 0 = this gun has no scope, 1 = rifle optic (2x), 2 = sniper scope (4x)
     var rf = me && curRef(me), d = rf && defOf(rf);
@@ -6138,8 +6142,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   scopeGo.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   /* ---- shoot button (first person): hold to fire, slide the same thumb to keep looking around ---- */
   var FIRE = { on: false, tid: null, pid: null, lx: 0, ly: 0 }, fireGo = $('fireGo');
-  function fireStart() { if (FIRE.on || state !== 'play' || blocked() || !me || me.down) return false; FIRE.on = true; fireGo.classList.add('on'); return true; }
-  function fireEnd() { FIRE.on = false; FIRE.tid = null; FIRE.pid = null; fireGo.classList.remove('on'); }
+  function fireStart() {
+    if (FIRE.on || state !== 'play' || blocked() || !me || me.down) return false;
+    FIRE.on = true; fireGo.classList.add('on'); FIRE.sc = SC.on;
+    if (fpMode === 'hold' && !SC.on && scopeStart()) FIRE.sc = true;   // hold-to-scope: pressing shoot also looks down the sights
+    return true;
+  }
+  function fireEnd() { var was = FIRE.on; FIRE.on = false; FIRE.tid = null; FIRE.pid = null; fireGo.classList.remove('on'); if (was && FIRE.sc && SC.on) scopeEnd(); FIRE.sc = false; }   // let go of shoot while scoped in: back out of the scope
   function fireLook(x, y) {
     if (fpOn()) { fpYaw += (x - FIRE.lx) * FP_SENS * sensMul * scF(); fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (y - FIRE.ly) * FP_SENS * sensMul * scF())); }
     FIRE.lx = x; FIRE.ly = y;
@@ -6795,16 +6804,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.restore();
   }
 
+  function pickBlink(pu) {   // drops about to vanish flash on and off (faster in the last moments)
+    return (pu.t < 4 || (phase === 'grace' && !pvp && !introOn && (pu.kind === 'health' || pu.kind === 'ammo'))) && Math.floor(time * (pu.t < 1.5 ? 12 : 6)) % 2 === 0;
+  }
   function drawPickup(pu) {
-    var blink = (pu.t < 4 || (phase === 'grace' && !pvp && !introOn && (pu.kind === 'health' || pu.kind === 'ammo'))) && Math.floor(time * 6) % 2 === 0;
-    if (blink) return;
+    if (pickBlink(pu)) return;
     var pulse = 0.55 + 0.45 * Math.sin(time * 6 + pu.x), x = pu.x, y = pu.y, col;
     if (pu.kind === 'special') {
       ctx.fillStyle = 'rgba(210,105,42,' + (0.18 + 0.18 * pulse).toFixed(2) + ')';
-      ctx.beginPath(); ctx.arc(x, y, 20, 0, 6.283); ctx.fill();
-      ctx.fillStyle = '#3a2a1c'; ctx.fillRect(x - 9, y - 7, 18, 14);
-      ctx.strokeStyle = '#d2692a'; ctx.lineWidth = 2; ctx.strokeRect(x - 9, y - 7, 18, 14);
-      ctx.fillStyle = '#d2692a'; ctx.fillRect(x - 2, y - 7, 4, 14);
+      ctx.beginPath(); ctx.arc(x, y, 22, 0, 6.283); ctx.fill();
+      var sgd2 = WEAPONS['k_' + pu.id] || SPECIALS[pu.id];
+      if (sgd2) { ctx.save(); ctx.translate(x - (sgd2.len + 5) * 0.55, y + 2); ctx.scale(1.1, 1.1); gunParts(ctx, sgd2, null, 0, '#14100d'); ctx.restore(); }
     } else if (pu.kind === 'ammo') {
       ctx.fillStyle = 'rgba(214,170,70,' + (0.14 + 0.14 * pulse).toFixed(2) + ')';
       ctx.beginPath(); ctx.arc(x, y, 14, 0, 6.283); ctx.fill();
@@ -7973,13 +7983,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3x(0, 8.4, 0, 3, 0.7, 9.4, '#2a3220', 2); v3x(6.6, 4, 2.6, 0.4, 3.2, 2.4, '#e8e2c8', 2); v3x(6.6, 4, -2.6, 0.4, 3.2, 1, '#e8e2c8', 2);   /* strap and stencil */
       v3x(6.5, 7, 0, 0.4, 0.8, 8, '#2a3220', 2); v3x(0, 4, 4.6, 12.6, 0.6, 0.6, '#3e4a28', 2); v3x(0, 4, -4.6, 12.6, 0.6, 0.6, '#3e4a28', 2);
       for (var q2 = 0; q2 < 4; q2++) v3x(q2 < 2 ? -6 : 6, 7.6, q2 % 2 ? 4.2 : -4.2, 0.9, 0.9, 0.9, '#8a8f95', 2);   /* rivets */
-    } else if (kind === 'special') {
-      v3frame(x, 0, z, sp * 0.5, 1);
-      v3x(0, 5.6, 0, 12.6, 11, 12.6, '#d2692a', 2); v3x(0, 11.6, 0, 13.4, 2.2, 13.4, '#e8903a', 2); v3x(0, 5.6, 0, 13, 11.2, 2.4, '#8a4018', 2);
-      v3x(0, 18 + bob * 0.5, 0, 3.4, 3.4, 3.4, '#ffd25a', 3, sp, sp * 1.3, 0);
-      for (var q3 = 0; q3 < 3; q3++) { v3x(0, 2.4 + q3 * 3.6, 6.4, 12.4, 0.5, 0.6, '#6a3410', 2); v3x(0, 2.4 + q3 * 3.6, -6.4, 12.4, 0.5, 0.6, '#6a3410', 2); v3x(6.4, 2.4 + q3 * 3.6, 0, 0.6, 0.5, 12.4, '#6a3410', 2); }   /* slats */
-      for (var q4 = 0; q4 < 4; q4++) { v3x(q4 < 2 ? 6.2 : -6.2, 5.6, q4 % 2 ? 6.2 : -6.2, 1.6, 11.4, 1.6, '#5a5f66', 2); v3x(q4 < 2 ? 6.2 : -6.2, 11.6, q4 % 2 ? 6.2 : -6.2, 2.4, 0.9, 2.4, '#8a8f95', 2); }   /* corners */
-      v3x(0, 12.8, 0, 8, 0.5, 2, '#f2e8c8', 2); v3x(0, 12.8, 0, 2, 0.5, 8, '#f2e8c8', 2);   /* stencilled star */
+    } else if (kind === 'special') {   // the weapon itself, turning slowly above a glowing plate
+      var sgd = WEAPONS['k_' + pid] || SPECIALS[pid], gS = 1.15, gcx = (9 + ((sgd ? sgd.len : 30) + 5) * 0.3) * gS, ga = sp * 0.5;
+      v3frame(x, 0, z, 0, 1); v3x(0, 0.8, 0, 14, 0.8, 14, '#d2692a', 3, 0, ga, 0); v3x(0, 0.8, 0, 14, 0.8, 3, '#ffb060', 3, 0, ga + 1.5708, 0);
+      if (sgd) {
+        v3frame(x - gcx * Math.cos(ga), 14 + bob - 22.5 * gS, z - gcx * Math.sin(ga), ga, gS);
+        v3figgun(sgd, null, null);
+      }
+      v3frame(x, 0, z, 0, 1); v3x(0, 32 + bob * 0.5, 0, 2.6, 2.6, 2.6, '#ffd25a', 3, sp, sp * 1.3, 0);
     } else if (kind === 'perk') {
       v3perk(x, z, i, pid, bob, sp);
     } else {   // item / treasure
@@ -8125,18 +8136,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // lighting: sunset outside, dimmer and lamp-lit indoors, nearly black at night with a torch
     var ins = (me && v3inside(me.x, me.y)) ? 1 : 0, cp = V.cam.position;
     V.li += (ins - V.li) * 0.15;
-    if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x060608 : 0xe0a47c); V.sc.fog.near = night ? 50 : 350; V.sc.fog.far = night ? 620 : 1700; }
+    if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x060608 : 0xe0a47c); V.sc.fog.near = night ? 50 : 350; V.sc.fog.far = night ? 680 : 1700; }
     V.sky.position.copy(cp);
     V.sdisc.visible = !night; V.sdisc.position.set(cp.x - 2000, cp.y + 880, cp.z + 800); V.sdisc.lookAt(cp);
-    V.hemi.intensity = night ? 0.5 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.62 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0x8fa8d8 : 0xff9a50);   /* at night the 'sun' is cool moonlight, which also casts the shadows */
-    V.pl.intensity = night ? 3.6 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
+    V.hemi.intensity = night ? 0.58 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.7 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0x8fa8d8 : 0xff9a50);   /* at night the 'sun' is cool moonlight, which also casts the shadows */
+    V.pl.intensity = night ? 4.0 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
     if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
     var snx = Math.round(focus.x / 14.375) * 14.375, sny = Math.round(focus.y / 14.375) * 14.375;   /* a whole number of shadow-map texels, so shadows do not shimmer as you walk */
      V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 600, 800, sny + 300); else V.sun.position.set(snx - 1000, 440, sny + 400);
     V.sf++; V.r.shadowMap.needsUpdate = V.rs;   /* must render a few times at the start or the shadow map does not exist and the whole scene goes black */
-    V.torch.intensity = (night && me && !me.down) ? 6.6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
+    V.torch.intensity = (night && me && !me.down) ? 7.2 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
     // figures
@@ -8216,7 +8227,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     var fcx2 = focus.x, fcy2 = focus.y;
     for (i = 0; i < coins.length && i < 90; i++) { e = coins[i]; if (Math.abs(e.x - fcx2) < 800 && Math.abs(e.y - fcy2) < 800) v3coin(e.x, e.y, i); }
-    for (i = 0; i < pickups.length && i < 60; i++) { e = pickups[i]; if (Math.abs(e.x - fcx2) < 900 && Math.abs(e.y - fcy2) < 900) v3item(e.kind, e.x, e.y, i, e.id); }
+    for (i = 0; i < pickups.length && i < 60; i++) { e = pickups[i]; if (Math.abs(e.x - fcx2) < 900 && Math.abs(e.y - fcy2) < 900 && !pickBlink(e)) v3item(e.kind, e.x, e.y, i, e.id); }
     for (i = V.pkn || 0; V.pm && i < V.pm.length; i++) V.pm[i].visible = false;
     V.pkn = 0;
     for (i = 0; i < boxes.length && i < 8; i++) { e = boxes[i]; v3chest(e.x, e.y); }
