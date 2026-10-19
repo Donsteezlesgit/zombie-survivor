@@ -5126,7 +5126,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 211';
+  var updMsg = '', VERSION = 'Version 212';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -8154,7 +8154,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = true;   /* every first-person map is played at night */
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
     var eyeY = (me && me.down) ? 9 : 30.5, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
-    var bobA = (me && !me.down && V.gb) ? V.gb * (1 - SC.amt * 0.85) : 0, bobY = bobA * Math.sin((me ? me.step : 0) * 2) * 0.9, bobX = bobA * Math.sin(me ? me.step : 0) * 0.5;   /* a slight walking bob: the eye dips with each step and sways a little side to side */
+    var bobA = (me && !me.down && V.gb) ? V.gb * (1 - SC.amt * 0.85) : 0, bobY = bobA * Math.sin((me ? me.step : 0) * 2) * 0.45, bobX = bobA * Math.sin(me ? me.step : 0) * 0.25;   /* a slight walking bob: the eye dips with each step and sways a little side to side */
     V.cam.position.set(focus.x + sx * 0.3 - Math.sin(fpYaw) * bobX, eyeY + bobY, focus.y + sy * 0.3 + Math.cos(fpYaw) * bobX);
     var tfov = V.fov0 || V.cam.fov;
     if (SC.amt > 0.001) tfov = 2 * Math.atan(Math.tan(V.fov0 * 0.00872665) / (1 + (SC.zm - 1) * SC.amt)) * 57.2958;
