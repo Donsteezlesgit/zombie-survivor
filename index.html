@@ -5090,7 +5090,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 204';
+  var updMsg = '', VERSION = 'Version 205';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -7486,7 +7486,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.6; sc.add(sun.target);
     for (n = 0; n < 6; n++) V.fm[n].castShadow = true;
     V.ex.castShadow = true; V.dr.castShadow = true; V.dr.receiveShadow = true;
-    V.gun = new T.InstancedMesh(box, v3mat('metal', 1), 192); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
+    V.gun = new T.InstancedMesh(box, v3mat('metal', 1), 192); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); V.gun.renderOrder = 999; V.gun.onBeforeRender = function (r) { r.clearDepth(); }; sc.add(V.gun);   /* your own gun is drawn last on a cleared depth buffer, so it is always in front of walls (looks only, nothing physical) */
     V.sh = new T.InstancedMesh(disc, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), NF); V.sh.frustumCulled = false; V.sh.count = 0; sc.add(V.sh);
     var bm = new T.MeshBasicMaterial({ color: 0xffffff });
     V.cu = new T.InstancedMesh(box, bm, 400); V.cu.frustumCulled = false; V.cu.count = 0; V.cu.setColorAt(0, v3col('#fff')); sc.add(V.cu);
@@ -8159,9 +8159,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         var dyaw = fpYaw - (V.gy === undefined ? fpYaw : V.gy), dpit = fpPitch - (V.gp === undefined ? fpPitch : V.gp); V.gy = fpYaw; V.gp = fpPitch;
         V.sw = (V.sw || 0) * Math.exp(-gdt * 9) - Math.max(-0.4, Math.min(0.4, dyaw)) * 9; V.sp = (V.sp || 0) * Math.exp(-gdt * 9) - Math.max(-0.3, Math.min(0.3, dpit)) * 9;
         if (me.flash > 0) V.rc = Math.min(3.2, (V.rc || 0) + 1.4); V.rc = (V.rc || 0) * Math.exp(-gdt * 14);
-        var bph = me.step * 1.0, gcl = Math.min(v3clear(V.ge[0], V.ge[2], fcx, fcz), v3clear(V.ge[0] - 9 * Math.sin(fpYaw), V.ge[2] + 9 * Math.cos(fpYaw), fcx, fcz)), gwant = Math.max(0, Math.min(1, (48 - gcl) / 40));
-        V.gcp = (V.gcp || 0) + (gwant - (V.gcp || 0)) * Math.min(1, gdt * 14);   /* wall close ahead: the gun slides back and drops so it never goes through it */
-        v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), (me.flash > 0 ? 1.6 : 0) + V.rc + V.gcp * 24, ((gref.reload > 0) ? 5 : 0) + V.rc * 0.35 + V.gcp * V.gcp * 15, V.gb * Math.abs(Math.sin(bph)) * -0.9 + Math.max(-2, Math.min(2, V.sp)) * 0.35, V.gb * Math.sin(bph) * 0.7 + Math.max(-3, Math.min(3, V.sw)) * 0.4, SC.amt * SC.amt * (3 - 2 * SC.amt));
+        var bph = me.step * 1.0;
+        v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), (me.flash > 0 ? 1.6 : 0) + V.rc, ((gref.reload > 0) ? 5 * (1 - SC.amt) : 0) + V.rc * 0.35, V.gb * Math.abs(Math.sin(bph)) * -0.9 + Math.max(-2, Math.min(2, V.sp)) * 0.35, V.gb * Math.sin(bph) * 0.7 + Math.max(-3, Math.min(3, V.sw)) * 0.4, SC.amt * SC.amt * (3 - 2 * SC.amt));
       }
     }
     for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
