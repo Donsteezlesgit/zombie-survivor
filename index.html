@@ -4992,42 +4992,58 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     } else if (screen === 'settings') {
       h += '<h1>Settings</h1>';
-      h += '<div class="sec">Sound</div>';
+      h += '<button class="go alt" data-a="setpage" data-p="set_sound" type="button">Sound</button>';
+      h += '<button class="go alt" data-a="setpage" data-p="set_controls" type="button">Controls</button>';
+      h += '<button class="go alt" data-a="setpage" data-p="set_graphics" type="button">Graphics</button>';
+      h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
+      h += '<button class="go alt" data-a="setpage" data-p="set_data" type="button">Game and data</button>';
+      h += '<button class="go alt" data-a="setpage" data-p="set_adv" type="button">Advanced</button>';
+      h += '<div class="swipe">' + VERSION + '</div>';
+      h += '<button class="go" data-a="back" data-to="' + settingsFrom + '" type="button">Back</button>';
+    } else if (screen === 'set_sound') {
+      h += '<h1>Sound</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
-      h += '<div class="sec">Controls</div>';
+      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
+    } else if (screen === 'set_controls') {
+      h += '<h1>Controls</h1>';
       h += '<div class="sens"><label for="sensR">Turn speed <b id="sensV">' + Math.round(sensMul * 100) + '%</b></label><input id="sensR" class="sensr" type="range" min="30" max="250" step="5" value="' + Math.round(sensMul * 100) + '"></div>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
       h += '<div class="swipe">' + (net.mode !== 'off' ? 'Online games use two thumbs: left walks, right aims' : (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic')) + '</div>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
-      h += '<div class="sec">Graphics</div>';
+      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
+    } else if (screen === 'set_graphics') {
+      h += '<h1>Graphics</h1>';
       h += '<button class="go alt" data-a="v3d" type="button">' + (v3off ? '3D maps: off' : '3D maps: on') + '</button>';
       h += '<button class="go alt" data-a="fps" type="button">' + (fpsOn ? 'FPS counter: on' : 'FPS counter: off') + '</button>';
-      h += '<div class="sec">Help</div>';
-      h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
-      h += '<div class="sec">Game and data</div>';
+      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
+    } else if (screen === 'set_data') {
+      h += '<h1>Game and data</h1>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
-      h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
-      h += '<button class="chip" data-a="backup" type="button">Backup progress</button>';
-      h += '<div class="sec">Advanced</div>';
-      h += '<button class="chip" data-a="diag" type="button">Screen info</button>';
-      h += DEV.on ? '<button class="chip" data-a="devoff" type="button">Dev mode: on (turn off)</button>' : '<button class="chip" data-a="devpw" type="button">Dev mode</button>';
+      h += '<button class="go alt" data-a="copylink" type="button">Copy game link</button>';
+      h += '<button class="go alt" data-a="backup" type="button">Backup progress</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
-      h += '<button class="go" data-a="back" data-to="' + settingsFrom + '" type="button">Back</button>';
+      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
+    } else if (screen === 'set_adv') {
+      h += '<h1>Advanced</h1>';
+      h += '<button class="go alt" data-a="diag" type="button">Screen info</button>';
+      h += DEV.on ? '<button class="go alt" data-a="devoff" type="button">Dev mode: on (turn off)</button>' : '<button class="go alt" data-a="devpw" type="button">Dev mode</button>';
+      h += '<div class="msg">' + esc(updMsg) + '</div>';
+      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
     } else if (screen === 'devpw') {
       h += '<h1>Dev mode</h1><p>Enter the password.</p><input class="bk" id="devPw" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" style="min-height:48px;text-align:center">';
-      h += '<div class="msg">' + esc(updMsg) + '</div><button class="go" data-a="devgo" type="button">Enter</button><button class="chip" data-a="back" data-to="settings" type="button">Back</button>';
+      h += '<div class="msg">' + esc(updMsg) + '</div><button class="go" data-a="devgo" type="button">Enter</button><button class="chip" data-a="back" data-to="set_adv" type="button">Back</button>';
     } else if (screen === 'backup') {
       h += '<h1>Backup</h1><p>Copy this code and keep it safe. After re-adding the app, paste it here and tap Restore.</p>';
       h += '<textarea class="bk" id="bkText" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off">' + backupCode() + '</textarea>';
       h += '<div class="msg" id="bkMsg"></div>';
       h += '<button class="go" data-a="bkcopy" type="button">Copy code</button>';
       h += '<button class="go alt" data-a="bkrestore" type="button">Restore from code</button>';
-      h += '<button class="chip" data-a="back" data-to="settings" type="button">Back</button>';
+      h += '<button class="chip" data-a="back" data-to="set_data" type="button">Back</button>';
     } else if (screen === 'diag') {
       h += '<h1>Screen info</h1><pre class="diag" id="diagOut"></pre><div class="swipe">Green line = bottom of the game. Yellow line = where the page thinks the screen ends.</div>';
       h += '<div class="lab">Try a layout, then look at the bottom</div><div class="exps"><button class="chip" data-a="exp" data-n="1" type="button">Try 1</button><button class="chip" data-a="exp" data-n="2" type="button">Try 2</button><button class="chip" data-a="exp" data-n="3" type="button">Try 3</button><button class="chip" data-a="exp" data-n="0" type="button">Reset</button></div>';
-      h += '<button class="go" data-a="back" data-to="settings" type="button">Back</button>';
+      h += '<button class="go" data-a="back" data-to="set_adv" type="button">Back</button>';
     } else if (screen === 'intro') {
       h += introHtml();
     } else if (screen === 'pvpintro') {
@@ -5055,7 +5071,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 197';
+  var updMsg = '', VERSION = 'Version 198';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5067,7 +5083,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       try { if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (x) { return x.unregister(); })); })); } catch (e) {}
       try { if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e) {}
       return Promise.all(jobs);
-    }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'settings') renderScreen(); });
+    }).then(function () { location.replace(url); }).catch(function () { updMsg = 'No signal. Could not reach GitHub, nothing was changed.'; if (screen === 'set_data') renderScreen(); });
   }
   function backupCode() {
     var o = {}, i, k;
@@ -5210,8 +5226,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'refresh') refreshApp();
     else if (a === 'copylink') {
       var lk = 'https://donsteezlesgit.github.io/zombie-survivor/';
-      var ok = function () { updMsg = 'Link copied. Send it to a friend or paste it into Safari.'; if (screen === 'settings') renderScreen(); };
-      var bad = function () { updMsg = 'Could not copy. The link is donsteezlesgit.github.io/zombie-survivor'; if (screen === 'settings') renderScreen(); };
+      var ok = function () { updMsg = 'Link copied. Send it to a friend or paste it into Safari.'; if (screen === 'set_data') renderScreen(); };
+      var bad = function () { updMsg = 'Could not copy. The link is donsteezlesgit.github.io/zombie-survivor'; if (screen === 'set_data') renderScreen(); };
       try { navigator.clipboard.writeText(lk).then(ok, bad); } catch (e) { bad(); }
     } else if (a === 'ctrl') { setCtrl(ctrlMode === 'two' ? 'one' : 'two'); renderScreen(); }
     else if (a === 'backup') showScreen('backup');
@@ -5236,10 +5252,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (a === 'devpw') { updMsg = ''; showScreen('devpw'); }
     else if (a === 'devgo') {
       var pw = document.getElementById('devPw');
-      if (pw && pw.value.trim().toLowerCase() === 'chongz') { DEV.on = true; armSyncPu(); try { localStorage.setItem('zs-dev', '1'); } catch (e) {} updMsg = 'Dev mode on. A DEV button now floats over the game.'; showScreen('settings'); }
+      if (pw && pw.value.trim().toLowerCase() === 'chongz') { DEV.on = true; armSyncPu(); try { localStorage.setItem('zs-dev', '1'); } catch (e) {} updMsg = 'Dev mode on. A DEV button now floats over the game.'; showScreen('set_adv'); }
       else { updMsg = 'Wrong password.'; renderScreen(); }
     }
     else if (a === 'devoff') { DEV.on = false; DEV.god = DEV.kill1 = DEV.zfreeze = DEV.inf = false; DEV.ts = 1; try { localStorage.setItem('zs-dev', '0'); } catch (e) {} lockCheck(); armCleanLg(); armSyncPu(); saveMe(); updMsg = 'Dev mode off.'; renderScreen(); }
+    else if (a === 'setpage') showScreen(b.dataset.p);
     else if (a === 'settings') { updMsg = ''; if (screen === 'main' || screen === 'pause') settingsFrom = screen; showScreen('settings'); }
     else if (a === 'help') { helpFrom = screen; helpIdx = 0; showScreen('help'); }
     else if (a === 'helpdone') showScreen(helpFrom);
@@ -5276,7 +5293,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     ensureAudio(); ovAct(b.dataset.a, b);
   });
   // tap on the empty space around a menu to close it, same as its Back / Done / Resume button
-  var DISMISS = { offline: 'back', online: 'back', maps: 'back', settings: 'back', stats: 'back', armoury: 'back', gun: 'armback', devpw: 'back', backup: 'back', diag: 'back', help: 'helpdone', guide: 'helpdone', pause: 'resume', join: 'leave' };
+  var DISMISS = { offline: 'back', online: 'back', maps: 'back', settings: 'back', set_sound: 'back', set_controls: 'back', set_graphics: 'back', set_data: 'back', set_adv: 'back', stats: 'back', armoury: 'back', gun: 'armback', devpw: 'back', backup: 'back', diag: 'back', help: 'helpdone', guide: 'helpdone', pause: 'resume', join: 'leave' };
   function ovBack() {
     var sel, b2;
     if (screen === 'me') { saveMe(); mePrev = null; ensureAudio(); showScreen('main'); return true; }
@@ -5288,7 +5305,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   ov.addEventListener('click', function (e) { if (e.target !== ov) return; ovBack(); });
   // swipe right from the left edge = Back, on the menu screens that have a Back or Done button
-  var SWIPE_OK = { me: 1, offline: 1, online: 1, maps: 1, settings: 1, stats: 1, armoury: 1, gun: 1, devpw: 1, backup: 1, diag: 1 }, swp = null;
+  var SWIPE_OK = { me: 1, offline: 1, online: 1, maps: 1, settings: 1, set_sound: 1, set_controls: 1, set_graphics: 1, set_data: 1, set_adv: 1, stats: 1, armoury: 1, gun: 1, devpw: 1, backup: 1, diag: 1 }, swp = null;
   ov.addEventListener('touchstart', function (e) {
     var t = e.touches[0];
     swp = (e.touches.length === 1 && SWIPE_OK[screen] && t.clientX <= 28) ? { x: t.clientX, y: t.clientY, ok: true } : null;
