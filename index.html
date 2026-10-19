@@ -5020,7 +5020,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 193';
+  var updMsg = '', VERSION = 'Version 194';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6333,6 +6333,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   // gun pictures (slim style): parts are [x, y, w, h, colour], hand at x 0, pointing along +x. m = which part carries the rarity stripes
   var GM = '#3a3f45', GD = '#23262a', GK = '#17191c', GW = '#7a4e2a', GY = '#c9a24a';
+
+  /* extra gun parts in the same side-on units as GART: sights, slots, rails, rings, triggers, lenses */
+  var GDET = {
+    pistol: [[13.4, -3.4, 1.6, 2.6, '#5a5f66'], [13, -5.6, 1.2, 1.6, GK], [1, -5.6, 1.4, 1.5, GK], [6.5, 1.2, 0.9, 2.6, GK], [5, 3.6, 5, 0.8, GK], [9, -3.8, 0.6, 4, GK], [10.4, -3.8, 0.6, 4, GK], [11.8, -3.8, 0.6, 4, GK], [-0.6, 1.6, 0.6, 5.6, GK]],
+    smg: [[21.5, -3.4, 1.2, 3.8, '#5a5f66'], [3, -5.4, 1.4, 1.4, GK], [8, -3.2, 0.7, 4.6, GK], [11, -3.2, 0.7, 4.6, GK], [14, -3.2, 0.7, 4.6, GK], [9, 2, 1, 2.8, GK], [4.6, 4, 3.4, 0.6, GK], [4.6, 7, 3.4, 0.6, GK], [4.6, 10, 3.4, 0.6, GK], [-6.6, -3.2, 1.2, 5.4, GK]],
+    shotgun: [[9.5, 2.2, 0.7, 3.6, GK], [12, 2.2, 0.7, 3.6, GK], [14.5, 2.2, 0.7, 3.6, GK], [25.5, -5.4, 1, 1.4, GY], [-3, 0.8, 1.6, 2.4, '#c0392b'], [-1, 0.8, 1.6, 2.4, '#c0392b'], [-0.5, 1.6, 0.9, 2.6, GK], [3, 3.2, 18, 1.4, '#4a4f56'], [-10.6, -3, 1.2, 6, GK], [-8, -1, 6, 0.5, '#5a381e'], [-6, 0.6, 5, 0.5, '#5a381e']],
+    rifle: [[26, -4.6, 0.8, 2.2, GK], [2, -5.2, 1.5, 1.8, GK], [12, -2, 0.8, 3.6, GK], [15, -2, 0.8, 3.6, GK], [18, -2, 0.8, 3.6, GK], [5, -5.2, 2.4, 1.1, GK], [8, 1.4, 0.9, 2.8, GK], [7, 4, 5, 0.8, GK], [3.6, 3.5, 3, 0.6, GK], [3.6, 5.3, 3, 0.6, GK], [16.2, -6.8, 0.8, 2.2, '#5ad8ff'], [-12.6, -3, 1.4, 6, GK], [24, -3.2, 0.6, 4, GK], [26, -3.2, 0.6, 4, GK]],
+    sniper: [[22, -8.2, 0.8, 3.4, '#5ad8ff'], [7.4, -8.2, 0.6, 3.4, '#2a8ab0'], [14, -9.6, 2, 1.6, GK], [3, -4.4, 3.4, 1, GK], [6.2, -5, 1.2, 1.4, GY], [28, 1, 0.8, 6, GK], [30, 1, 0.8, 6, GK], [36, -2.6, 1.4, 4.2, '#5a5f66'], [-6, -4, 6, 1.4, GW], [4, 1, 0.9, 2.6, GK], [-12.6, -3, 1.4, 6, GK]],
+    lmg: [[20, 2, 2, 6, GY], [10, 5, 10, 1.4, GY], [6, -3, 0.9, 4, GK], [9, -3, 0.9, 4, GK], [12, -3, 0.9, 4, GK], [10, -9, 8, 1, GK], [9, -6, 8, 1.5, '#4a4f56'], [32, -4.4, 1, 2, GK], [27.4, 10, 3.2, 0.8, GK], [-1, 3, 0.9, 3, GK], [-6, 3, 3, 6, GK]],
+    flame: [[-3, -12.4, 1, 8.8, GK], [2, -12.4, 1, 8.8, GK], [0, -13.4, 2, 1.4, GY], [4, -5, 12, 0.9, '#2a2a2e'], [24, -3.4, 1.2, 6.8, '#5a5f66'], [27, -1.4, 2, 1.6, '#ffd25a']],
+    rocket: [[30, -4, 5, 8, '#d2692a'], [-12, -12, 2.4, 3, GK], [-12, 5, 2.4, 3, GK], [10, -10.4, 2, 1.4, GK], [4, -12, 1.4, 3, '#5ad8ff'], [14, -6, 1.2, 12, GY], [8, 6, 1, 3, GK]],
+    mini: [[8, -6.4, 1.4, 12.8, '#5a5f66'], [14, -6.4, 1.4, 12.8, '#5a5f66'], [20, -6.4, 1.4, 12.8, '#5a5f66'], [-2, -11, 14, 1.2, GK], [4, 5, 8, 1, GY]],
+    ray: [[2, -4.4, 1, 5.6, '#5ad8ff'], [5, -4.4, 1, 5.6, '#5ad8ff'], [8, -4.4, 1, 5.6, '#5ad8ff'], [12.5, -4.5, 1, 8, '#bff2ff'], [4, -9, 0.8, 3, '#5ad8ff'], [-0.4, 3, 0.9, 2.4, GK]],
+    zap: [[15, -6.4, 0.9, 12.8, '#9fd8ff'], [17, -6.4, 0.9, 12.8, '#9fd8ff'], [19, -6.4, 0.9, 12.8, '#9fd8ff'], [6, -1.4, 8, 0.8, '#bfe0ff'], [-2, 2, 1, 3, GK]],
+    ghost: [[4, -2.4, 1, 4, '#78ff9a'], [7, -2.4, 1, 4, '#78ff9a'], [10, -2.4, 1, 4, '#78ff9a'], [-4, -13, 12, 1, '#78ff9a']]
+  };
   var GART = {
     pistol:  { m: 1, p: [[-1, -1, 5, 9, GD], [0, -4, 14, 5, GM], [14, -3, 2, 3, GK], [3, -5, 6, 1.5, GY]] },
     smg:     { m: 1, p: [[-6, -3, 8, 5, GD], [2, -4, 16, 6, GM], [18, -3, 4, 3, GK], [4, 2, 5, 10, GD], [10, -6, 4, 2, GY]] },
@@ -6915,8 +6931,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         }
         c *= 0.78 + 0.3 * sk(u, v);
       } else if (kind === 'plaster') {
-        var st = Math.max(0, n2(u + 0.37, v + 0.11) - 0.58) * 3.2, tr = n3(u, v) * 0.6 + g4 * 0.4;
-        c = (206 + (f - 0.5) * 70 + (g5 - 0.5) * 30) * (1 - Math.min(0.5, st)); h = 120 + tr * 70 + (g5 - 0.5) * 36;
+        var st = Math.max(0, n3(u + 0.37, v + 0.11) * 0.6 + g4 * 0.4 - 0.6) * 2.4, tr = n3(u, v) * 0.6 + g4 * 0.4;
+        c = (206 + (f - 0.5) * 70 + (g5 - 0.5) * 30) * (1 - Math.min(0.26, st)); h = 120 + tr * 70 + (g5 - 0.5) * 36;
         c *= 0.85 + 0.2 * sk(u, v);
       } else if (kind === 'wood') {
         var pi = (x / 32) | 0, lx = x % 32, jn = (y + pi * 53) % 128, gr = wg(u, v) * 0.5 + Math.sin(lx * 0.7 + f * 9 + v3hs(pi) * 6) * 0.25 + 0.25;
@@ -6933,6 +6949,19 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       } else if (kind === 'leaf') {
         var lv = n3(u, v) * 0.5 + g4 * 0.35 + g5 * 0.15;
         c = lv > 0.5 ? 120 + (lv - 0.5) * 300 : 36 + lv * 150; h = c;
+      } else if (kind === 'skin') {
+        var vn = Math.abs(n3(u + 0.2, v + 0.5) - 0.5) < 0.025 ? 1 : 0, bl2 = Math.max(0, n2(u + 0.6, v + 0.2) - 0.55) * 2;
+        c = (222 + (f - 0.5) * 36 + (g5 - 0.5) * 30) * (1 - bl2 * 0.22) - vn * 26; if (g5 > 0.82) c -= 22; h = 128 + (g5 - 0.5) * 70 + (g4 - 0.5) * 30 - vn * 18;
+      } else if (kind === 'cloth') {
+        var wv = ((x >> 1) + (y >> 1)) & 1, wr = Math.sin(v * 6.283 * 7 + n2(u, v) * 9) * 0.5 + 0.5, stn = Math.max(0, n2(u + 0.3, v + 0.8) - 0.6) * 2.2;
+        c = 205 * (0.9 + 0.1 * wv) * (0.76 + 0.3 * f) * (0.88 + 0.12 * wr) * (1 - Math.min(0.4, stn)); h = 110 + wv * 40 + wr * 40 + (g5 - 0.5) * 20;
+        if (x % 128 < 1 || y % 128 < 1) { c *= 0.7; h -= 30; }
+      } else if (kind === 'denim') {
+        var tw = ((x + y) >> 1) & 1, fd = Math.max(0, n2(u + 0.5, v + 0.1) - 0.5);
+        c = 190 * (0.84 + 0.16 * tw) * (0.7 + 0.5 * f) * (1 + fd * 0.5); h = 110 + tw * 50 + (g5 - 0.5) * 24;
+        if (x % 64 < 1 || y % 128 < 1) { c *= 1.25; h += 20; }
+      } else if (kind === 'grit') {
+        c = 215 + (g5 - 0.5) * 50 + (g4 - 0.5) * 34; h = 128 + (g5 - 0.5) * 70 + (g4 - 0.5) * 40;
       } else {   // metal: brushed sheet with seams, rust blotches
         var gr2 = hz(u, v), rs = Math.max(0, n3(u + 0.7, v + 0.3) * 0.6 + g4 * 0.4 - 0.62) * 2.6, sm = (x % 128 < 2 || y % 128 < 2);
         c = (205 + (gr2 - 0.5) * 36 + (g5 - 0.5) * 22) * (1 - Math.min(0.3, rs)) * (0.92 + 0.14 * f); h = 128 + (f - 0.5) * 30 - rs * 30;
@@ -6976,7 +7005,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V3T[kind] = t; V3B[kind] = tb; return t;
   }
   function v3bump(kind) { v3tex(kind); return V3B[kind]; }
-  var V3BS = { brick: 2.2, plaster: 1.4, wood: 1.6, roof: 2.2, leaf: 1.2, metal: 1.2 };
+  var V3BS = { brick: 2.2, plaster: 1.4, wood: 1.6, roof: 2.2, leaf: 1.2, metal: 1.2, skin: 0.9, cloth: 1.3, denim: 1.3, grit: 0.9 };
+  function v3mat(kind, rep) { var t = v3tex(kind), b = v3bump(kind); if (rep) { t.repeat.set(rep, rep); b.repeat.set(rep, rep); } return new THREE.MeshLambertMaterial({ color: 0xffffff, map: t, bumpMap: b, bumpScale: V3BS[kind] || 1 }); }
   // geometry groups: one per material. S = how many world units one texture tile covers.
   function v3grp(S) { return { p: [], n: [], c: [], u: [], i: [], S: S }; }
   function v3vert(G, x, y, z, nx, ny, nz, c, f, u, v) { G.p.push(x, y, z); G.n.push(nx, ny, nz); G.c.push(Math.min(1, c[0] * f), Math.min(1, c[1] * f), Math.min(1, c[2] * f)); G.u.push(u, v); }
@@ -7290,8 +7320,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var V = { cvs: cvs, r: r, sc: sc, cam: cam3, hemi: hemi, sun: sun, pl: pl, map: '', walls: null, gTex: null, ground: null, bTex: null, blood: null, bT: 0, shown: true, w: 0, h: 0, box: box, sph: sph, disc: disc };
     var NF = 480, names = ['body', 'head', 'legL', 'legR', 'armL', 'armR'];
     V.fm = [];
-    var fmat = new T.MeshLambertMaterial({ color: 0xffffff }), n;
-    for (n = 0; n < names.length; n++) { var im = new T.InstancedMesh(box, fmat, NF); im.frustumCulled = false; im.count = 0; im.setColorAt(0, v3col('#ffffff')); sc.add(im); V.fm.push(im); }
+    var fmat = v3mat('grit', 2), n, fkinds = ['cloth', 'skin', 'denim', 'denim', 'skin', 'skin'], fmats = [];
+    for (n = 0; n < names.length; n++) fmats.push(v3mat(fkinds[n], n === 4 || n === 5 ? 1 : 2));
+    for (n = 0; n < names.length; n++) { var im = new T.InstancedMesh(box, fmats[n], NF); im.frustumCulled = false; im.count = 0; im.setColorAt(0, v3col('#ffffff')); sc.add(im); V.fm.push(im); }
     V.ex = new T.InstancedMesh(box, fmat, 6000); V.ex.frustumCulled = false; V.ex.count = 0; V.ex.setColorAt(0, v3col('#fff')); sc.add(V.ex);
     V.eb = new T.InstancedMesh(box, new T.MeshBasicMaterial({ color: 0xffffff }), 2500); V.eb.frustumCulled = false; V.eb.count = 0; V.eb.setColorAt(0, v3col('#fff')); sc.add(V.eb);
     V.eg = new T.InstancedMesh(box, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.78, depthWrite: false }), 200); V.eg.frustumCulled = false; V.eg.count = 0; V.eg.setColorAt(0, v3col('#fff')); sc.add(V.eg);
@@ -7303,7 +7334,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.6; sc.add(sun.target);
     for (n = 0; n < 6; n++) V.fm[n].castShadow = true;
     V.ex.castShadow = true; V.dr.castShadow = true; V.dr.receiveShadow = true;
-    V.gun = new T.InstancedMesh(box, fmat, 48); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
+    V.gun = new T.InstancedMesh(box, v3mat('metal', 1), 192); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); sc.add(V.gun);
     V.sh = new T.InstancedMesh(disc, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), NF); V.sh.frustumCulled = false; V.sh.count = 0; sc.add(V.sh);
     var bm = new T.MeshBasicMaterial({ color: 0xffffff });
     V.cu = new T.InstancedMesh(box, bm, 400); V.cu.frustumCulled = false; V.cu.count = 0; V.cu.setColorAt(0, v3col('#fff')); sc.add(V.cu);
@@ -7411,6 +7442,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
       v3x(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, 0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), col, 2);
     });
+    (GDET[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GDET.rifle).forEach(function (q) { v3x(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (q[1] + q[3] / 2) * S, 0, q[2] * kx * S, q[3] * S, Math.max(1.0, q[3] * S * 0.95), q[4], 2); });
     function A(x, y, w, h, col) { v3x(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, 0, w * S, h * S, Math.max(1.3, h * S * 0.95), col, 2); }
     if (AT & 4) A(mz - 1, -3, 9, 4, '#25262a');
     if (AT & 1) { A(gd.len * 0.35, -8, 8, 3.2, '#1a1c20'); A(gd.len * 0.35 + 5.4, -7.4, 1.8, 1.8, '#ff4a3a'); }
@@ -7418,6 +7450,53 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (AT & 8) A(gd.len * 0.62, 3, 3, 6, '#2e2a26');
     if (AT & 16) A(mz - 7, 2, 5, 2.2, '#ff3a3a');
     if (AT & 32) A(gd.len * 0.12, -5.4, 3.4, 2, '#d4a52e');
+  }
+
+  // ---- finer detail shared by zombies and players: shoes that follow the legs, sleeves, hands, ears, nose, brows, belt
+  function v3hx(c) { return '#' + c.getHexString(); }
+  function v3feet(sw, pants, shoe, sole, bare, skin) {
+    var j, a, fx, fy;
+    for (j = 0; j < 2; j++) {
+      a = j ? -sw : sw; fx = 13 * Math.sin(a); fy = 13 - 13 * Math.cos(a);
+      if (bare) { v3x(fx + 1.4, fy + 1.1, j ? -2.8 : 2.8, 6, 2.2, 4.4, skin, 0, 0, 0, a); }
+      else { v3x(fx + 1.2, fy + 1.5, j ? -2.8 : 2.8, 6.8, 3, 5, shoe, 0, 0, 0, a); v3x(fx + 1.2, fy + 0.5, j ? -2.8 : 2.8, 7.2, 1, 5.3, sole, 0, 0, 0, a); v3x(fx + 4.2, fy + 1.9, j ? -2.8 : 2.8, 1.6, 2.4, 4.6, shade(shoe, 14), 0, 0, 0, a); }
+      v3x(fx, fy + 4.2, j ? -2.8 : 2.8, 4.8, 1.4, 4.8, shade(pants, -18), 0, 0, 0, a);   /* cuff */
+    }
+  }
+  function v3arms(rzL, rzR, cloth, skin, sleeve, gun) {
+    var j, a, hx2, hy2;
+    for (j = 0; j < 2; j++) {
+      a = j ? rzR : rzL;
+      if (sleeve) { v3x(3.4 * Math.cos(a), 24.5 + 3.4 * Math.sin(a), j ? -6.6 : 6.6, 6.8, 4.3, 4.3, cloth, 0, 0, 0, a); v3x(6.8 * Math.cos(a), 24.5 + 6.8 * Math.sin(a), j ? -6.6 : 6.6, 1.1, 4.5, 4.5, shade(cloth, -22), 0, 0, 0, a); }
+      hx2 = 12 * Math.cos(a) + 0.8; hy2 = 24.5 + 12 * Math.sin(a);
+      if (!sleeve || true) { v3x(hx2, hy2, j ? -6.6 : 6.6, 3.8, 3.7, 3.7, skin, 0, 0, 0, a); v3x(hx2 + 2, hy2 + 0.4, j ? -6.6 : 6.6, 1.4, 1.2, 3.4, shade(skin, -10), 0, 0, 0, a); }
+    }
+  }
+  function v3face(skin, hair, mouth) {
+    var dk = shade(skin, -12);
+    v3x(0.6, 29.9, 3.95, 1.4, 2.8, 0.9, dk); v3x(0.6, 29.9, -3.95, 1.4, 2.8, 0.9, dk);   /* ears */
+    v3x(4.7, 29.3, 0, 1.4, 1.9, 1.8, shade(skin, -9));   /* nose */
+    v3x(4.45, 32.1, 1.95, 0.5, 0.7, 2.6, hair); v3x(4.45, 32.1, -1.95, 0.5, 0.7, 2.6, hair);   /* brows */
+    if (mouth) { v3x(4.45, 27.6, 0, 0.4, 0.7, 3.2, mouth); }
+  }
+  function v3zdet(k, seed, skin, cloth, ecol) {
+    var sd = (seed * 1000 | 0) % 97, i;
+    v3x(0, 13.8, 0, 6.9, 1.4, 11.3, '#2a2018'); v3x(3.5, 13.8, 0, 0.4, 1.1, 1.8, '#a89a6a', 2);   /* belt */
+    for (i = 0; i < 3; i++) v3x(3.33, 14.6 + ((sd * (i + 3)) % 8), ((sd * (i + 5)) % 9) - 4, 0.3, 2.4 + (i % 2), 3, shade(cloth, -34 - i * 4));   /* grime */
+    v3x(-3.33, 18 + (sd % 5), ((sd % 7) - 3), 0.3, 4, 4, shade(cloth, -30));
+    if (sd % 4 === 0 && k !== 'armoured') { v3x(3.38, 20.4, 0, 0.3, 6.4, 7.4, '#5a1612', 2); for (i = 0; i < 4; i++) v3x(3.5, 18.2 + i * 1.6, 0, 0.35, 0.6, 6.2, '#e2dcc6', 2); }   /* ribs showing */
+    if (sd % 3 === 1) v3x(7.5, 24.5 + 2.4, 6.6, 2.2, 1.2, 1, '#e2dcc6', 2);   /* bone through the arm */
+    if (sd % 5 === 0 && k !== 'armoured') v3x(4.7, 30.8, 1.9, 0.45, 2.2, 2.2, '#1a0606', 2);   /* a missing eye */
+    if (sd % 6 === 0) { v3x(3.4, 13.5, 1.5, 0.5, 5, 1.4, '#8a2a2a', 2); v3x(3.4, 11, 1.8, 0.5, 2, 1.2, '#a03a3a', 2); }
+    if (k === 'walker' || k === 'runner') { v3x(-1.2, 33.4, 2.6, 1.6, 3, 1.2, '#2a2418'); v3x(-1.2, 33.2, -2.8, 1.6, 3.4, 1.2, '#2a2418'); }
+    v3x(2.2, 25.6, 0, 3, 0.6, 9, shade(cloth, 12));   /* torn collar */
+  }
+  function v3pdet(L, cloth, skin) {
+    v3x(0, 13.8, 0, 6.9, 1.3, 11.3, '#2a2420'); v3x(3.5, 13.8, 0, 0.4, 1.1, 1.8, '#c8b66a', 2);   /* belt */
+    v3x(0.4, 26.1, 0, 7.1, 1.5, 8.4, shade(cloth, 16)); v3x(0.4, 25.9, 0, 6.6, 1.5, 4.6, skin);   /* collar and neck */
+    v3x(3.32, 19.8, 3, 0.35, 3, 3.2, shade(cloth, -14)); v3x(3.34, 20.8, 3, 0.4, 0.5, 3.4, shade(cloth, -26));   /* pocket */
+    v3x(3.32, 19.6, 0, 0.3, 12, 0.5, shade(cloth, -22)); v3x(-3.32, 19.6, 0, 0.3, 12, 0.5, shade(cloth, -22));   /* seams */
+    v3x(6, 24.5, 6.9, 1.2, 0.6, 3.8, '#2a2a2e');   /* watch strap */
   }
   // zombies: a face, torn clothes, hands, and something different for every kind
   function v3zom(k, step, seed, za) {
@@ -7533,6 +7612,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3x(4.6, by + 7.4, 0, 3.8, 3.8, 3.6, BB); v3x(7.2, by + 6.8, 0, 2.4, 1.1, 1.5, BK);
       if (ch) { v3x(4.6, by + 9.8, 0, 1.8, 1.8, 0.8, '#d23a2e'); v3x(7, by + 5.6, 0, 0.8, 1.2, 0.8, '#d23a2e'); }
       v3x(6.3, by + 8, 1.6, 0.5, 0.8, 0.8, ch ? '#111' : '#d9d9e2', 1); v3x(6.3, by + 8, -1.6, 0.5, 0.8, 0.8, ch ? '#111' : '#d9d9e2', 1);
+      for (i = 0; i < 3; i++) { v3x(-5.6, by + 3.6 + i * 1.2, (i - 1) * 1.6, 2.6, 0.7, 1.4, shade(BB, -16 + i * 6), 0, 0, 0, 0.2 + i * 0.12); }   /* tail feathers */
+      v3x(-1, by + 3.4, 3.7, 4.6, 1.6, 0.6, shade(WG, -14)); v3x(-1, by + 3.4, -3.7, 4.6, 1.6, 0.6, shade(WG, -14));   /* wing layers */
+      for (i = -1; i <= 1; i++) { v3x(1.2 + 0.6 * sw, 0.5, 1.4 + i * 0.5, 1.8, 0.4, 0.4, LG); v3x(1.2 - 0.6 * sw, 0.5, -1.4 + i * 0.5, 1.8, 0.4, 0.4, LG); }   /* toes */
+      v3x(4.6, by + 3.8, 0, 3, 2.4, 3.8, shade(BB, -10));   /* chest */
       return;
     }
     if (!Q) return;
@@ -7551,6 +7634,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (Q.tail === 'thin') v3x(-bl - 3, lh + 1.2, wag * 3, 6, 0.8, 0.8, '#d9a0a0');
     else if (Q.tail === 'cat') v3x(-bl - 1, by2 + 3, wag * 3, 1.5, 7, 1.5, Q.B, 0, 0, 0, 0.3);
     else v3x(-bl - 0.6, by2 + 2.6, wag * 3, 1.5, 5.4, 1.5, Q.B, 0, 0, 0, 0.55);
+    /* finer detail: paws, eye whites, inner ears, whiskers, tongue, collar and markings */
+    v3x(bl * 0.62 + sw * 2.2 + 0.5, 0.7, bw * 0.34, 3.2, 1.4, 2.8, Q.M); v3x(bl * 0.62 - sw * 2.2 + 0.5, 0.7, -bw * 0.34, 3.2, 1.4, 2.8, Q.M);
+    v3x(-bl * 0.62 - sw * 2.2 + 0.5, 0.7, bw * 0.34, 3.2, 1.4, 2.8, Q.M); v3x(-bl * 0.62 + sw * 2.2 + 0.5, 0.7, -bw * 0.34, 3.2, 1.4, 2.8, Q.M);
+    v3x(hx + hr * 1.03, hy + hr * 0.2, hr * 0.55, 0.4, 1.4, 1.4, '#f4f4f0', 1); v3x(hx + hr * 1.03, hy + hr * 0.2, -hr * 0.55, 0.4, 1.4, 1.4, '#f4f4f0', 1);
+    v3x(hx + hr * 1.0, hy + hr * 0.58, hr * 0.55, 0.4, 0.5, 1.8, shade(Q.B, -40)); v3x(hx + hr * 1.0, hy + hr * 0.58, -hr * 0.55, 0.4, 0.5, 1.8, shade(Q.B, -40));
+    if (Q.ear === 'point') { v3x(hx - 0.1, hy + hr * 1.15, hr * 0.6, 0.6, 1.8, 0.8, '#e8a0a0'); v3x(hx - 0.1, hy + hr * 1.15, -hr * 0.6, 0.6, 1.8, 0.8, '#e8a0a0'); }
+    if (pt === 1 || pt === 2) for (i = -1; i <= 1; i++) { v3x(hx + hr * 1.7, hy - hr * 0.35 + i * 0.5, hr * 0.7, 0.4, 0.2, 2.6, '#e8e8e8', 1); v3x(hx + hr * 1.7, hy - hr * 0.35 + i * 0.5, -hr * 0.7, 0.4, 0.2, 2.6, '#e8e8e8', 1); }
+    if (pt === 3 || pt === 4) { v3x(hx + hr * 1.7, hy - hr * 0.85 - Math.abs(Math.sin(S.ph * 0.6)) * 0.4, 0, 1.4, 0.5, 1.4, '#e07a8a', 1); v3x(bl * 0.82, by2 - bh * 0.35, 0, 1.4, 1.3, bw * 0.72, '#c0392b'); v3x(bl * 0.82 + 0.8, by2 - bh * 0.7, 0, 0.5, 1.4, 1.4, '#e8c04a', 1); }
+    if (pt === 3) { v3x(hx + hr * 1.0, hy + hr * 0.75, hr * 0.5, 0.4, 0.8, 0.9, '#b87a3c'); v3x(hx + hr * 1.0, hy + hr * 0.75, -hr * 0.5, 0.4, 0.8, 0.9, '#b87a3c'); }
+    if (pt === 4) { v3x(-bl * 0.2, by2 + bh * 1.0, bw * 0.2, bl * 0.9, 0.5, bw * 0.4, '#caae78'); v3x(bl * 0.3, by2 + bh * 1.0, -bw * 0.18, bl * 0.7, 0.5, bw * 0.35, '#caae78'); }
+    if (pt === 1) v3x(-bl - 5.5, lh + 1.2, wag * 4, 3, 0.7, 0.7, '#d9a0a0');
   }
   function v3bat(b) {
     var fl = Math.sin(b.ph) * 0.9, w = 7 + Math.sin(b.ph) * 4;
@@ -7558,6 +7652,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     v3x(0, 0, 0, 3.8, 2.4, 2.8, '#0c0810'); v3x(1.8, 1.7, 0.9, 0.8, 1.6, 0.8, '#0c0810'); v3x(1.8, 1.7, -0.9, 0.8, 1.6, 0.8, '#0c0810');
     v3x(0, w * 0.5 * Math.sin(fl), 1.2 + w * 0.5 * Math.cos(fl), 3.4, 0.5, w, '#150e1c', 0, fl); v3x(0, w * 0.5 * Math.sin(fl), -1.2 - w * 0.5 * Math.cos(fl), 3.4, 0.5, w, '#150e1c', 0, -fl);
     v3x(2, 0.4, 0.5, 0.4, 0.5, 0.5, '#ff3a2a', 1); v3x(2, 0.4, -0.5, 0.4, 0.5, 0.5, '#ff3a2a', 1);
+    v3x(2.1, -0.6, 0.5, 0.3, 0.8, 0.3, '#f2f0e8'); v3x(2.1, -0.6, -0.5, 0.3, 0.8, 0.3, '#f2f0e8');   /* fangs */
+    v3x(0.4, 0.3, 0, 1.6, 1.4, 1.8, '#1c1424');   /* chest fluff */
+    v3x(-0.4, w * 0.3 * Math.sin(fl), 1.2 + w * 0.3 * Math.cos(fl), 0.5, 0.7, w * 0.55, '#2a1e34', 0, fl); v3x(-0.4, w * 0.3 * Math.sin(fl), -1.2 - w * 0.3 * Math.cos(fl), 0.5, 0.7, w * 0.55, '#2a1e34', 0, -fl);   /* wing ribs */
   }
   // things lying about: first-aid kits, ammo boxes, crates, gems, treasure chests, coins
   /* ---- power drops: a spinning medallion with a painted icon on a lit pedestal, orbiting shards, one look per perk ---- */
@@ -7622,19 +7719,31 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (kind === 'health') {
       v3frame(x, 0, z, sp * 0.4, 1);
       v3x(0, 4.5, 0, 12, 9, 10, '#f2f2f2', 2); v3x(0, 4.5, 0, 12.2, 1.4, 10.2, '#cfd4d8', 2); v3x(0, 9.3, 0, 7, 0.6, 2.2, '#d6252e', 3); v3x(0, 9.3, 0, 2.2, 0.6, 7, '#d6252e', 3); v3x(0, 9.4, 0, 3, 1.2, 3.4, '#8a8f95', 2);
+      v3x(0, 10.4, 0, 5.4, 1, 1.6, '#8a8f95', 2); v3x(2.6, 10.4, 0, 0.8, 1.6, 1.6, '#6a6f75', 2); v3x(-2.6, 10.4, 0, 0.8, 1.6, 1.6, '#6a6f75', 2);   /* handle */
+      v3x(6.2, 5.6, 0, 0.6, 2.4, 2.4, '#9aa0a6', 2); v3x(6.15, 7.4, 4, 0.4, 1, 3, '#d6252e', 3); v3x(6.15, 7.4, -4, 0.4, 1, 3, '#d6252e', 3);   /* latch and label bars */
+      v3x(0, 9.1, 4.6, 12.6, 0.5, 0.8, '#b8bec4', 2); v3x(0, 9.1, -4.6, 12.6, 0.5, 0.8, '#b8bec4', 2); v3x(-5.9, 5.2, 0, 0.8, 7, 9, '#cfd4d8', 2);   /* rim and hinge */
+      v3x(0, 0.6, 0, 12.6, 1.2, 10.4, '#aab0b6', 2); v3x(4.5, 9.2, 3.2, 1.2, 0.6, 1.2, '#f2f2f2', 2);
     } else if (kind === 'ammo') {
       v3frame(x, 0, z, sp * 0.4, 1);
       v3x(0, 4, 0, 13, 8, 9, '#5a6a3a', 2); v3x(0, 4, 0, 13.2, 1.5, 9.2, '#f2c14e', 2);
-      for (var q = 0; q < 3; q++) v3x(-3 + q * 3, 9.8, 0, 1.6, 3.4, 1.6, '#d4a52e', 3);
+      for (var q = 0; q < 3; q++) { v3x(-3 + q * 3, 9.8, 0, 1.6, 3.4, 1.6, '#d4a52e', 3); v3x(-3 + q * 3, 11.8, 0, 1.3, 1.4, 1.3, '#c97a4a', 3); }
+      v3x(0, 8.4, 0, 3, 0.7, 9.4, '#2a3220', 2); v3x(6.6, 4, 2.6, 0.4, 3.2, 2.4, '#e8e2c8', 2); v3x(6.6, 4, -2.6, 0.4, 3.2, 1, '#e8e2c8', 2);   /* strap and stencil */
+      v3x(6.5, 7, 0, 0.4, 0.8, 8, '#2a3220', 2); v3x(0, 4, 4.6, 12.6, 0.6, 0.6, '#3e4a28', 2); v3x(0, 4, -4.6, 12.6, 0.6, 0.6, '#3e4a28', 2);
+      for (var q2 = 0; q2 < 4; q2++) v3x(q2 < 2 ? -6 : 6, 7.6, q2 % 2 ? 4.2 : -4.2, 0.9, 0.9, 0.9, '#8a8f95', 2);   /* rivets */
     } else if (kind === 'special') {
       v3frame(x, 0, z, sp * 0.5, 1);
       v3x(0, 5.6, 0, 12.6, 11, 12.6, '#d2692a', 2); v3x(0, 11.6, 0, 13.4, 2.2, 13.4, '#e8903a', 2); v3x(0, 5.6, 0, 13, 11.2, 2.4, '#8a4018', 2);
       v3x(0, 18 + bob * 0.5, 0, 3.4, 3.4, 3.4, '#ffd25a', 3, sp, sp * 1.3, 0);
+      for (var q3 = 0; q3 < 3; q3++) { v3x(0, 2.4 + q3 * 3.6, 6.4, 12.4, 0.5, 0.6, '#6a3410', 2); v3x(0, 2.4 + q3 * 3.6, -6.4, 12.4, 0.5, 0.6, '#6a3410', 2); v3x(6.4, 2.4 + q3 * 3.6, 0, 0.6, 0.5, 12.4, '#6a3410', 2); }   /* slats */
+      for (var q4 = 0; q4 < 4; q4++) { v3x(q4 < 2 ? 6.2 : -6.2, 5.6, q4 % 2 ? 6.2 : -6.2, 1.6, 11.4, 1.6, '#5a5f66', 2); v3x(q4 < 2 ? 6.2 : -6.2, 11.6, q4 % 2 ? 6.2 : -6.2, 2.4, 0.9, 2.4, '#8a8f95', 2); }   /* corners */
+      v3x(0, 12.8, 0, 8, 0.5, 2, '#f2e8c8', 2); v3x(0, 12.8, 0, 2, 0.5, 8, '#f2e8c8', 2);   /* stencilled star */
     } else if (kind === 'perk') {
       v3perk(x, z, i, pid, bob, sp);
     } else {   // item / treasure
       v3frame(x, 0, z, 0, 1);
       v3x(0, 11 + bob, 0, 8, 8, 8, '#6aff9a', 3, 0.7, sp * 1.6, 0.7); v3x(0, 11 + bob, 0, 5, 5, 5, '#d8ffe4', 3, sp, 0.5, sp);
+      v3x(0, 11 + bob, 0, 6, 11, 6, '#3acc72', 3, 0, sp * 1.6, 0.4); v3x(0, 11 + bob, 0, 11, 3, 3, '#9affc0', 3, 0.3, sp * 1.6, sp);
+      v3x(0, 2.2, 0, 8, 1.6, 8, '#2a2d33', 2); v3x(0, 3.6, 0, 5, 1.4, 5, '#3a3e48', 2);
     }
   }
   function v3chest(x, z) {
@@ -7643,11 +7752,20 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     v3x(0, 6, 0, 26, 12, 20, '#a8742e', 2); v3x(0, 14.5, 0, 26.6, 6, 20.6, '#c9962e', 2);
     v3x(7, 9.5, 0, 3, 20, 21, '#f2c14e', 2); v3x(-7, 9.5, 0, 3, 20, 21, '#f2c14e', 2); v3x(13.4, 10, 0, 1.2, 5, 4, '#f2c14e', 2);
     v3x(0, 24 + Math.sin(sp * 2) * 1.5, 0, 4.4, 4.4, 4.4, '#ffe68a', 3, sp, sp * 1.4, 0);
+    var ci;
+    v3x(0, 17.9, 0, 27, 1.4, 21.4, '#8a6a22', 2);   /* band round the lid */
+    for (ci = 0; ci < 4; ci++) { v3x(ci < 2 ? 12.4 : -12.4, 12.8, ci % 2 ? 9.4 : -9.4, 2.4, 14, 2.4, '#6a6e74', 2); v3x(ci < 2 ? 12.4 : -12.4, 18.6, ci % 2 ? 9.4 : -9.4, 3, 1.4, 3, '#a8acb2', 2); }   /* corner irons */
+    for (ci = 0; ci < 3; ci++) { v3x(13.2, 3 + ci * 3, 0, 0.5, 0.4, 20, '#6a4a1c', 2); v3x(-13.2, 3 + ci * 3, 0, 0.5, 0.4, 20, '#6a4a1c', 2); }   /* plank grooves */
+    v3x(13.8, 11, 0, 0.8, 5.4, 4.6, '#f2c14e', 2); v3x(14.3, 10.4, 0, 0.4, 2, 1, '#2a1a08', 2); v3x(-13.4, 14, 5, 1, 2.4, 2.4, '#8a8f95', 2); v3x(-13.4, 14, -5, 1, 2.4, 2.4, '#8a8f95', 2);   /* lock and hinges */
+    for (ci = 0; ci < 6; ci++) v3x(15 + (ci % 3) * 1.8, 0.9 + (ci > 2 ? 1 : 0), -4 + ci * 1.7, 1.6, 0.6, 1.6, '#f2c14e', 3, 0, ci, 0);   /* coins spilling out */
+    for (ci = 0; ci < 4; ci++) { var ca = sp * 1.6 + ci * 1.5708; v3x(Math.cos(ca) * 12, 20 + Math.sin(sp * 3 + ci) * 3, Math.sin(ca) * 10, 1.2, 1.2, 1.2, '#fff6c0', 3, ca, ca, 0); }   /* sparkles */
   }
   function v3coin(x, z, i) {
     var sp = time * 3 + i * 1.3;
     V.fl = 0; v3frame(x, 0, z, sp, 1);
-    v3x(0, 6 + Math.sin(time * 4 + i) * 1.2, 0, 1.1, 5.4, 5.4, '#f2c14e', 3); v3x(0.3, 6 + Math.sin(time * 4 + i) * 1.2, 0, 1.1, 3.4, 3.4, '#ffe68a', 3);
+    var cy = 6 + Math.sin(time * 4 + i) * 1.2;
+    v3x(0, cy, 0, 1.1, 5.4, 5.4, '#f2c14e', 3); v3x(0, cy, 0, 1.1, 5.4, 5.4, '#e0a92e', 3, 0.785); v3x(0.3, cy, 0, 1.1, 3.4, 3.4, '#ffe68a', 3);
+    v3x(0.6, cy, 0, 0.5, 2.6, 0.7, '#b8841c', 3); v3x(0.6, cy + 0.9, 0, 0.5, 0.6, 1.8, '#b8841c', 3); v3x(0.6, cy - 0.9, 0, 0.5, 0.6, 1.8, '#b8841c', 3);   /* embossed S */
   }
   function v3blob(x, z, rx, rz) { if (!V.rs && V.shn < 600) v3put(V.sh, V.shn++, x, 0.7, z, 0, rx, 1, rz); }
   function v3fig(n, x, z, ang, s, step, mv, skin, cloth, pants, down, gun, ext) {
@@ -7662,8 +7780,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     v3part(f[5], n, 0, 24.5, -6.6, za - 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
     if (ext && !ext.lod) {
       V.fl = ext.fl | 0;
-      if (ext.k) v3zom(ext.k, step, ext.seed || 0, za);
-      else { v3ply(ext.L, ext.ar, ext.P); if (gun && ext.gd) v3figgun(ext.gd, ext.glo); }
+      var skH = v3hx(skin), clH = v3hx(cloth), pnH = v3hx(pants), zr = ext.k ? ((ext.seed || 0) * 1000 | 0) % 7 : 0, rzA = za + 0.06 * Math.sin(step * 0.5), rzB = za - 0.06 * Math.sin(step * 0.5);
+      if (ext.k) {
+        v3zom(ext.k, step, ext.seed || 0, za); v3zdet(ext.k, ext.seed || 0, skH, clH); v3face(skH, '#2a2418', null);
+        v3feet(sw, pnH, shade(pnH, -34), '#1a1612', zr === 0, skH); v3arms(rzA, rzB, clH, skH, ext.k !== 'tank' && zr % 2 === 0, false);
+      } else {
+        v3ply(ext.L, ext.ar, ext.P); v3pdet(ext.L, clH, skH); v3face(skH, HAIRC[ext.L.hc] || HAIRC[1], ext.L.f === 1 ? null : '#7a3a36');
+        v3feet(sw, pnH, ext.ar && ext.ar.legs > 0 ? TIERCOL[ext.ar.legs] : '#2a2a30', '#141416', false, skH); v3arms(rzA, rzB, clH, skH, !gun, !!gun);
+        if (gun && ext.gd) v3figgun(ext.gd, ext.glo);
+      }
       V.fl = 0;
     }
   }
@@ -7678,7 +7803,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return { x: V.ge[0] + X * cy - r * sy, y: V.ge[1] + Y, z: V.ge[2] + X * sy + r * cy };
   }
   function v3gpart(f, u, r, lx, ly, lz, colr) {
-    if (V.gn >= 47) return;
+    if (V.gn >= 191) return;
     var d = V.d, q = v3loc(f, u, r);
     d.position.set(q.x, q.y, q.z); d.rotation.order = 'YZX'; d.rotation.set(0, -fpYaw, fpPitch); d.scale.set(lx, ly, lz); d.updateMatrix(); d.rotation.order = 'XYZ';
     V.gun.setMatrixAt(V.gn, d.matrix); V.gun.setColorAt(V.gn, colr); V.gn++;
@@ -7691,6 +7816,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
       v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, r0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), v3col(col));
     });
+    (GDET[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GDET.rifle).forEach(function (q) { v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (q[1] + q[3] / 2) * S, r0, q[2] * kx * S, q[3] * S, Math.max(1.0, q[3] * S * 0.95), v3col(q[4])); });
     function A(x, y, w, h, col) { v3gpart(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, r0, w * S, h * S, Math.max(1.3, h * S * 0.95), v3col(col)); }
     if (AT & 4) { A(mz - 1, -3, 9, 4, '#25262a'); A(mz + 1, -2.6, 1.2, 3.2, '#3a3c42'); A(mz + 4, -2.6, 1.2, 3.2, '#3a3c42'); }
     if (AT & 1) { A(gd.len * 0.35, -8, 8, 3.2, '#1a1c20'); A(gd.len * 0.35 + 5.4, -7.4, 1.8, 1.8, '#ff4a3a'); }
