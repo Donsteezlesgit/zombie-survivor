@@ -5020,7 +5020,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 192';
+  var updMsg = '', VERSION = 'Version 193';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6880,48 +6880,103 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   var V3C = {};
   function v3col(s) { var c = V3C[s]; if (!c) { c = V3C[s] = new THREE.Color(); c.set(s); } return c; }
   // ---------- procedural textures: drawn once in code (no image files), then tinted by each face's own colour ----------
-  var V3T = {};
+  /* ---- surface textures, all drawn in code: a grey colour map (tinted per face) plus a height map that the lighting reads as bumps ---- */
+  var V3T = {}, V3B = {};
+  function v3tn(rx, ry, seed) {   // tiling value noise: returns f(u,v) for u,v in 0..1
+    var r = dtRng(seed), g = new Float32Array(rx * ry), i;
+    for (i = 0; i < g.length; i++) g[i] = r();
+    return function (u, v) {
+      var x = u * rx, y = v * ry, xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, x0, x1, y0, y1;
+      fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+      x0 = ((xi % rx) + rx) % rx; x1 = (x0 + 1) % rx; y0 = ((yi % ry) + ry) % ry; y1 = (y0 + 1) % ry;
+      return (g[y0 * rx + x0] * (1 - fx) + g[y0 * rx + x1] * fx) * (1 - fy) + (g[y1 * rx + x0] * (1 - fx) + g[y1 * rx + x1] * fx) * fy;
+    };
+  }
+  function v3hs(i) { var s = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); }
   function v3tex(kind) {
     if (V3T[kind]) return V3T[kind];
-    var c = document.createElement('canvas'), x, r = dtRng(kind.length * 977 + kind.charCodeAt(0) * 31), i, j, k, s, t;
-    c.width = c.height = 128; x = c.getContext('2d');
-    function grey(v) { v = Math.max(0, Math.min(255, v | 0)); return 'rgb(' + v + ',' + v + ',' + v + ')'; }
-    if (kind === 'brick') {
-      x.fillStyle = grey(120); x.fillRect(0, 0, 128, 128);
-      var sh = [];
-      for (j = 0; j < 8; j++) { sh[j] = []; for (i = 0; i < 4; i++) sh[j][i] = 205 + r() * 50; }
-      for (j = 0; j < 8; j++) for (i = -1; i < 5; i++) { x.fillStyle = grey(sh[j][((i % 4) + 4) % 4]); x.fillRect(i * 32 + (j % 2) * 16 + 1, j * 16 + 1, 30, 14); }
-      for (k = 0; k < 160; k++) { x.fillStyle = 'rgba(0,0,0,' + (r() * 0.12) + ')'; x.fillRect(r() * 128, r() * 128, 2, 2); }
-    } else if (kind === 'plaster') {
-      x.fillStyle = grey(225); x.fillRect(0, 0, 128, 128);
-      for (k = 0; k < 900; k++) { x.fillStyle = grey(190 + r() * 65); x.fillRect(r() * 128, r() * 128, 1 + ((r() * 2) | 0), 1 + ((r() * 2) | 0)); }
-      x.strokeStyle = 'rgba(70,60,50,0.35)'; x.lineWidth = 1;
-      for (k = 0; k < 4; k++) { var cx0 = r() * 128, cy0 = r() * 100; x.beginPath(); x.moveTo(cx0, cy0); for (j = 0; j < 4; j++) { cx0 += (r() - 0.5) * 26; cy0 += r() * 14; x.lineTo(cx0, cy0); } x.stroke(); }
-      x.fillStyle = 'rgba(60,50,40,0.22)'; x.fillRect(0, 63, 128, 1); x.fillRect(63, 0, 1, 128);
-    } else if (kind === 'wood') {
-      for (i = 0; i < 8; i++) {
-        x.fillStyle = grey(190 + r() * 55); x.fillRect(i * 16, 0, 16, 128);
-        x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(i * 16, 0, 1.5, 128);
-        for (k = 0; k < 5; k++) { x.fillStyle = 'rgba(60,35,15,' + (0.08 + r() * 0.12) + ')'; x.fillRect(i * 16 + 2 + r() * 12, 0, 1, 128); }
-        if (r() < 0.5) { x.fillStyle = 'rgba(50,28,10,0.5)'; x.beginPath(); x.arc(i * 16 + 8, r() * 128, 2 + r() * 2, 0, 6.283); x.fill(); }
+    var N = 256, cc = document.createElement('canvas'), hc = document.createElement('canvas'), cx, hx, ci, hi, cd, hd, r = dtRng(kind.length * 977 + kind.charCodeAt(0) * 31), x, y, i, k, t, u, v, p, c, h;
+    cc.width = cc.height = hc.width = hc.height = N; cx = cc.getContext('2d'); hx = hc.getContext('2d');
+    ci = cx.createImageData(N, N); hi = hx.createImageData(N, N); cd = ci.data; hd = hi.data;
+    var n1 = v3tn(8, 8, 11), n2 = v3tn(16, 16, 22), n3 = v3tn(32, 32, 33), n4 = v3tn(64, 64, 44), n5 = v3tn(128, 128, 55), sk = v3tn(48, 3, 66), hz = v3tn(3, 64, 77), wg = v3tn(96, 4, 88);
+    function fb(u2, v2) { return n1(u2, v2) * 0.34 + n2(u2, v2) * 0.28 + n3(u2, v2) * 0.2 + n4(u2, v2) * 0.12 + n5(u2, v2) * 0.06; }
+    function cl(a) { return a < 0 ? 0 : a > 255 ? 255 : a; }
+    for (y = 0; y < N; y++) for (x = 0; x < N; x++) {
+      u = x / N; v = y / N; p = (y * N + x) * 4; c = 200; h = 128;
+      var f = fb(u, v), g5 = n5(u, v), g4 = n4(u, v);
+      if (kind === 'brick') {
+        var row = (y / 32) | 0, xo = x + (row % 2) * 32, bx = xo % 64, by = y % 32, id = row * 4 + (((xo / 64) | 0) % 4), ed = Math.min(bx - 3, 63 - bx, by - 3, 31 - by);
+        if (bx < 3 || by < 3) { c = 92 + f * 50 + g5 * 30; h = 18 + g5 * 14; }
+        else {
+          c = (168 + v3hs(id) * 70) * (0.84 + 0.3 * g4) * (0.86 + 0.2 * n3(u, v)) + (g5 - 0.5) * 22;
+          if (g5 > 0.88) c *= 0.7;
+          if (ed < 3) { c *= 0.84 + ed * 0.05; }
+          h = 150 + 55 * n3(u, v) + Math.min(ed, 5) * 9 + (g5 - 0.5) * 30;
+        }
+        c *= 0.78 + 0.3 * sk(u, v);
+      } else if (kind === 'plaster') {
+        var st = Math.max(0, n2(u + 0.37, v + 0.11) - 0.58) * 3.2, tr = n3(u, v) * 0.6 + g4 * 0.4;
+        c = (206 + (f - 0.5) * 70 + (g5 - 0.5) * 30) * (1 - Math.min(0.5, st)); h = 120 + tr * 70 + (g5 - 0.5) * 36;
+        c *= 0.85 + 0.2 * sk(u, v);
+      } else if (kind === 'wood') {
+        var pi = (x / 32) | 0, lx = x % 32, jn = (y + pi * 53) % 128, gr = wg(u, v) * 0.5 + Math.sin(lx * 0.7 + f * 9 + v3hs(pi) * 6) * 0.25 + 0.25;
+        if (lx < 2) { c = 36; h = 15; }
+        else if (jn < 2) { c = 44; h = 22; }
+        else { c = (150 + v3hs(pi) * 80) * (0.7 + 0.45 * gr) * (0.9 + 0.2 * g4); h = 140 + gr * 60 + (g5 - 0.5) * 20; if (lx < 4) { c *= 0.88; h -= 14; } }
+      } else if (kind === 'roof') {
+        var rw = (y / 32) | 0, xo2 = x + (rw % 2) * 32, bx2 = xo2 % 64, by2 = y % 32, id2 = rw * 4 + (((xo2 / 64) | 0) % 4), mo = Math.max(0, n2(u + 0.2, v + 0.6) - 0.58) * 3;
+        if (bx2 < 2) { c = 30; h = 15; }
+        else {
+          c = (150 + v3hs(id2) * 80) * (0.55 + 0.45 * Math.min(1, by2 / 14 + 0.3)) * (0.86 + 0.2 * g4) * (1 - Math.min(0.45, mo));
+          h = 60 + by2 * 5 + (g5 - 0.5) * 24; if (by2 > 28) { c *= 0.7; }
+        }
+      } else if (kind === 'leaf') {
+        var lv = n3(u, v) * 0.5 + g4 * 0.35 + g5 * 0.15;
+        c = lv > 0.5 ? 120 + (lv - 0.5) * 300 : 36 + lv * 150; h = c;
+      } else {   // metal: brushed sheet with seams, rust blotches
+        var gr2 = hz(u, v), rs = Math.max(0, n3(u + 0.7, v + 0.3) * 0.6 + g4 * 0.4 - 0.62) * 2.6, sm = (x % 128 < 2 || y % 128 < 2);
+        c = (205 + (gr2 - 0.5) * 36 + (g5 - 0.5) * 22) * (1 - Math.min(0.3, rs)) * (0.92 + 0.14 * f); h = 128 + (f - 0.5) * 30 - rs * 30;
+        if (sm) { c = 60; h = 18; }
+        else if (x % 128 === 2 || y % 128 === 2) { c *= 1.12; }
       }
-    } else if (kind === 'roof') {
-      x.fillStyle = grey(90); x.fillRect(0, 0, 128, 128);
-      for (j = 0; j < 8; j++) for (i = -1; i < 5; i++) {
-        x.fillStyle = grey(175 + r() * 70); x.fillRect(i * 32 + (j % 2) * 16 + 1, j * 16 + 1, 30, 13);
-        x.fillStyle = 'rgba(0,0,0,0.35)'; x.fillRect(i * 32 + (j % 2) * 16 + 1, j * 16 + 11, 30, 3);
-      }
-    } else if (kind === 'leaf') {
-      x.fillStyle = grey(170); x.fillRect(0, 0, 128, 128);
-      for (k = 0; k < 260; k++) { x.fillStyle = grey(110 + r() * 145); x.beginPath(); x.arc(r() * 128, r() * 128, 2 + r() * 5, 0, 6.283); x.fill(); }
-    } else {
-      x.fillStyle = grey(235); x.fillRect(0, 0, 128, 128);
-      for (k = 0; k < 500; k++) { x.fillStyle = grey(205 + r() * 50); x.fillRect(r() * 128, r() * 128, 1, 1 + ((r() * 2) | 0)); }
-      x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(0, 0, 128, 2); x.fillRect(0, 64, 128, 1.5); x.fillRect(0, 0, 1.5, 128); x.fillRect(64, 0, 1.5, 128);
+      c = cl(c); h = cl(h);
+      cd[p] = cd[p + 1] = cd[p + 2] = c; cd[p + 3] = 255; hd[p] = hd[p + 1] = hd[p + 2] = h; hd[p + 3] = 255;
     }
-    t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = 1000; /* 1000 = repeat: this trimmed three.js build does not export the name */ t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 2;
-    V3T[kind] = t; return t;
+    cx.putImageData(ci, 0, 0); hx.putImageData(hi, 0, 0);
+    function crack(x0, y0, len, w) {
+      var a = Math.PI / 2 + (r() - 0.5), sx = x0, sy = y0, pts = [[sx, sy]], j;
+      for (j = 0; j < len; j += 6) { a += (r() - 0.5) * 0.9; sx += Math.cos(a) * 6; sy += Math.sin(a) * 6; pts.push([sx, sy]); }
+      [[cx, 'rgba(30,24,20,0.7)'], [hx, 'rgba(0,0,0,0.85)']].forEach(function (q) { q[0].strokeStyle = q[1]; q[0].lineWidth = w; q[0].beginPath(); pts.forEach(function (pp, ii) { ii ? q[0].lineTo(pp[0], pp[1]) : q[0].moveTo(pp[0], pp[1]); }); q[0].stroke(); });
+    }
+    if (kind === 'plaster' || kind === 'brick') { for (k = 0; k < (kind === 'brick' ? 3 : 5); k++) crack(r() * N, r() * N * 0.6, 50 + r() * 70, 1.2); }
+    if (kind === 'wood') for (k = 0; k < 7; k++) {
+      var kx = r() * N, ky = r() * N, kr = 3 + r() * 4;
+      [[cx, 'rgba(50,28,12,0.75)', 'rgba(50,28,12,0)'], [hx, 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0)']].forEach(function (q) { var gg = q[0].createRadialGradient(kx, ky, 0, kx, ky, kr * 1.6); gg.addColorStop(0, q[1]); gg.addColorStop(1, q[2]); q[0].fillStyle = gg; q[0].beginPath(); q[0].ellipse(kx, ky, kr, kr * 2, 0, 0, 6.283); q[0].fill(); });
+    }
+    if (kind === 'leaf') for (k = 0; k < 240; k++) {
+      var lx2 = r() * N, ly2 = r() * N, la = r() * 3.14, ls = 4 + r() * 6, tone = (90 + r() * 150) | 0;
+      for (var wx = -1; wx <= 1; wx++) for (var wy = -1; wy <= 1; wy++) {
+        cx.fillStyle = 'rgba(' + tone + ',' + tone + ',' + tone + ',0.65)'; cx.beginPath(); cx.ellipse(lx2 + wx * N, ly2 + wy * N, ls, ls * 0.45, la, 0, 6.283); cx.fill();
+        hx.fillStyle = 'rgba(' + tone + ',' + tone + ',' + tone + ',0.65)'; hx.beginPath(); hx.ellipse(lx2 + wx * N, ly2 + wy * N, ls, ls * 0.45, la, 0, 6.283); hx.fill();
+      }
+    }
+    if (kind === 'metal') {
+      for (k = 0; k < 18; k++) {
+        var sx2 = r() * N, sy2 = r() * N, sl = 14 + r() * 40, sa = r() * 6.28;
+        cx.strokeStyle = 'rgba(255,255,255,0.35)'; cx.lineWidth = 0.8; cx.beginPath(); cx.moveTo(sx2, sy2); cx.lineTo(sx2 + Math.cos(sa) * sl, sy2 + Math.sin(sa) * sl); cx.stroke();
+        hx.strokeStyle = 'rgba(0,0,0,0.5)'; hx.lineWidth = 0.8; hx.beginPath(); hx.moveTo(sx2, sy2); hx.lineTo(sx2 + Math.cos(sa) * sl, sy2 + Math.sin(sa) * sl); hx.stroke();
+      }
+      for (k = 0; k < 8; k++) for (var q2 = 0; q2 < 2; q2++) {   // rivets along the seams
+        var rvx = q2 ? 6 + k * 16 : 6, rvy = q2 ? 6 : 6 + k * 16;
+        [[0, 0], [128, 0], [0, 128], [128, 128]].forEach(function (o) { cx.fillStyle = 'rgba(40,40,40,0.8)'; cx.beginPath(); cx.arc(rvx + o[0], rvy + o[1], 1.6, 0, 6.283); cx.fill(); hx.fillStyle = 'rgba(255,255,255,0.9)'; hx.beginPath(); hx.arc(rvx + o[0], rvy + o[1], 1.8, 0, 6.283); hx.fill(); });
+      }
+    }
+    t = new THREE.CanvasTexture(cc); t.wrapS = t.wrapT = 1000; /* 1000 = repeat: this trimmed three.js build does not export the name */ t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    var tb = new THREE.CanvasTexture(hc); tb.wrapS = tb.wrapT = 1000; tb.anisotropy = 2;
+    V3T[kind] = t; V3B[kind] = tb; return t;
   }
+  function v3bump(kind) { v3tex(kind); return V3B[kind]; }
+  var V3BS = { brick: 2.2, plaster: 1.4, wood: 1.6, roof: 2.2, leaf: 1.2, metal: 1.2 };
   // geometry groups: one per material. S = how many world units one texture tile covers.
   function v3grp(S) { return { p: [], n: [], c: [], u: [], i: [], S: S }; }
   function v3vert(G, x, y, z, nx, ny, nz, c, f, u, v) { G.p.push(x, y, z); G.n.push(nx, ny, nz); G.c.push(Math.min(1, c[0] * f), Math.min(1, c[1] * f), Math.min(1, c[2] * f)); G.u.push(u, v); }
@@ -7198,7 +7253,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       g = new T.BufferGeometry();
       g.setAttribute('position', new T.Float32BufferAttribute(G.p, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(G.n, 3));
       g.setAttribute('color', new T.Float32BufferAttribute(G.c, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(G.u, 2)); g.setIndex(G.i);
-      grp.add(new T.Mesh(g, new T.MeshLambertMaterial({ vertexColors: true, map: kinds[kn] ? v3tex(kinds[kn]) : null, side: T.DoubleSide })));
+      grp.add(new T.Mesh(g, new T.MeshLambertMaterial({ vertexColors: true, map: kinds[kn] ? v3tex(kinds[kn]) : null, bumpMap: kinds[kn] ? v3bump(kinds[kn]) : null, bumpScale: V3BS[kn] || 1, side: T.DoubleSide })));
     }
     return grp;
   }
@@ -7240,7 +7295,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.ex = new T.InstancedMesh(box, fmat, 6000); V.ex.frustumCulled = false; V.ex.count = 0; V.ex.setColorAt(0, v3col('#fff')); sc.add(V.ex);
     V.eb = new T.InstancedMesh(box, new T.MeshBasicMaterial({ color: 0xffffff }), 2500); V.eb.frustumCulled = false; V.eb.count = 0; V.eb.setColorAt(0, v3col('#fff')); sc.add(V.eb);
     V.eg = new T.InstancedMesh(box, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.78, depthWrite: false }), 200); V.eg.frustumCulled = false; V.eg.count = 0; V.eg.setColorAt(0, v3col('#fff')); sc.add(V.eg);
-    V.dr = new T.InstancedMesh(box, new T.MeshLambertMaterial({ color: 0xffffff, map: v3tex('wood') }), 80); V.dr.frustumCulled = false; V.dr.count = 0; V.dr.setColorAt(0, v3col('#fff')); sc.add(V.dr);
+    V.dr = new T.InstancedMesh(box, new T.MeshLambertMaterial({ color: 0xffffff, map: v3tex('wood'), bumpMap: v3bump('wood'), bumpScale: 1.6 }), 80); V.dr.frustumCulled = false; V.dr.count = 0; V.dr.setColorAt(0, v3col('#fff')); sc.add(V.dr);
     V.pm = null; V.en = V.ebn = V.egn = V.shn = 0; V.fl = 0; V.rs = true; V.slow = 0; V.ft = 0; V.tp = 0; V.sf = 0;
     /* real shadows from the sun, drawn every other frame, with an automatic fall-back to blob shadows if the phone struggles */
     r.shadowMap.enabled = true; r.shadowMap.type = 1; r.shadowMap.autoUpdate = false;
@@ -7323,7 +7378,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.blood.rotation.x = -Math.PI / 2; V.blood.position.set(WORLD / 2, 0.4, WORLD / 2); V.blood.visible = false; V.sc.add(V.blood);
     var nb = 0, i; for (i = 0; i < BLD.length; i++) nb += BLD[i].bar.max;
     if (V.bars) { sc3rm(V.bars); }
-    V.bars = new T.InstancedMesh(V.box, new T.MeshLambertMaterial({ color: 0xb08050, map: v3tex('wood') }), Math.max(1, nb)); V.bars.frustumCulled = false; V.bars.castShadow = true; V.bars.receiveShadow = true; V.sc.add(V.bars);
+    V.bars = new T.InstancedMesh(V.box, new T.MeshLambertMaterial({ color: 0xb08050, map: v3tex('wood'), bumpMap: v3bump('wood'), bumpScale: 1.6 }), Math.max(1, nb)); V.bars.frustumCulled = false; V.bars.castShadow = true; V.bars.receiveShadow = true; V.sc.add(V.bars);
     V.map = mapId; V.bT = 99;
   }
   function sc3rm(o) { if (o.parent) o.parent.remove(o); }
