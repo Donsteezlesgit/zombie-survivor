@@ -1992,7 +1992,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       else { [[o.x, o.y], [o.x + o.w, o.y], [o.x, o.y + o.h], [o.x + o.w, o.y + o.h]].forEach(function (p) { pts.push([p[0], p[1]]); pts.push([p[0] + DX * L, p[1] + DY * L]); }); }
       var h = dtHull(pts); s.beginPath(); s.moveTo(h[0][0], h[0][1]); for (var q = 1; q < h.length; q++) s.lineTo(h[q][0], h[q][1]); s.closePath(); s.fill();
     });
-    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 0.14; c.fillStyle = '#000'; c.drawImage(sc, 0, 0); c.restore();
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = P3 ? 0.14 : 0.36; c.fillStyle = '#000'; c.drawImage(sc, 0, 0); c.restore();
     sc.width = sc.height = 1;
     // fences (painted over the shadows)
     [[30, 230, 270, 0, [[100, 170]]], [30, 770, 270, 0, [[100, 170]]], [30, 230, 540, 1, []], [300, 230, 100, 1, []], [300, 670, 100, 1, []],
@@ -2242,15 +2242,35 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var d = mapDef(id);
     if (mapId === d.id) return;
     bonusRoom = -1;
-    mapId = d.id; WORLD = d.world; GS = d.gs; P3 = !!d.v3d; DT3.length = 0;
+    mapId = d.id; WORLD = d.world; GS = d.gs; P3 = want3d(d); DT3.length = 0;
     sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
     RECTS.length = 0; BLD.length = 0; ROOFS.length = 0; DOORS.length = 0; LIGHTS.length = 0; bats = [];
     MAPCFG = d.cfg;
     d.build(); d.ground(); d.bld();
-    // buildings are baked into the ground picture once, so the game draws one big layer instead of two
-    groundL.x.save(); groundL.x.setTransform(1, 0, 0, 1, 0, 0); groundL.x.drawImage(bldL.c, 0, 0); groundL.x.restore();
-    bldL.c.width = bldL.c.height = 1; bloodOn = false;
+    bakeArt();
+    bloodOn = false;
     navInit();
+  }
+  // buildings are baked into the ground picture once, so the game draws one big layer instead of two
+  function bakeArt() {
+    groundL.x.save(); groundL.x.setTransform(1, 0, 0, 1, 0, 0); groundL.x.drawImage(bldL.c, 0, 0); groundL.x.restore();
+    bldL.c.width = bldL.c.height = 1;
+  }
+  /* 2D SAFETY RULE: P3 (skip painting raised props flat) is true ONLY when 3D really draws this map.
+     If 3D is switched off, fails, or THREE is missing, the 2D art must be the original full art. */
+  function want3d(d) { return !!d.v3d && !v3fail && !v3off && !!window.THREE; }
+  // repaint only the pictures (not walls/doors/lights) when 3D turns on or off
+  function repaintArt() {
+    var d = mapDef(mapId), w = want3d(d);
+    if (w === P3 || !d.v3d) return;
+    P3 = w; DT3.length = 0;
+    var keep = LIGHTS.slice(), blood = document.createElement('canvas');
+    blood.width = bloodL.c.width; blood.height = bloodL.c.height; blood.getContext('2d').drawImage(bloodL.c, 0, 0);
+    sizeLayer(groundL); sizeLayer(bldL);
+    d.ground(); d.bld(); bakeArt();
+    LIGHTS.length = 0; keep.forEach(function (l) { LIGHTS.push(l); });
+    bloodL.x.save(); bloodL.x.setTransform(1, 0, 0, 1, 0, 0); bloodL.x.drawImage(blood, 0, 0); bloodL.x.restore();
+    bloodDirty = true;
   }
   setMap('beginners');
 
@@ -4232,7 +4252,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     // two-thumb mode: a shot at a zombie the aim line runs straight through (dead centre) is a critical hit
     var hs = b.vh !== undefined && b.kind === 'bullet' && b.h0 + b.vh * b.dist > zHeight(z) * 0.78;   // first person: a hit up near the head is a critical
-    var cc = !b.crit && ((b.cen && centred(z, b)) || hs), dm = b.dmg * (cc ? 2 : 1), ar;
+    // first person: ONLY a headshot is a critical (the two-thumb dead-centre crit is for the top-down view)
+    var cc = !b.crit && (b.vh !== undefined ? hs : (b.cen && centred(z, b))), dm = b.dmg * (cc ? 2 : 1), ar;
+    if (cc && hs && hitMk) hitMk.k = 2;
     if (b.arm && wave >= TUNE.armFrom && !z.ghost) {
       ar = z.boss ? TUNE.armBoss : (z.type === 'tank' ? TUNE.armTank : (z.type === 'armoured' ? TUNE.armArm : 0));
       if (ar) { if (b.pel) ar *= TUNE.armPellet; dm = Math.max(dm - ar, dm * TUNE.armFloor); }
@@ -5027,7 +5049,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 195';
+  var updMsg = '', VERSION = 'Version 196';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5226,7 +5248,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       hapOn = !hapOn; try { localStorage.setItem('zs-hap', hapOn ? '1' : '0'); } catch (e) {}
       renderScreen(); if (hapOn) hap([20]);
     }
-    else if (a === 'v3d') { v3off = !v3off; try { localStorage.setItem('zs-v3d', v3off ? '0' : '1'); } catch (e) {} renderScreen(); }
+    else if (a === 'v3d') { v3off = !v3off; try { localStorage.setItem('zs-v3d', v3off ? '0' : '1'); } catch (e) {} repaintArt(); renderScreen(); }
     else if (a === 'fps') { fpsOn = !fpsOn; try { localStorage.setItem('zs-fps', fpsOn ? '1' : '0'); } catch (e) {} renderScreen(); }
     else if (a === 'btnedit') openBtnEd();
     else if (a === 'mute') {
@@ -7328,8 +7350,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function v3init() {
     var T = THREE, cvs = document.createElement('canvas'), r;
     cvs.id = 'c3';
-    try { r = new T.WebGLRenderer({ canvas: cvs, antialias: true, alpha: false, powerPreference: 'high-performance' }); } catch (e) { v3fail = true; return null; }
-    if (!r || !r.getContext()) { v3fail = true; return null; }
+    try { r = new T.WebGLRenderer({ canvas: cvs, antialias: true, alpha: false, powerPreference: 'high-performance' }); } catch (e) { v3fail = true; repaintArt(); return null; }
+    if (!r || !r.getContext()) { v3fail = true; repaintArt(); return null; }
     cv.parentNode.insertBefore(cvs, cv);
     var sc = new T.Scene(), cam3 = new T.PerspectiveCamera(70, 1, 2, 3000);
     sc.background = new T.Color(0x14100c);
@@ -8088,8 +8110,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var ha2 = 1 - (dnow - hitMk.t) / (hitMk.k ? 380 : 160);
       if (ha2 <= 0) hitMk = null;
       else {
-        var hm = hitMk.k ? 11 : 8, hn = hitMk.k ? 20 : 15, hx0 = W / 2, hy0 = H / 2;
-        ctx.save(); ctx.strokeStyle = (hitMk.k ? 'rgba(255,60,50,' : 'rgba(255,255,255,') + ha2.toFixed(3) + ')'; ctx.lineWidth = hitMk.k ? 3 : 2.4; ctx.lineCap = 'round';
+        var hm = hitMk.k ? 11 : 8, hn = hitMk.k === 2 ? 26 : hitMk.k ? 20 : 15, hx0 = W / 2, hy0 = H / 2;
+        ctx.save(); ctx.strokeStyle = (hitMk.k === 2 ? 'rgba(255,205,50,' : hitMk.k ? 'rgba(255,60,50,' : 'rgba(255,255,255,') + ha2.toFixed(3) + ')'; ctx.lineWidth = hitMk.k ? 3 : 2.4; ctx.lineCap = 'round';
         ctx.beginPath(); [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(function (q) { ctx.moveTo(hx0 + q[0] * hm, hy0 + q[1] * hm); ctx.lineTo(hx0 + q[0] * hn, hy0 + q[1] * hn); }); ctx.stroke(); ctx.restore();
       }
     }
@@ -8135,7 +8157,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var i, P, rr;
     if (v3Active()) {
       try { if (!V) V = v3init(); if (V) { render3d(vw, vh, sx, sy); return; } }
-      catch (err) { v3fail = true; try { console.error('3D off', err); } catch (e2) {} }
+      catch (err) { v3fail = true; try { console.error('3D off', err); } catch (e2) {} repaintArt(); }
     }
     if (V && V.shown) { V.cvs.style.display = 'none'; V.shown = false; }
 
@@ -8904,7 +8926,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function loop(now) {
     // 120Hz phones: run at 60 so the phone does half the drawing and stays cooler
-    if (now - last < 14) { requestAnimationFrame(loop); return; }
+    // 3D maps are capped at a steady 30: every frame takes the same time, so it feels smooth instead of swinging 30-60
+    if (now - last < (v3Active() ? 31 : 14)) { requestAnimationFrame(loop); return; }
     var dt = (now - last) / 1000; last = now; fpsTick(now);
     if (dt > 0.05) dt = 0.05;
     if (DEV.on && net.mode !== 'client') { dt *= DEV.ts; devTick(); }
