@@ -5090,7 +5090,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 202';
+  var updMsg = '', VERSION = 'Version 203';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -8064,23 +8064,24 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function v3viewgun(gd, lo, kick, dip, bu, br, ads) {
     var S = 0.55, art = GART[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GART.rifle, kx = (gd.len + 5) / art.tip;
     var skC = lo && lo[1] ? GSKIN[lo[1]].c : null, AT = lo ? lo[0] : 0, mz = gd.len + 5;
-    var f0 = 38 - mz * S - kick, u0 = -11 - dip + (bu || 0) * (1 - (ads || 0) * 0.85), r0 = 9 + (br || 0) * (1 - (ads || 0) * 0.85), sg = gd.cls === 'sniper' ? [15, -10] : ((AT & 1) ? [gd.len * 0.35 + 4.5, -7.2] : null);
+    var f0 = 38 - mz * S - kick, u0 = -11 - dip + (bu || 0) * (1 - (ads || 0) * 0.85), r0 = 9 + (br || 0) * (1 - (ads || 0) * 0.85), sg = gd.cls === 'sniper' ? [15, -10] : ((AT & 1) ? [gd.len * 0.35 + 4.5, -7.35] : null);
     if (ads > 0 && sg) {   // aiming: the gun comes up and in until the sight sits on the line of the eye
       var fT = 27 - sg[0] * S - kick, uT = sg[1] * S - dip * 0.4, rT = (br || 0) * 0.2;
       f0 += (fT - f0) * ads; u0 += (uT - u0) * ads; r0 += (rT - r0) * ads;
     }
-    art.p.forEach(function (q, qi) {
+    var hideBody = sg && gd.cls !== 'sniper' && ads > 0.6;   // aiming down a red dot: only the sight stays, so the view is clean
+    if (!hideBody) art.p.forEach(function (q, qi) {
       var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
       v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, r0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), v3col(col));
     });
-    (GDET[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GDET.rifle).forEach(function (q) { v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (q[1] + q[3] / 2) * S, r0, q[2] * kx * S, q[3] * S, Math.max(1.0, q[3] * S * 0.95), v3col(q[4])); });
+    if (!hideBody) (GDET[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GDET.rifle).forEach(function (q) { v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (q[1] + q[3] / 2) * S, r0, q[2] * kx * S, q[3] * S, Math.max(1.0, q[3] * S * 0.95), v3col(q[4])); });
     function A(x, y, w, h, col) { v3gpart(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, r0, w * S, h * S, Math.max(1.3, h * S * 0.95), v3col(col)); }
     if (AT & 4) { A(mz - 1, -3, 9, 4, '#25262a'); A(mz + 1, -2.6, 1.2, 3.2, '#3a3c42'); A(mz + 4, -2.6, 1.2, 3.2, '#3a3c42'); }
     function B(x, y, w, h, ro, lz, col) { v3gpart(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, r0 + ro, w * S, h * S, lz, v3col(col)); }
-    if (AT & 1) {   // red dot sight: a see-through window (open at both ends) on a mount, with the dot floating in the middle
-      var x0 = gd.len * 0.35;
-      B(x0, -3.4, 9, 1.8, 0, 3.2, '#1d1f23'); B(x0 + 1, -5.2, 7, 4, -1.5, 0.5, '#25272c'); B(x0 + 1, -5.2, 7, 4, 1.5, 0.5, '#25272c'); B(x0 + 1, -9.2, 7, 0.9, 0, 3.6, '#2c2e34');
-      B(x0 + 4.2, -7.1, 0.8, 0.8, 0, 0.7, '#ff3828');
+    if (AT & 1) {   // red dot sight: a thin see-through outline; the dot itself is the 2D overlay
+      var x0 = gd.len * 0.35, wc = '#3b3e45';
+      if (!hideBody) { B(x0 + 0.5, -3.4, 8, 1.3, 0, 2.2, '#1d1f23'); B(x0 + 3.2, -4.6, 2.6, 1, 0, 1.2, '#1d1f23'); }
+      B(x0 + 0.5, -10.3, 8, 0.7, 0, 3.4, wc); B(x0 + 0.5, -4.4, 8, 0.7, 0, 3.4, wc); B(x0 + 0.5, -10.3, 0.7, 6.6, 0, 3.4, wc); B(x0 + 7.8, -10.3, 0.7, 6.6, 0, 3.4, wc);
     }
     if (AT & 2) { A(gd.len * 0.3, 3, 4, 10, '#3a3a40'); A(gd.len * 0.3, 11, 4, 1.4, '#d4a52e'); }
     if (AT & 8) A(gd.len * 0.62, 3, 3, 6, '#2e2a26');
