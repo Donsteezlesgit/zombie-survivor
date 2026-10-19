@@ -3073,7 +3073,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return {
       d: d,
       dmg: TUNE.baseDmg * d.dmg * (1 + 0.3 * (t - 1)) * (1 + 0.1 * P.upg.dmg) * (d.special ? specMult() : 1) * (!d.special && (atM(P, d.id) & 4) ? 1.05 : 1),
-      rate: d.rate * (1 + 0.1 * (Math.min(t, 4) - 1) + 0.05 * Math.max(0, t - 4)) * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1) * (!d.special && (atM(P, d.id) & 8) ? 1.08 : 1)
+      rate: d.rate * (1 + 0.1 * P.upg.rate) * (!base && P.perkT.rf > 0 ? 2 : 1) * (!d.special && (atM(P, d.id) & 8) ? 1.08 : 1)
     };
   }
   function setSel(P, n) {
@@ -3911,7 +3911,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       cost = SLOT_COST[P.unlocked]; if (P.wallet < cost) return false;
       P.wallet -= cost; P.unlocked++;
     } else if (a === 'buygun') {
-      w = WEAPONS[id]; if (!w || w.price <= 0 || P.wallet < w.price || ownsGun(P, id)) return false;
+      w = WEAPONS[id]; if (!w || w.price <= 0 || P.wallet < w.price) return false;
+      if (ownsGun(P, id)) {   // buying a gun you already hold: the new one takes its place and the old one's upgrades are lost
+        for (i = 0; i < 3; i++) if (P.slots[i] && P.slots[i].id === id) { P.wallet -= w.price; P.slots[i] = makeGun(id, P); if (P.sel === i) P.fireCd = 0.12; break; }
+        return true;
+      }
       var empty = -1;
       for (i = 0; i < P.unlocked; i++) if (!P.slots[i]) { empty = i; break; }
       if (empty >= 0) { P.wallet -= w.price; P.slots[empty] = makeGun(id, P); if (P.sel !== 3) setSel(P, empty); }
@@ -3947,25 +3951,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return !!(P.stash && /^k_/.test(P.stash.id));
   }
   function rollBox(P) {
-    var ids = [], ws = [], tot = 0, i, r;
-    if (Math.random() >= TUNE.boxSpecial || holdsBoxSpecial(P)) {
-      for (i = 0; i < SHOP_GUNS.length; i++) {
-        if (ownsGun(P, SHOP_GUNS[i])) continue;
-        ids.push(SHOP_GUNS[i]); ws.push(1 / Math.pow(WEAPONS[SHOP_GUNS[i]].price + 150, TUNE.boxPow)); tot += ws[ws.length - 1];
-      }
-      if (ids.length) {
-        r = Math.random() * tot;
-        for (i = 0; i < ids.length; i++) { r -= ws[i]; if (r <= 0) return ids[i]; }
-        return ids[ids.length - 1];
-      }
+    // every gun you do not own has the same chance. The best (most expensive) guns and the specials are only slightly harder to get
+    var ids = [], ws = [], tot = 0, i, r, prices = SHOP_GUNS.map(function (g) { return WEAPONS[g].price; }).sort(function (x, y) { return y - x; }), top = prices[Math.max(0, Math.floor(prices.length * 0.25) - 1)];
+    for (i = 0; i < SHOP_GUNS.length; i++) {
+      if (ownsGun(P, SHOP_GUNS[i])) continue;
+      ids.push(SHOP_GUNS[i]); ws.push(WEAPONS[SHOP_GUNS[i]].price >= top ? 0.7 : 1);
     }
-    var pool = BOX_SPECIALS.filter(function (k) { return !ownsGun(P, 'k_' + k); }), pw, pt = 0;
-    if (!pool.length) pool = BOX_SPECIALS;
-    pw = pool.map(function (k) { return (k === 'ray' || k === 'zap') ? TUNE.rareSpec : (1 - TUNE.rareSpec * 2) / 3; });
-    pw.forEach(function (x) { pt += x; });
-    r = Math.random() * pt;
-    for (i = 0; i < pool.length; i++) { r -= pw[i]; if (r <= 0) return 'k_' + pool[i]; }
-    return 'k_' + pool[pool.length - 1];
+    if (!holdsBoxSpecial(P)) BOX_SPECIALS.forEach(function (k) { if (!ownsGun(P, 'k_' + k)) { ids.push('k_' + k); ws.push(0.7); } });
+    if (!ids.length) return 'k_' + BOX_SPECIALS[0];
+    ws.forEach(function (x) { tot += x; });
+    r = Math.random() * tot;
+    for (i = 0; i < ids.length; i++) { r -= ws[i]; if (r <= 0) return ids[i]; }
+    return ids[ids.length - 1];
   }
   function freeSlot(P) { for (var i = 0; i < P.unlocked; i++) if (!P.slots[i]) return i; return -1; }
   function openBox(P) {
@@ -5129,7 +5126,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 210';
+  var updMsg = '', VERSION = 'Version 211';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5416,7 +5413,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { t: 'Upgrades', art: 'upgrade', b: ['Shop, Upgrades tab: three random cards each wave. Each can be bought once per wave.', 'Damage, Max health, Speed, Fire rate, Crit chance, Coin value, Pick-up magnet, Special ammo, Ammo restock (+5% ammo from every ammo pickup), Reload speed (5% faster reloads, up to 10 levels).', 'Most give +10% per level (magnet and special ammo +25%). Levels stack and the price climbs each time.', 'Crit chance: each level is +10% to deal double damage.', 'Cards are fixed per wave, so reopening the shop never rerolls them.'] },
     { t: 'Guns', art: 'rarity', b: ['Classes: Pistol, SMG, Shotgun, Rifle, Sniper and LMG, from free to 15,000 coins.', 'You start with the Glock, which has endless reserve ammo.', 'Every gun has a magazine and reserve ammo. An empty magazine reloads itself. Top up a part-empty one with the round button. Guns do not refill between waves.', 'Colour shows rarity: grey, green, blue, purple, red. Gold is for special weapons.', 'Shotguns fire many pellets at close range. Snipers hit hard and pierce through several zombies.', 'When your gun runs totally dry the game switches you to another gun with ammo.'] },
     { t: 'Gun slots', art: 'slots', b: ['You begin with two slots: the Glock and an empty one.', 'Slot 3 costs 1,500 coins.', 'Buy a gun with a free slot and it goes straight in.', 'No free slot: a pop-up asks which gun to replace, and offers a new slot if you can afford it. The replaced gun and its upgrades are lost.', 'Tap the gun box under the minimap to swap guns.'] },
-    { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage, and fire rate too.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
+    { t: 'Gun upgrades', art: 'gunup', b: ['Shop, Guns tab: upgrade any gun you own from Mk I up to Mk X.', 'Each level adds damage. Fire speed does not change.', 'Early levels are cheap. Levels above IV get expensive fast, and Mk X on a top gun costs a fortune.', 'The held gun shows two stripes: price colour, then upgrade level (grey, green, blue, purple, red, gold).', 'Upgrades belong to a gun. Replace the gun and you lose them.'] },
     { t: 'Armour and stim', art: 'armour', b: ['Head: cuts damage taken, up to −24%.', 'Body: adds max health, up to +100.', 'Legs: adds move speed, up to +20%.', 'Each piece has four tiers, from Hard hat or Padded vest to Riot gear. Armour is worn on your character.', 'Stim: tap the syringe button above the reload button to heal half your max health and get a short speed boost. It takes 2 minutes to recharge, and it does nothing at full health. Health drops also appear from zombies, but rarely.', 'Grenades: you carry 2, on one button under the reload button. Each comes back 60 seconds after you throw it. Two-thumb mode throws where you last aimed; one-finger mode throws at the biggest crowd. Up to wave 4 one grenade kills any walker or runner. After that it still hurts, but may not kill.', 'Grenade types: in the Armoury, the Grenades tab sells Sticky (huge damage to one zombie), Stun (freezes a crowd for 4 seconds) and Fire (burning flames on the ground). Pick the one you carry. The shop has a Grenade boost upgrade for every type.'] },
     { t: 'Special weapons', art: 'special', b: ['Flamethrower: short range fire, hits everything in the flames.', 'Rocket launcher: slow, explodes and hurts groups.', 'Minigun: very fast fire.', 'Ray gun and Lightning gun: very rare. They can drop from zombies or come from the Mystery box.', 'Specials are lucky finds. Tanks very rarely drop a crate, and bosses sometimes do. Pick one up and it becomes a fourth weapon with its own ammo. When the ammo is gone, it is gone.', 'Specials get stronger as waves rise, especially after wave 20. Crates on the floor vanish when the wave ends.'] },
     { t: 'Mystery box', art: 'box', b: ['Two boxes appear on the map each wave, in new spots every wave.', 'Stand next to one and tap the button: 120 coins for a random gun.', 'Roughly 6% of rolls are a special weapon (gold). A special from the box is kept in a normal gun slot, and you can only keep one at a time. Cheaper guns come up more often than expensive ones.', 'You can take it, swap it for a gun you hold, or discard it.', 'Online, the game keeps running while the box screen is open. Get covered first.'] },
@@ -5889,12 +5886,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         ch = '';
         for (i = 0; i < SHOP_GUNS.length; i++) {
           id = SHOP_GUNS[i]; d = WEAPONS[id];
-          if (d.cls !== ck || ownsGun(P, id)) continue;
-          ch += card(d.name, '', gunLine(id), buyBtn('buygun', id, d.price, wallet >= d.price), rarCol(d));
+          if (d.cls !== ck) continue;
+          ch += card(d.name, '', gunLine(id) + (ownsGun(P, id) ? ' <b>You have this one: buying it replaces yours and its upgrades are lost.</b>' : ''), buyBtn('buygun', id, d.price, wallet >= d.price), rarCol(d));
         }
         if (ch) { any = true; h += '<div class="sec">' + CLS[ck].label + 's</div>' + ch; }
       }
-      if (!any) h += '<div class="note">You own every gun.</div>';
     } else {
       h += '<div class="sec">Armour</div>';
       for (i = 0; i < ARM_PARTS.length; i++) {
@@ -7506,7 +7502,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // the sky: a big dome of vertex colours that follows the camera (sunset by day, near black at night)
   function v3skyPaint(night) {
     var geo = V.sky.geometry, pos = geo.attributes.position, n = pos.count, col = new Float32Array(n * 3), i, y, a, b, t;
-    var H = night ? [0.05, 0.045, 0.06] : [1.0, 0.69, 0.46], M = night ? [0.025, 0.025, 0.04] : [0.82, 0.5, 0.42], Z = night ? [0.012, 0.012, 0.025] : [0.3, 0.38, 0.6], G = night ? [0.02, 0.017, 0.015] : [0.2, 0.15, 0.11];
+    var H = night ? [0.9, 0.4, 0.2] : [1.0, 0.69, 0.46], M = night ? [0.42, 0.17, 0.24] : [0.82, 0.5, 0.42], Z = night ? [0.07, 0.07, 0.17] : [0.3, 0.38, 0.6], G = night ? [0.13, 0.08, 0.06] : [0.2, 0.15, 0.11];   /* 'night' here is the dusk look: a deep sunset sky */
     for (i = 0; i < n; i++) {
       y = pos.getY(i);
       if (y < -0.1) { a = G; b = G; t = 0; } else if (y < 0) { a = G; b = H; t = (y + 0.1) / 0.1; } else if (y < 0.18) { a = H; b = M; t = y / 0.18; } else { a = M; b = Z; t = Math.min(1, (y - 0.18) / 0.5); }
@@ -8158,7 +8154,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = true;   /* every first-person map is played at night */
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
     var eyeY = (me && me.down) ? 9 : 30.5, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
-    V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
+    var bobA = (me && !me.down && V.gb) ? V.gb * (1 - SC.amt * 0.85) : 0, bobY = bobA * Math.sin((me ? me.step : 0) * 2) * 0.9, bobX = bobA * Math.sin(me ? me.step : 0) * 0.5;   /* a slight walking bob: the eye dips with each step and sways a little side to side */
+    V.cam.position.set(focus.x + sx * 0.3 - Math.sin(fpYaw) * bobX, eyeY + bobY, focus.y + sy * 0.3 + Math.cos(fpYaw) * bobX);
     var tfov = V.fov0 || V.cam.fov;
     if (SC.amt > 0.001) tfov = 2 * Math.atan(Math.tan(V.fov0 * 0.00872665) / (1 + (SC.zm - 1) * SC.amt)) * 57.2958;
     if (Math.abs(V.cam.fov - tfov) > 0.01) { V.cam.fov = tfov; V.cam.updateProjectionMatrix(); }
@@ -8168,16 +8165,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // lighting: sunset outside, dimmer and lamp-lit indoors, nearly black at night with a torch
     var ins = (me && v3inside(me.x, me.y)) ? 1 : 0, cp = V.cam.position;
     V.li += (ins - V.li) * 0.15;
-    if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x060608 : 0xe0a47c); V.sc.fog.near = night ? 50 : 350; V.sc.fog.far = night ? 680 : 1700; }
+    if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x4e2a28 : 0xe0a47c); V.sc.fog.near = night ? 90 : 350; V.sc.fog.far = night ? 900 : 1700; }
     V.sky.position.copy(cp);
-    V.sdisc.visible = !night; V.sdisc.position.set(cp.x - 2000, cp.y + 880, cp.z + 800); V.sdisc.lookAt(cp);
-    V.hemi.intensity = night ? 0.58 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.7 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0x8fa8d8 : 0xff9a50);   /* at night the 'sun' is cool moonlight, which also casts the shadows */
+    V.sdisc.visible = true; V.sdisc.material.color.setHex(night ? 0xff8a40 : 0xffd9a0); V.sdisc.position.set(cp.x - 2000, cp.y + (night ? 330 : 880), cp.z + (night ? 900 : 800)); V.sdisc.lookAt(cp);
+    V.hemi.color.setHex(night ? 0xffa878 : 0xffd8b8); V.hemi.groundColor.setHex(night ? 0x44343a : 0x6a5440); V.hemi.intensity = night ? 0.85 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 1.15 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0xff8a48 : 0xff9a50);   /* a low warm sun that casts long shadows */
     V.pl.intensity = night ? 4.0 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
     if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
     var snx = Math.round(focus.x / 14.375) * 14.375, sny = Math.round(focus.y / 14.375) * 14.375;   /* a whole number of shadow-map texels, so shadows do not shimmer as you walk */
-     V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 600, 800, sny + 300); else V.sun.position.set(snx - 1000, 440, sny + 400);
+     V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 1000, 330, sny + 420); else V.sun.position.set(snx - 1000, 440, sny + 400);
     V.sf++; V.r.shadowMap.needsUpdate = V.rs;   /* must render a few times at the start or the shadow map does not exist and the whole scene goes black */
     /* fire and explosions light up the walls round them */
     var glI = 0, glx = 0, gly = 0, fpi, fpt, bestFd = 1e9;
@@ -8339,7 +8336,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       pcc[pc * 3] = e._c[0] * lf; pcc[pc * 3 + 1] = e._c[1] * lf; pcc[pc * 3 + 2] = e._c[2] * lf; pc++;
     }
     V.pts.geometry.setDrawRange(0, pc); V.pts.geometry.attributes.position.needsUpdate = true; V.pts.geometry.attributes.color.needsUpdate = true;
-    V.sc.background.set(night ? 0x050506 : 0x14100c);
+    V.sc.background.set(night ? 0x3a1c1c : 0x14100c);
     V.r.render(V.sc, V.cam);
 
     // flat 2D overlay on top: health bars, names, reload, aim helpers, then the usual screen effects
