@@ -3970,10 +3970,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
 
   // ---------- simulation ----------
-  function hurtPlayer(P, dmg) {
+  var dmgInd = [], hitMk = null, sensMul = 1;
+  try { sensMul = Math.max(0.3, Math.min(2.5, (parseInt(localStorage.getItem('zs-sens'), 10) || 100) / 100)); } catch (e) {}
+  function hurtPlayer(P, dmg, src) {
     if (P.inv > 0 || P.down || state !== 'play' || (DEV.on && DEV.god)) return;
     dmg *= 1 - armVal(P, 'head');
     P.hp -= dmg; P.inv = 0.2;
+    if (P === me && src && dmgInd.length < 6) dmgInd.push({ a: Math.atan2(src.y - P.y, src.x - P.x), t: 1 });
     priv(P, ['H', dmg]);
     addBlood(P.x, P.y, 0, 0, 6, 120);
     if (P.hp <= 0) { P.hp = 0; downPlayer(P); }
@@ -4036,6 +4039,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   function killZombie(i, ownerId) {
     var z = zombies[i], k, O = pById(ownerId);
+    if (me && ownerId === me.id && !pvp) hitMk = { t: performance.now(), k: 1 };
     ssplat(z.x, z.y, z.r * 1.7, 0.55);
     addBlood(z.x, z.y, rnd(-1, 1), rnd(-1, 1), z.boss ? 26 : 9, 150);
     zombies.splice(i, 1);
@@ -4217,6 +4221,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function damageZombie(j, b) {
     var z = zombies[j];
+    if (b.owner === (me && me.id) && !pvp) hitMk = { t: performance.now(), k: 0 };
     if (b.kind === 'goo') {
       z.hp -= b.dmg * 0.5; z.flash = 0.08; z.cf = false;
       z.gooT = 2.6; z.gooDmg = Math.max(z.gooDmg || 0, b.dmg); z.gooOwner = b.owner;
@@ -4520,7 +4525,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         if (z.atk <= 0) {
           for (j = 0; j < players.length; j++) {
             P = players[j];
-            if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg); z.atk = z.cd; break; }
+            if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg, z); z.atk = z.cd; break; }
           }
         }
         if (z.atk < -1) z.atk = -1;
@@ -4579,7 +4584,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
               for (j = 0; j < players.length; j++) {
                 P = players[j]; if (P.down) continue;
                 var pa = Math.atan2(P.y - z.y, P.x - z.x), da = Math.abs(Math.atan2(Math.sin(z.ang - pa), Math.cos(z.ang - pa)));
-                if (Math.hypot(P.x - z.x, P.y - z.y) < TUNE.fireRange && da < TUNE.fireCone) hurtPlayer(P, z.dmg * 0.3);
+                if (Math.hypot(P.x - z.x, P.y - z.y) < TUNE.fireRange && da < TUNE.fireCone) hurtPlayer(P, z.dmg * 0.3, z);
               }
             }
             if (z.breath <= 0) z.next = z.t + 3.2;
@@ -4638,7 +4643,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (z.atk <= 0) {
         for (j = 0; j < players.length; j++) {
           P = players[j];
-          if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg); z.atk = z.cd; break; }
+          if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg, z); z.atk = z.cd; break; }
         }
       }
       if (z.atk < -1) z.atk = -1;
@@ -4696,7 +4701,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       eb.x += eb.dx * eb.spd * dt; eb.y += eb.dy * eb.spd * dt; eb.life -= dt; eb.spin += dt * 9;
       for (j = 0; j < players.length; j++) {
         P = players[j];
-        if (!P.down && Math.hypot(P.x - eb.x, P.y - eb.y) < PR + eb.r) { hurtPlayer(P, eb.dmg); hitP = true; break; }
+        if (!P.down && Math.hypot(P.x - eb.x, P.y - eb.y) < PR + eb.r) { hurtPlayer(P, eb.dmg, eb); hitP = true; break; }
       }
       if (hitP) { addFx(eb.x, eb.y, 6, 120, 0.3, 3, '150,130,110'); ebullets.splice(i, 1); continue; }
       if (eb.life <= 0 || wallHit(eb.x, eb.y, eb.r * 0.6) || eb.x < WALL || eb.x > WORLD - WALL || eb.y < WALL || eb.y > WORLD - WALL) { addFx(eb.x, eb.y, 5, 100, 0.25, 3, '150,130,110'); ebullets.splice(i, 1); }
@@ -4924,6 +4929,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>' + (net.mode === 'off' ? 'Paused' : 'Menu') + '</h1>';
       h += '<p>' + (pvp ? 'PvP' : 'Wave <b>' + wave + '</b>') + ' · <b>' + (me ? me.kills : 0) + '</b> kills. ' + (net.mode === 'off' ? 'Take a breath.' : (hostPaused ? 'The game is paused for everyone.' : 'The game keeps running while this is open.')) + '</p>';
       h += '<button class="go" data-a="resume" type="button">Resume</button>';
+      h += '<div class="sens"><label for="sensR">Turn speed <b id="sensV">' + Math.round(sensMul * 100) + '%</b></label><input id="sensR" class="sensr" type="range" min="30" max="250" step="5" value="' + Math.round(sensMul * 100) + '"></div>';
       if (net.mode === 'host') h += hostPaused ? '<button class="go alt" data-a="hunpause" type="button">Resume for everyone</button>' : '<button class="go alt" data-a="hpause" type="button">Pause for everyone</button>';
       h += '<button class="go alt" data-a="help" type="button">How to play</button>';
       h += '<button class="go alt" data-a="settings" type="button">Settings</button>';
@@ -4966,6 +4972,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       h += '<h1>Settings</h1>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
+      h += '<div class="sens"><label for="sensR">Turn speed <b id="sensV">' + Math.round(sensMul * 100) + '%</b></label><input id="sensR" class="sensr" type="range" min="30" max="250" step="5" value="' + Math.round(sensMul * 100) + '"></div>';
       h += '<button class="go alt" data-a="v3d" type="button">' + (v3off ? '3D maps: off' : '3D maps: on') + '</button>';
       h += '<button class="go alt" data-a="fps" type="button">' + (fpsOn ? 'FPS counter: on' : 'FPS counter: off') + '</button>';
       h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
@@ -5020,7 +5027,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 194';
+  var updMsg = '', VERSION = 'Version 195';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5228,6 +5235,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       tone(500, 400, 0.06, 'square', 0.05); renderScreen();
     }
   }
+  ov.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'sensR') {
+      sensMul = Math.max(0.3, Math.min(2.5, (parseInt(e.target.value, 10) || 100) / 100));
+      try { localStorage.setItem('zs-sens', String(Math.round(sensMul * 100))); } catch (er) {}
+      var sv = document.getElementById('sensV'); if (sv) sv.textContent = Math.round(sensMul * 100) + '%';
+    }
+  });
   ov.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-a]') : null;
     if (!b || b.disabled) return;
@@ -6074,7 +6088,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (joy.active && t.identifier === joy.tid) dragStick(joy, t);
       else if (aim.active && t.identifier === aim.tid) {
         dragStick(aim, t); if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
-        if (fpOn() && aim.lx !== undefined) { fpYaw += (t.clientX - aim.lx) * FP_SENS; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (t.clientY - aim.ly) * FP_SENS)); }
+        if (fpOn() && aim.lx !== undefined) { fpYaw += (t.clientX - aim.lx) * FP_SENS * sensMul; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (t.clientY - aim.ly) * FP_SENS * sensMul)); }
         aim.lx = t.clientX; aim.ly = t.clientY;
       }
     }
@@ -6100,7 +6114,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (aim.active && e.pointerId === aim.id) {
       dragStick(aim, e);
       if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
-      if (fpOn() && aim.lx !== undefined) { fpYaw += (e.clientX - aim.lx) * FP_SENS; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (e.clientY - aim.ly) * FP_SENS)); }
+      if (fpOn() && aim.lx !== undefined) { fpYaw += (e.clientX - aim.lx) * FP_SENS * sensMul; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (e.clientY - aim.ly) * FP_SENS * sensMul)); }
       aim.lx = e.clientX; aim.ly = e.clientY;
     }
   });
@@ -6464,7 +6478,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var pdist = Math.hypot(P.x - S.x, P.y - S.y), pgo = S.mv ? pdist > 26 : pdist > 46;   // a pet close to you stays put until you really walk off (stops it jittering when you shuffle about)
     if (pgo && dist > (S.mv ? 1.5 : 4)) {
       st = Math.min(dist, Math.min(dist * 7, 230) * dt); S.x += dx / dist * st; S.y += dy / dist * st; S.mv = 1; S.ph += st * 0.17;
-      ta = Math.atan2(dy, dx); da = ta - S.hd; while (da > Math.PI) da -= 6.283; while (da < -Math.PI) da += 6.283; S.hd += da * Math.min(1, dt * 12);
+      ta = Math.atan2(dy, dx); da = ta - S.hd; while (da > Math.PI) da -= 6.283; while (da < -Math.PI) da += 6.283; S.hd += Math.max(-dt * 8, Math.min(dt * 8, da * Math.min(1, dt * 12)));
     } else { S.mv = 0; S.ph += dt * 3; }
     return S;
   }
@@ -6702,7 +6716,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var S = 96, R = 480, k = (S / 2) / R, c = S / 2, i, o, x, y, d;
     mmx.setTransform(mmDpr, 0, 0, mmDpr, 0, 0);
     mmx.clearRect(0, 0, S, S);
-    var edge = c - 3, px = me.x, py = me.y;
+    var edge = c - 3, px = me.x, py = me.y, mmRot = fpOn();
+    if (mmRot) { mmx.save(); mmx.translate(c, c); mmx.rotate(-Math.PI / 2 - fpYaw); mmx.translate(-c, -c); }   /* first person: what you are looking at is always up */
     mmx.fillStyle = '#c43a2a';
     for (i = 0; i < BLD.length; i++) {
       o = BLD[i].bar; x = (o.cx - px) * k; y = (o.cy - py) * k;
@@ -6759,6 +6774,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     if (ua) { mmx.globalAlpha = ua * 0.55; mmx.strokeStyle = '#9fe8ff'; mmx.lineWidth = 1.6; mmx.beginPath(); mmx.arc(c, c, (1 - ua) * edge, 0, 6.283); mmx.stroke(); }
     mmx.globalAlpha = 1;
+    if (mmRot) {
+      mmx.restore();
+      var vg2 = mmx.createLinearGradient(c, c, c, c - edge); vg2.addColorStop(0, 'rgba(235,227,212,0.32)'); vg2.addColorStop(1, 'rgba(235,227,212,0)');
+      mmx.fillStyle = vg2; mmx.beginPath(); mmx.moveTo(c, c); mmx.lineTo(c - edge * 0.52, c - edge * 0.86); mmx.lineTo(c + edge * 0.52, c - edge * 0.86); mmx.closePath(); mmx.fill();   /* your view cone */
+    }
     mmx.fillStyle = '#ebe3d4';
     mmx.beginPath(); mmx.arc(c, c, 2.6, 0, 6.283); mmx.fill();
   }
@@ -6777,6 +6797,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     '#bmClose{font:700 16px var(--face-ui);color:#ebe3d4;background:#2a221d;border:1px solid #5a4d44;border-radius:6px;min-height:40px;padding:0 16px}' +
     '#bigMap canvas{border:1px solid #5a4d44;border-radius:4px;background:#0c0a08}.bmleg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font:600 12px var(--face-ui)}' +
     '.rcol .mm{pointer-events:auto}';
+  bmCss.textContent += '.sens{display:flex;flex-direction:column;gap:6px;width:100%;max-width:320px;margin:6px auto;color:#ebe3d4;font:700 15px var(--face-ui)}.sens label{display:flex;justify-content:space-between}.sensr{width:100%;height:36px;accent-color:#f2c14e}';
   document.head.appendChild(bmCss);
   function bigDir(b) { return b.ny > 0.5 ? 'North' : b.ny < -0.5 ? 'South' : b.nx > 0.5 ? 'West' : 'East'; }
   function openBig() {
@@ -7595,8 +7616,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function v3pet(S) {
     S.a3 = (S.a3 || 0) + ((S.mv ? 1 : 0) - (S.a3 || 0)) * 0.2;   /* eased walking amount, and a much slower walk cycle than the flat 2D one, which looked like fast shaking in 3D */
     var pt = S.pt, U = 1.3, ph3 = S.ph * 0.3, sw = Math.sin(ph3) * S.a3, hop = Math.abs(Math.sin(ph3)) * 0.5 * S.a3, br = Math.sin(S.ph * 0.4) * 0.25 * (1 - S.a3), Q = PETQ[pt], i;
-    V.fl = 0; v3frame(S.x, hop, S.y, S.hd, 1);
-    v3blob(S.x, S.y, Q ? 8 : 5, Q ? 8 : 5);
+    /* draw from a smoothed copy of the pet's pose so tiny stop/start twitches never show */
+    var pn3 = performance.now(), pdt = Math.min(0.1, Math.max(0.001, (pn3 - (S.t3 || pn3)) / 1000)); S.t3 = pn3;
+    if (S.rx === undefined || Math.hypot(S.x - S.rx, S.y - S.ry) > 120) { S.rx = S.x; S.ry = S.y; S.rh = S.hd; }
+    var kp = 1 - Math.exp(-pdt * 30), kh = 1 - Math.exp(-pdt * 12), dh3 = S.hd - S.rh; while (dh3 > Math.PI) dh3 -= 6.283; while (dh3 < -Math.PI) dh3 += 6.283;
+    S.rx += (S.x - S.rx) * kp; S.ry += (S.y - S.ry) * kp; S.rh += dh3 * kh;
+    V.fl = 0; v3frame(S.rx, hop, S.ry, S.rh, 1);
+    v3blob(S.rx, S.ry, Q ? 8 : 5, Q ? 8 : 5);
     if (pt === 7) {   // little ghost
       var gb = 6 + Math.sin(S.ph * 0.5) * 1.4;
       v3x(0, gb + 5, 0, 5.4, 7, 6.4, '#eaf2f6', 4); v3x(0, gb + 10, 0, 4.6, 4.6, 5.6, '#eaf2f6', 4); for (i = 0; i < 3; i++) v3x(0, gb + 0.6 + (i % 2) * 0.8, -2 + i * 2, 5, 1.8, 1.8, '#eaf2f6', 4);
@@ -7808,10 +7834,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     d.position.set(q.x, q.y, q.z); d.rotation.order = 'YZX'; d.rotation.set(0, -fpYaw, fpPitch); d.scale.set(lx, ly, lz); d.updateMatrix(); d.rotation.order = 'XYZ';
     V.gun.setMatrixAt(V.gn, d.matrix); V.gun.setColorAt(V.gn, colr); V.gn++;
   }
-  function v3viewgun(gd, lo, kick, dip) {
+  function v3viewgun(gd, lo, kick, dip, bu, br) {
     var S = 0.55, art = GART[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GART.rifle, kx = (gd.len + 5) / art.tip;
     var skC = lo && lo[1] ? GSKIN[lo[1]].c : null, AT = lo ? lo[0] : 0, mz = gd.len + 5;
-    var f0 = 38 - mz * S - kick, u0 = -11 - dip, r0 = 9;
+    var f0 = 38 - mz * S - kick, u0 = -11 - dip + (bu || 0), r0 = 9 + (br || 0);
     art.p.forEach(function (q, qi) {
       var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
       v3gpart(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, r0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), v3col(col));
@@ -7849,8 +7875,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
     if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
-    var snx = Math.round(focus.x / 12) * 12, sny = Math.round(focus.y / 12) * 12; V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 600, 800, sny + 300); else V.sun.position.set(snx - 1000, 440, sny + 400);
-    V.sf++; V.r.shadowMap.needsUpdate = V.rs && (V.sf < 4 || (V.sf & 1) === 0);   /* must render a few times at the start or the shadow map does not exist and the whole scene goes black */
+    var snx = Math.round(focus.x / 14.375) * 14.375, sny = Math.round(focus.y / 14.375) * 14.375;   /* a whole number of shadow-map texels, so shadows do not shimmer as you walk */
+     V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 600, 800, sny + 300); else V.sun.position.set(snx - 1000, 440, sny + 400);
+    V.sf++; V.r.shadowMap.needsUpdate = V.rs;   /* must render a few times at the start or the shadow map does not exist and the whole scene goes black */
     V.torch.intensity = (night && me && !me.down) ? 6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
@@ -7884,7 +7911,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // your own gun, low on the right of the view
     if (me && !me.down) {
       var gref = curRef(me), gdd = gref && defOf(gref);
-      if (gdd) v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), me.flash > 0 ? 1.6 : 0, (gref.reload > 0) ? 5 : 0);
+      if (gdd) {
+        /* walking bob, turning sway and a recoil kick that settles back */
+        var gnow = performance.now(), gdt = Math.min(0.1, Math.max(0.001, (gnow - (V.gt || gnow)) / 1000)); V.gt = gnow;
+        var gmv = (me._v3s2 !== undefined && Math.abs(me.step - me._v3s2) > 0.003) ? 1 : 0; me._v3s2 = me.step;
+        V.gb = (V.gb || 0) + (gmv - (V.gb || 0)) * Math.min(1, gdt * 8);
+        var dyaw = fpYaw - (V.gy === undefined ? fpYaw : V.gy), dpit = fpPitch - (V.gp === undefined ? fpPitch : V.gp); V.gy = fpYaw; V.gp = fpPitch;
+        V.sw = (V.sw || 0) * Math.exp(-gdt * 9) - Math.max(-0.4, Math.min(0.4, dyaw)) * 9; V.sp = (V.sp || 0) * Math.exp(-gdt * 9) - Math.max(-0.3, Math.min(0.3, dpit)) * 9;
+        if (me.flash > 0) V.rc = Math.min(3.2, (V.rc || 0) + 1.4); V.rc = (V.rc || 0) * Math.exp(-gdt * 14);
+        var bph = me.step * 1.0;
+        v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), (me.flash > 0 ? 1.6 : 0) + V.rc, ((gref.reload > 0) ? 5 : 0) + V.rc * 0.35, V.gb * Math.abs(Math.sin(bph)) * -0.9 + Math.max(-2, Math.min(2, V.sp)) * 0.35, V.gb * Math.sin(bph) * 0.7 + Math.max(-3, Math.min(3, V.sw)) * 0.4);
+      }
     }
     for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
     V.gun.count = V.gn; V.gun.instanceMatrix.needsUpdate = true; if (V.gun.instanceColor) V.gun.instanceColor.needsUpdate = true;
@@ -8032,6 +8069,29 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var l0 = v3proj(LP.x + Math.cos(lan) * 24, 23, LP.y + Math.sin(lan) * 24), l1 = v3proj(LP.x + Math.cos(lan) * 320, 23, LP.y + Math.sin(lan) * 320);
       if (!l0.ok || !l1.ok) continue;
       ctx.strokeStyle = 'rgba(255,60,50,0.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(l0.x, l0.y); ctx.lineTo(l1.x, l1.y); ctx.stroke();
+    }
+    // damage direction: a red arc on the screen edge toward whatever hit you (rotates with your view)
+    var dnow = performance.now(), dI;
+    for (dI = dmgInd.length - 1; dI >= 0; dI--) {
+      var di = dmgInd[dI]; di.t -= (di.l ? (dnow - di.l) / 1000 : 0.016) / 1.6; di.l = dnow;
+      if (di.t <= 0) { dmgInd.splice(dI, 1); continue; }
+      var rel = di.a - fpYaw, phi = Math.atan2(-Math.cos(rel), Math.sin(rel)), dR = Math.min(W, H) * 0.38;
+      ctx.save(); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(230,30,24,' + (0.85 * Math.min(1, di.t * 1.6)).toFixed(3) + ')'; ctx.lineWidth = 16;
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, dR, phi - 0.32, phi + 0.32); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,150,130,' + (0.7 * Math.min(1, di.t * 1.6)).toFixed(3) + ')'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, dR + 6, phi - 0.26, phi + 0.26); ctx.stroke();
+      ctx.restore();
+    }
+    // hit marker: four little ticks round the crosshair when a shot lands (red and longer for a kill)
+    if (hitMk && state === 'play') {
+      var ha2 = 1 - (dnow - hitMk.t) / (hitMk.k ? 380 : 160);
+      if (ha2 <= 0) hitMk = null;
+      else {
+        var hm = hitMk.k ? 11 : 8, hn = hitMk.k ? 20 : 15, hx0 = W / 2, hy0 = H / 2;
+        ctx.save(); ctx.strokeStyle = (hitMk.k ? 'rgba(255,60,50,' : 'rgba(255,255,255,') + ha2.toFixed(3) + ')'; ctx.lineWidth = hitMk.k ? 3 : 2.4; ctx.lineCap = 'round';
+        ctx.beginPath(); [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(function (q) { ctx.moveTo(hx0 + q[0] * hm, hy0 + q[1] * hm); ctx.lineTo(hx0 + q[0] * hn, hy0 + q[1] * hn); }); ctx.stroke(); ctx.restore();
+      }
     }
     // crosshair, dead centre. Gaps in the middle so it never hides a zombie.
     if (state === 'play' && me && !me.down) {
