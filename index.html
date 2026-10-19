@@ -1523,7 +1523,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
           for (i = 0; i < LV.stairs.length; i++) { s = LV.stairs[i]; if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) { si = i; break; } }
           if (si >= 0) {
             s = LV.stairs[si]; t = stairT(s, x, y); navStair[cy * NN + cx] = si;
-            if (!((lvv === s.a && t < 0.5) || (lvv === s.b && t >= 0.5))) blocked = true;
+            var t1 = stairT(s, x - NC / 2, y - NC / 2), t2 = stairT(s, x + NC / 2, y + NC / 2), tlo = Math.min(t1, t2, t), thi = Math.max(t1, t2, t);   /* a cell that straddles the half-way line is open on both levels */
+            if (!((lvv === s.a && tlo < 0.5) || (lvv === s.b && thi >= 0.5))) blocked = true;
           } else { h = surf(x, y, lvv); if (h !== h) blocked = true; }
         }
         navBase[li * NN2 + cy * NN + cx] = blocked ? 1 : 0;
@@ -2274,14 +2275,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   // ---------- The Factory (3D only). Laid out from the approved blueprint C: blueprint units x FA_K = world units. ----------
   // Step 1 is ground level only: every building, the bent rail pit (flat for now), cover, spawn doors and pens. Floors, stairs, catwalks and jumping come in step 2.
-  var FA_K = 5.6, FB = [], FA_SILO = null, FA_DOORS = [];
+  var FA_K = 5.6, FB = [], FA_SILO = null, FA_DOORS = [], FA_DECO = [];
   var FA_PITW = [[700, 258], [940, 258], [940, 1098], [1344, 1098], [1344, 2156], [1064, 2156], [1064, 1342], [700, 1342]];   /* the rail pit's outline, world units */
   var FA_PITR = [[700, 258, 240, 840], [700, 1098, 644, 244], [1064, 1342, 280, 814]];   /* the same pit as three boxes */
   var FA_PIT = FA_PITW.map(function (p) { return [p[0] / FA_K, p[1] / FA_K]; });
   var FA_RAIL = [[820, 258], [820, 1220], [1204, 1220], [1204, 2156]].map(function (p) { return [p[0] / FA_K, p[1] / FA_K]; });
   function buildFactory() {
     var T = WALL_T, K = FA_K, ST = 4;
-    FB = []; FA_SILO = null; FA_DOORS = [];
+    FB = []; FA_SILO = null; FA_DOORS = []; FA_DECO = [];
     LV.pit = FA_PITW; LV.pitR = FA_PITR;
     function R(x, y, w, h, o) { var q = { x: x, y: y, w: w, h: h }, k; if (o) for (k in o) q[k] = o[k]; RECTS.push(q); return q; }
     function LR(x, y, w, h, l0, l1, o) { var q = R(x, y, w, h, o); q.l0 = l0; q.l1 = l1; return q; }
@@ -2386,17 +2387,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     room('Boiler house', 190, 224, 370, 448, 108, 'brick', [0.82, 0.5, 0.4], {
       d: [['s', 150, 70], ['w', 300, 70], ['n', 60, 70]], w: [['e', 30, 60], ['e', 330, 60], ['n', 220, 60], ['w', 60, 60], ['w', 170, 60]],
       i: [['h', 224, 0, 370, [[60, 130], [250, 320]]], ['v', 185, 0, 224, [[80, 150]]]], sp: [['e', 224]],
-      up: { st: [[290, 262, 56, 140, 'n']], fl: [[6, 6, 358, 436]] }
+      up: { st: [[250, 286, 56, 120, 'n']], fl: [[6, 6, 358, 436]] }
     });
     room('Stores', 190, 784, 370, 392, 108, 'brick', [0.72, 0.52, 0.44], {
       d: [['n', 150, 70], ['s', 60, 70], ['w', 150, 70]], w: [['e', 40, 60], ['e', 290, 60], ['n', 280, 60], ['w', 280, 60]],
       i: [['v', 150, 0, 392, [[150, 220]]], ['h', 200, 150, 370, [[100, 170]]]], sp: [['e', 196]],
-      up: { st: [[304, 215, 56, 125, 'n']], fl: [[6, 6, 358, 380]] }
+      up: { st: [[250, 236, 56, 110, 'n']], fl: [[6, 6, 358, 380]] }
     });
     room('Paint shop', 190, 1372, 470, 700, 108, 'metal', [0.58, 0.62, 0.64], {
       d: [['s', 300, 70], ['w', 330, 70], ['e', 560, 70]], w: [['w', 60, 60], ['w', 150, 60], ['w', 450, 60], ['w', 540, 60], ['e', 70, 60], ['e', 500, 60], ['n', 80, 60], ['n', 330, 60], ['s', 60, 60], ['s', 160, 60]],
       i: [['h', 300, 0, 470, [[60, 130], [300, 370]]], ['v', 235, 300, 700, [[150, 220]]]], sp: [['e', 350], ['n', 235]],
-      up: { st: [[394, 60, 56, 130, 'n']], fl: [[6, 6, 458, 288]], rl: [[6, 294, 464, 294]] }
+      up: { st: [[330, 60, 56, 130, 'n']], fl: [[6, 6, 458, 288]], rl: [[6, 294, 464, 294]] }
     });
     room('Gatehouse', 1036, 157, 426, 157, 52, 'brick', [0.78, 0.46, 0.38], {
       d: [['s', 180, 70]], w: [['n', 60, 60], ['n', 300, 60], ['e', 50, 60], ['s', 50, 60], ['s', 330, 60]],
@@ -2406,12 +2407,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       d: [['w', 250, 80], ['w', 440, 70], ['n', 100, 80], ['e', 330, 80]],
       w: [['w', 60, 60], ['w', 140, 60], ['e', 150, 60], ['e', 430, 60], ['n', 260, 60], ['n', 350, 60], ['s', 40, 60], ['s', 110, 60], ['s', 340, 60], ['s', 420, 60]],
       i: [['h', 160, 0, 504, [[60, 150], [350, 440]]], ['v', 252, 0, 160, [[50, 120]]]], p: [[122, 282], [346, 282], [122, 432], [346, 432]], sp: [['s', 252]],
-      up: { st: [[440, 176, 56, 125, 'n']], fl: [[6, 6, 492, 170], [6, 176, 124, 372]], rl: [[130, 176, 436, 176], [130, 176, 130, 548]] }
+      up: { st: [[392, 190, 56, 125, 'n']], fl: [[6, 6, 492, 190], [6, 196, 124, 352]], rl: [[130, 196, 388, 196], [130, 196, 130, 548]] }
     });
     room('Offices', 1568, 190, 370, 482, 108, 'brick', [0.76, 0.5, 0.42], {
       d: [['w', 200, 70], ['s', 40, 70], ['s', 270, 70], ['e', 250, 70]], w: [['n', 60, 60], ['n', 240, 60], ['e', 60, 60], ['e', 360, 60], ['w', 60, 60], ['w', 330, 60]],
       i: [['v', 120, 0, 482, [[40, 110], [260, 330], [370, 440]]], ['h', 160, 120, 370, [[60, 130]]], ['h', 320, 120, 370, [[150, 220]]]], sp: [['s', 185]],
-      up: { st: [[40, 60, 56, 130, 'n']], fl: [[6, 6, 358, 470]], u: [['v', 190, 0, 482, [[40, 110], [200, 270], [370, 440]]], ['h', 240, 190, 370, [[60, 130]]]] }
+      up: { st: [[132, 190, 120, 56, 'w']], fl: [[6, 6, 358, 470]], u: [['v', 280, 0, 482, [[40, 110], [200, 270], [370, 440]]], ['h', 240, 280, 370, [[60, 130]]]] }
     });
     room('Foundry', 1512, 1064, 426, 392, 116, 'metal', [0.66, 0.6, 0.55], {
       d: [['n', 60, 70], ['n', 300, 70], ['s', 250, 70], ['e', 100, 70]], w: [['n', 180, 60], ['e', 220, 60], ['e', 300, 60], ['s', 60, 60], ['s', 330, 60], ['w', 40, 60], ['w', 300, 60]],
@@ -2471,6 +2472,79 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       LV.floors.push({ x: br[0], y: br[1], w: br[2], h: br[3], lv: 0, mat: 'metal', br: 1 });
       rail(br[0], br[1], br[0] + br[2], br[1], 0); rail(br[0], br[1] + br[3], br[0] + br[2], br[1] + br[3], 0);
     });
+
+    // ---- details: furniture, machines, shelving and clutter inside the buildings and the silo, scattered with a fixed seed where it cannot block a doorway, window or stairs
+    var dr = dtRng(9001);
+    function gapR(a, b) { return Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w), b.y - (a.y + a.h), a.y - (b.y + b.h)); }
+    function fits(q, lv) {
+      var i, r, g, d, s3, a2, c2, xs = [q.x + 3, q.x + q.w - 3, q.x + q.w / 2], ys = [q.y + 3, q.y + q.h - 3, q.y + q.h / 2];
+      if (lv > 0) for (a2 = 0; a2 < 3; a2++) for (c2 = 0; c2 < 3; c2++) if (surf(xs[a2], ys[c2], lv) !== lvH(lv)) return false;
+      for (i = 0; i < RECTS.length; i++) {
+        r = RECTS[i]; if (r.void || r.bar || r.side || !rOn(r, lv)) continue;
+        g = gapR(q, r);
+        if (r.win) { if (g < 30) return false; continue; }
+        if (g < 0) return false;
+        if (g > 1.5 && g < (r.prop ? 22 : 26)) return false;
+      }
+      if (lv === 0) for (i = 0; i < FA_DOORS.length; i++) { d = FA_DOORS[i]; if (gapR(q, { x: d[0] - 34, y: d[1] - 34, w: d[2] + 68, h: d[3] + 68 }) < 0) return false; }
+      for (i = 0; i < LV.stairs.length; i++) { s3 = LV.stairs[i]; if (s3.a !== lv && s3.b !== lv) continue; if (gapR(q, { x: s3.x - 30, y: s3.y - 30, w: s3.w + 60, h: s3.h + 60 }) < 0) return false; }
+      return true;
+    }
+    var PL = {
+      tank: ['tank', 44, 44, 80, 0, 0], tank2: ['tank', 56, 56, 80, 0, 0], mach: ['machine', 72, 38, 60, 0, 1], rack: ['rack', 22, 84, 70, 1, 1], desk: ['desk', 48, 28, 24, 1, 1], lock: ['locker', 18, 70, 60, 0, 1],
+      barrel: ['barrel', 22, 22, 28, 1, 0], crate: ['crate', 38, 38, 38, 0, 0], pallet: ['pallet', 40, 40, 12, 1, 0], drums: ['drums', 46, 46, 30, 1, 0], bench: ['bench', 60, 26, 34, 1, 1]
+    };
+    function furnish(b, lv, names, n, x0, y0, x1, y1) {
+      var tries, placed = 0, pq, w, h, x, y, q, ph, under, t;
+      for (tries = 0; placed < n && tries < n * 60; tries++) {
+        pq = PL[names[Math.floor(dr() * names.length)]]; w = pq[1]; h = pq[2];
+        if (pq[5] && dr() < 0.5) { t = w; w = h; h = t; }
+        x = Math.round(x0 + dr() * (x1 - x0 - w)); y = Math.round(y0 + dr() * (y1 - y0 - h));
+        if (dr() < 0.55) { t = Math.floor(dr() * 4); if (t === 0) x = Math.round(x0); else if (t === 1) x = Math.round(x1 - w); else if (t === 2) y = Math.round(y0); else y = Math.round(y1 - h); }
+        q = { x: x, y: y, w: w, h: h };
+        if (!fits(q, lv)) continue;
+        under = lv === 0 && b.up && surf(x + w / 2, y + h / 2, 1) === lvH(1);
+        ph = lv > 0 || under ? Math.min(pq[3], 42) : Math.min(pq[3], b.H - 14);
+        R(x, y, w, h, { prop: pq[0], pi: placed + tries, ph: ph, l0: lv, l1: lv, furn: pq[4] ? 'deco' : undefined }); placed++;
+      }
+    }
+    FB.forEach(function (b) {
+      var ix0 = b.x + 8, iy0 = b.y + 8, ix1 = b.x + b.w - 8, iy1 = b.y + b.h - 8, F;
+      if (b.name === 'Boiler house') { furnish(b, 0, ['tank', 'tank2', 'mach', 'barrel', 'crate', 'rack'], 16, ix0, iy0, ix1, iy1); furnish(b, 1, ['crate', 'barrel', 'rack', 'desk'], 8, ix0, iy0, ix1, iy1); }
+      else if (b.name === 'Stores') { furnish(b, 0, ['rack', 'rack', 'rack', 'crate', 'pallet', 'barrel'], 18, ix0, iy0, ix1, iy1); furnish(b, 1, ['rack', 'crate', 'pallet', 'barrel'], 9, ix0, iy0, ix1, iy1); }
+      else if (b.name === 'Paint shop') { furnish(b, 0, ['drums', 'drums', 'mach', 'bench', 'crate', 'barrel', 'rack'], 26, ix0, iy0, ix1, iy1); furnish(b, 1, ['drums', 'crate', 'bench', 'barrel'], 8, ix0, iy0, ix1, b.y + 294); }
+      else if (b.name === 'Gatehouse') furnish(b, 0, ['desk', 'lock', 'crate', 'barrel'], 6, ix0, iy0, ix1, iy1);
+      else if (b.name === 'Main hall') { furnish(b, 0, ['mach', 'mach', 'tank2', 'crate', 'pallet', 'bench', 'barrel'], 24, ix0, iy0, ix1, iy1); furnish(b, 1, ['crate', 'barrel', 'pallet', 'bench'], 8, ix0, iy0, ix1, iy1); }
+      else if (b.name === 'Offices') { furnish(b, 0, ['desk', 'desk', 'desk', 'lock', 'rack', 'crate'], 22, ix0, iy0, ix1, iy1); furnish(b, 1, ['desk', 'desk', 'lock', 'rack', 'crate'], 14, ix0, iy0, ix1, iy1); }
+      else if (b.name === 'Foundry') { furnish(b, 0, ['tank', 'tank2', 'mach', 'mach', 'bench', 'barrel', 'crate'], 20, ix0, iy0, ix1, iy1); furnish(b, 1, ['crate', 'barrel', 'bench'], 5, ix0, iy0, ix1, iy1); }
+    });
+    furnish({ up: false, H: SH }, 0, ['crate', 'barrel', 'barrel', 'pallet'], 5, cx - 180, cy - 180, cx + 180, cy + 180);
+    furnish({ up: false, H: SH }, 1, ['crate', 'barrel'], 3, cx - 136, cy - 136, cx + 136, cy + 136);
+    furnish({ up: false, H: SH }, 2, ['crate', 'barrel'], 3, cx - 136, cy - 136, cx + 136, cy + 136);
+    // rail wagons waiting in the pit
+    [[805, 1000, 30, 60], [1189, 1480, 30, 60], [1189, 1790, 30, 60]].forEach(function (c, i) { R(c[0], c[1], c[2], c[3], { prop: 'cart', pi: i, l0: -1, l1: -1 }); });
+    // non-solid scenery: chimneys on the roofs, a crane in the main hall, pipes in the paint shop, lamp poles in the yard
+    FB.forEach(function (b) {
+      if (b.name === 'Boiler house') { FA_DECO.push(['stack', b.x + 90, b.y + 100, 13, b.H + 6, 90], ['stack', b.x + 290, b.y + 70, 13, b.H + 6, 70]); }
+      if (b.name === 'Foundry') FA_DECO.push(['stack', b.x + 120, b.y + 200, 22, b.H + 6, 120]);
+      if (b.name === 'Main hall') FA_DECO.push(['beam', b.x + 100, b.y + 60, 8, 440, b.H - 20, 10], ['beam', b.x + 396, b.y + 60, 8, 440, b.H - 20, 10], ['beam', b.x + 100, b.y + 330, 304, 8, b.H - 14, 10], ['hook', b.x + 248, b.y + 330, 5, 5, b.H - 50, 36]);
+      if (b.name === 'Paint shop') FA_DECO.push(['pipe', b.x + 8, b.y + 310, 6, 380, 84, 8], ['pipe', b.x + 456, b.y + 310, 6, 380, 84, 8], ['pipe', b.x + 8, b.y + 310, 450, 6, 92, 6]);
+      if (b.name === 'Stores') FA_DECO.push(['pipe', b.x + 8, b.y + 8, 6, 376, 44, 6]);
+      if (b.name === 'Foundry') FA_DECO.push(['pipe', b.x + 8, b.y + 8, 205, 6, 100, 8]);
+    });
+    (function () {
+      var n = 0, tr = 0, x, y, r2 = dtRng(515);
+      while (n < 10 && tr++ < 300) {
+        x = 170 + r2() * 1790; y = 170 + r2() * 2010;
+        if (Math.hypot(x - 1400, y - 1020) < 170 || Math.hypot(x - cx, y - cy) < 280) continue;
+        var ok = true, i2;
+        for (i2 = 0; i2 < FA_PITR.length; i2++) { var qq = FA_PITR[i2]; if (x > qq[0] - 50 && x < qq[0] + qq[2] + 50 && y > qq[1] - 50 && y < qq[1] + qq[3] + 50) ok = false; }
+        for (i2 = 0; ok && i2 < RECTS.length; i2++) if (!RECTS[i2].void && distRect(x, y, RECTS[i2]) < 60) ok = false;
+        for (i2 = 0; ok && i2 < FB.length; i2++) if (x > FB[i2].x - 40 && x < FB[i2].x + FB[i2].w + 40 && y > FB[i2].y - 40 && y < FB[i2].y + FB[i2].h + 40) ok = false;
+        for (i2 = 0; ok && i2 < BLD.length; i2++) if (distRect(x, y, BLD[i2].pocket) < 90) ok = false;
+        if (ok) { FA_DECO.push(['lamp', x, y, 5, 0, 130]); n++; }
+      }
+    })();
     // ---- outdoor pens: a little spot against the boundary wall with the normal plank barrier
     spawnDoor(767, 112, 0, 1, vT, 'pen'); spawnDoor(1215, 2240, 0, -1, vB, 'pen'); spawnDoor(112, 1274, 1, 0, vL, 'pen'); spawnDoor(2016, 868, -1, 0, vR, 'pen');
     // ---- cover (from the blueprint): containers in the yards, wooden crate stacks down in the pit
@@ -2537,6 +2611,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (k = 0; k < b.w * b.h / 90; k++) { c.fillStyle = rr() < 0.5 ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.05)'; c.fillRect(ra(b.x, b.x + b.w), ra(b.y, b.y + b.h), ra(1, 2.6), ra(1, 2.6)); }
       for (k = 0; k < 6; k++) blob(ra(b.x + 20, b.x + b.w - 20), ra(b.y + 20, b.y + b.h - 20), ra(14, 46), 'rgba(26,20,14,0.28)');
       for (k = 0; k < 3; k++) crack(ra(b.x + 20, b.x + b.w - 20), ra(b.y + 20, b.y + b.h - 20), ra(30, 90), 'rgba(20,16,12,0.55)', 1.4);
+    });
+    // yellow and black hazard stripes in every doorway and at the foot of every flight of stairs
+    function hazard(x, y, w, h) {
+      c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.fillStyle = 'rgba(20,18,14,0.75)'; c.fillRect(x, y, w, h); c.fillStyle = 'rgba(226,190,50,0.85)';
+      for (var t = -h; t < w + h; t += 14) { c.beginPath(); c.moveTo(x + t, y + h); c.lineTo(x + t + 7, y + h); c.lineTo(x + t + 7 + h, y); c.lineTo(x + t + h, y); c.closePath(); c.fill(); }
+      c.restore();
+    }
+    FA_DOORS.forEach(function (d) { var vt = d[2] < d[3]; if (vt) hazard(d[0] - 8, d[1], d[2] + 16, d[3]); else hazard(d[0], d[1] - 8, d[2], d[3] + 16); });
+    LV.stairs.forEach(function (s) {
+      if (s.a < 0) return;
+      var e = s.dir === 'n' ? [s.x, s.y + s.h, s.w, 7] : s.dir === 's' ? [s.x, s.y - 7, s.w, 7] : s.dir === 'w' ? [s.x + s.w, s.y, 7, s.h] : [s.x - 7, s.y, 7, s.h];
+      if (s.a === 0) hazard(e[0], e[1], e[2], e[3]);
     });
     // each spawn spot: a stained, scuffed patch of floor
     BLD.forEach(function (b) { blob(b.sx, b.sy, 40, 'rgba(60,10,8,0.35)'); c.fillStyle = 'rgba(224,190,60,0.5)'; c.fillRect(Math.min(b.ex, b.ex + b.nx * 54) - (b.ny ? 52 : 0) , Math.min(b.ey, b.ey + b.ny * 54) - (b.nx ? 52 : 0), b.ny ? 104 : 4, b.nx ? 104 : 4); });
@@ -5505,7 +5591,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 214';
+  var updMsg = '', VERSION = 'Version 215';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -7622,7 +7708,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // geometry groups: one per material. S = how many world units one texture tile covers.
   function v3grp(S) { return { p: [], n: [], c: [], u: [], i: [], S: S }; }
   function v3vert(G, x, y, z, nx, ny, nz, c, f, u, v) { G.p.push(x, y, z); G.n.push(nx, ny, nz); G.c.push(Math.min(1, c[0] * f), Math.min(1, c[1] * f), Math.min(1, c[2] * f)); G.u.push(u, v); }
+  var V3GY = 0;   /* everything built while this is set sits this far up (props down in the pit, on upper floors) */
   function v3box(G, x, z, w, d, y0, hh, c) {
+    y0 += V3GY;
     var x1 = x + w, z1 = z + d, y1 = y0 + hh, S = G.S, k, v, F = [
       [x, y1, z1, x1, y1, z1, x1, y1, z, x, y1, z, 0, 1, 0, 1.12],
       [x, y0, z1, x1, y0, z1, x1, y1, z1, x, y1, z1, 0, 0, 1, 0.95],
@@ -7643,7 +7731,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function v3poly(G, P, c, f, uv) {
     var a = P[0], b = P[1], d = P[2], ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = d[0] - a[0], vy = d[1] - a[1], vz = d[2] - a[2];
     var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, l = Math.hypot(nx, ny, nz) || 1, q = G.p.length / 3, k;
-    for (k = 0; k < P.length; k++) v3vert(G, P[k][0], P[k][1], P[k][2], nx / l, ny / l, nz / l, c, f, uv[k][0], uv[k][1]);
+    for (k = 0; k < P.length; k++) v3vert(G, P[k][0], P[k][1] + V3GY, P[k][2], nx / l, ny / l, nz / l, c, f, uv[k][0], uv[k][1]);
     G.i.push(q, q + 1, q + 2); if (P.length > 3) G.i.push(q, q + 2, q + 3);
   }
   // a house: ceiling, pitched roof with overhang, gable ends, ridge cap and a chimney
@@ -7929,7 +8017,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3box(W, x, z, w, d, 0, 38, wc);
       n = Math.floor((hz ? w : d) / 22);
       for (k = 0; k <= n; k++) { if (hz) v3box(W, x + k * ((w - 5) / n), z - 0.6, 5, d + 1.2, 0, 38, [wc[0] * 0.6, wc[1] * 0.6, wc[2] * 0.6]); else v3box(W, x - 0.6, z + k * ((d - 5) / n), w + 1.2, 5, 0, 38, [wc[0] * 0.6, wc[1] * 0.6, wc[2] * 0.6]); }
-      v3box(W, x + 6, z + 6, w * 0.45, d * 0.5, 38, 24, [0.5, 0.35, 0.2]); return;
+      if ((r.ph || 99) > 50) v3box(W, x + 6, z + 6, w * 0.45, d * 0.5, 38, 24, [0.5, 0.35, 0.2]);
+      return;
     }
     if (r.prop === 'jersey') {   // a concrete road barrier: wide foot, narrower top
       v3box(P, x, z, w, d, 0, 12, [0.7, 0.68, 0.64]); v3box(P, x + (hz ? 4 : 5), z + (hz ? 5 : 4), w - (hz ? 8 : 10), d - (hz ? 10 : 8), 12, 20, [0.72, 0.7, 0.66]);
@@ -7943,6 +8032,53 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (r.prop === 'pallet') {   // a wooden pallet: deck boards on three bearers
       for (k = 0; k < 3; k++) v3box(W, x + k * (w - 8) / 2, z, 8, d, 0, 5, [0.5, 0.36, 0.2]);
       for (k = 0; k < 5; k++) v3box(W, x - 0.5, z + k * (d - 8) / 4, w + 1, 8, 5, 2, [0.6, 0.45, 0.26]);
+      return;
+    }
+    var PH = r.ph || 40, cc2;
+    if (r.prop === 'tank') {   // an upright steel tank: bands, a gauge and a pipe
+      var tr = Math.min(w, d) / 2 - 1; cc2 = [[0.5, 0.52, 0.54], [0.46, 0.34, 0.28], [0.4, 0.46, 0.42]][p % 3];
+      v3cyl(M, cx, cz, tr, 0, PH, 10, cc2); v3cyl(M, cx, cz, tr + 1.2, PH * 0.3, 3, 10, [0.3, 0.3, 0.32]); v3cyl(M, cx, cz, tr + 1.2, PH * 0.7, 3, 10, [0.3, 0.3, 0.32]);
+      v3box(D, cx - 3, cz + tr - 1, 6, 5, PH * 0.5, 8, [0.2, 0.2, 0.22]); v3box(M, cx - 2, cz - 2, 4, 4, PH, 10, [0.36, 0.36, 0.38]); v3box(M, cx + tr * 0.4, cz - 2, 3, 3, 0, PH * 0.7, [0.55, 0.4, 0.2]);
+      return;
+    }
+    if (r.prop === 'machine') {   // a blocky machine: body, hood, control panel with lamps, vents
+      cc2 = [[0.42, 0.5, 0.56], [0.56, 0.46, 0.3], [0.38, 0.5, 0.42]][p % 3]; var bh = PH * 0.72;
+      v3box(M, x, z, w, d, 0, bh, cc2); v3box(D, x + 2, z + 2, w - 4, d - 4, bh, PH - bh, [0.26, 0.26, 0.28]);
+      if (hz) { v3box(D, x + 8, z + d - 0.8, w * 0.35, 1.6, bh * 0.35, bh * 0.4, [0.18, 0.2, 0.22]); v3box(M, x + w * 0.55, z + d - 0.8, 4, 1.8, bh * 0.7, 4, [0.85, 0.2, 0.18]); v3box(M, x + w * 0.65, z + d - 0.8, 4, 1.8, bh * 0.7, 4, [0.3, 0.8, 0.4]); v3box(M, x + w * 0.75, z + d - 0.8, 4, 1.8, bh * 0.7, 4, [0.9, 0.7, 0.2]); for (k = 0; k < 4; k++) v3box(D, x + 6 + k * 6, z - 0.6, 3, 1.4, bh * 0.2, bh * 0.5, [0.16, 0.16, 0.18]); }
+      else { v3box(D, x + d * 0.0 + w - 0.8, z + 8, 1.6, d * 0.35, bh * 0.35, bh * 0.4, [0.18, 0.2, 0.22]); v3box(M, x + w - 0.8, z + d * 0.55, 1.8, 4, bh * 0.7, 4, [0.85, 0.2, 0.18]); v3box(M, x + w - 0.8, z + d * 0.7, 1.8, 4, bh * 0.7, 4, [0.3, 0.8, 0.4]); for (k = 0; k < 4; k++) v3box(D, x - 0.6, z + 6 + k * 6, 1.4, 3, bh * 0.2, bh * 0.5, [0.16, 0.16, 0.18]); }
+      return;
+    }
+    if (r.prop === 'rack') {   // a steel shelving rack with boxes on its shelves
+      var L = hz ? w : d, nn = Math.max(2, Math.round(L / 28)), lv2 = [PH * 0.08, PH * 0.4, PH * 0.72];
+      for (k = 0; k <= nn; k++) { if (hz) { v3box(M, x + k * (w - 3) / nn, z, 3, 3, 0, PH, [0.34, 0.4, 0.5]); v3box(M, x + k * (w - 3) / nn, z + d - 3, 3, 3, 0, PH, [0.34, 0.4, 0.5]); } else { v3box(M, x, z + k * (d - 3) / nn, 3, 3, 0, PH, [0.34, 0.4, 0.5]); v3box(M, x + w - 3, z + k * (d - 3) / nn, 3, 3, 0, PH, [0.34, 0.4, 0.5]); } }
+      lv2.forEach(function (yy, li) {
+        v3box(W, x, z, w, d, yy, 2, [0.52, 0.38, 0.22]);
+        for (k = 0; k < nn; k++) if ((k * 7 + li * 3 + p) % 5 !== 0) { var bs = Math.min(w, d) - 6, bl = L / nn - 6; if (hz) v3box(W, x + k * L / nn + 3, z + 3, bl, bs, yy + 2, 8 + ((k + li) % 3) * 4, [0.58 + ((k + p) % 3) * 0.04, 0.42, 0.26]); else v3box(W, x + 3, z + k * L / nn + 3, bs, bl, yy + 2, 8 + ((k + li) % 3) * 4, [0.58 + ((k + p) % 3) * 0.04, 0.42, 0.26]); }
+      });
+      return;
+    }
+    if (r.prop === 'desk') {   // a wooden desk with drawers, a monitor and papers
+      v3box(W, x, z, w, d, 20, 4, [0.5, 0.36, 0.22]); v3box(W, hz ? x + 2 : x, hz ? z : z + 2, hz ? 8 : w, hz ? d : 8, 0, 20, [0.42, 0.3, 0.18]); v3box(W, hz ? x + w - 10 : x, hz ? z : z + d - 10, hz ? 8 : w, hz ? d : 8, 0, 20, [0.42, 0.3, 0.18]);
+      v3box(D, cx - 5, cz - 3, 10, 6, 24, 9, [0.12, 0.12, 0.14]); v3box(P, cx + 8, cz - 6, 8, 11, 24, 0.8, [0.86, 0.84, 0.78]); return;
+    }
+    if (r.prop === 'locker') {   // a row of tall steel lockers
+      cc2 = [[0.36, 0.46, 0.4], [0.4, 0.42, 0.5]][p % 2]; v3box(M, x, z, w, d, 0, PH, cc2);
+      n = Math.max(1, Math.floor((hz ? w : d) / 14)); for (k = 1; k < n; k++) { if (hz) v3box(D, x + k * w / n - 0.5, z - 0.6, 1, d + 1.2, 4, PH - 8, [0.16, 0.18, 0.18]); else v3box(D, x - 0.6, z + k * d / n - 0.5, w + 1.2, 1, 4, PH - 8, [0.16, 0.18, 0.18]); }
+      return;
+    }
+    if (r.prop === 'bench') {   // a workbench with a vise and some tools
+      v3box(W, x, z, w, d, 26, 4, [0.46, 0.34, 0.2]);
+      [[0, 0], [w - 4, 0], [0, d - 4], [w - 4, d - 4]].forEach(function (o) { v3box(M, x + o[0], z + o[1], 4, 4, 0, 26, [0.3, 0.3, 0.34]); });
+      v3box(M, x + (hz ? 6 : 3), z + (hz ? 3 : 6), 8, 8, 30, 8, [0.5, 0.2, 0.18]); v3box(D, cx, cz, 10, 3, 30, 1.6, [0.2, 0.2, 0.22]); return;
+    }
+    if (r.prop === 'drums') {   // four oil drums strapped together
+      [[0.27, 0.27], [0.73, 0.27], [0.27, 0.73], [0.73, 0.73]].forEach(function (o, i) { var bc2 = [[0.6, 0.2, 0.14], [0.2, 0.32, 0.5], [0.34, 0.38, 0.3], [0.7, 0.55, 0.18]][(p + i) % 4]; v3cyl(M, x + w * o[0], z + d * o[1], 10, 0, 28, 8, bc2); });
+      return;
+    }
+    if (r.prop === 'cart') {   // a flat rail wagon with low boards and iron wheels
+      v3box(M, x + 3, z + 3, w - 6, d - 6, 8, 4, [0.3, 0.3, 0.32]); v3box(W, x, z + 4, 3, d - 8, 12, 12, [0.46, 0.34, 0.2]); v3box(W, x + w - 3, z + 4, 3, d - 8, 12, 12, [0.46, 0.34, 0.2]);
+      v3box(W, x, z, w, 3, 12, 12, [0.46, 0.34, 0.2]); v3box(W, x, z + d - 3, w, 3, 12, 12, [0.46, 0.34, 0.2]);
+      [[3, 8], [w - 3, 8], [3, d - 8], [w - 3, d - 8]].forEach(function (o) { v3cyl(D, x + o[0], z + o[1], 5, 0, 8, 6, [0.22, 0.2, 0.2]); });
       return;
     }
     if (r.prop === 'pillar') { v3box(P, r.x, r.y, r.w, r.h, 0, r.hh, [0.7, 0.68, 0.64]); v3box(M, r.x - 3, r.y - 3, r.w + 6, r.h + 6, 0, 6, [0.5, 0.48, 0.44]); return; }
@@ -7968,7 +8104,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
       if (r.wl) { v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, wbs, r.hh - wbs, r.col); continue; }
       if (r.side) { v3box(GS.wood, r.x, r.y, r.w, r.h, 0, 34, [0.74, 0.6, 0.44]); continue; }
-      if (r.prop) v3fprop(GS, r);
+      if (r.prop) { V3GY = r.l0 === undefined || r.l0 === 0 ? 0 : lvH(r.l0); v3fprop(GS, r); V3GY = 0; }
     }
     if (LVON) {
       // first and second floors: a slab with a visible underside; bridges are thin decks
@@ -7998,6 +8134,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         v3poly(GS.metal, [[pa[0], 0, pa[1]], [pb[0], 0, pb[1]], [pb[0], 1.5, pb[1]], [pa[0], 1.5, pa[1]]], [0.6, 0.56, 0.5], 1, [[0, 0], [pl / S2, 0], [pl / S2, 0.1], [0, 0.1]]);
       }
     }
+    FA_DECO.forEach(function (d) {
+      var kd = d[0];
+      if (kd === 'stack') { v3cyl(GS.brick, d[1], d[2], d[3], d[4], d[5], 8, [0.6, 0.34, 0.28]); v3cyl(GS.dark, d[1], d[2], d[3] + 1.5, d[4] + d[5] - 6, 6, 8, [0.2, 0.18, 0.17]); }
+      else if (kd === 'beam') v3box(M, d[1], d[2], d[3], d[4], d[5], d[6], [0.5, 0.42, 0.18]);
+      else if (kd === 'hook') { v3box(M, d[1], d[2], d[3], d[4], d[5], d[6], [0.2, 0.2, 0.22]); v3box(M, d[1] - 3, d[2] - 3, 11, 11, d[5] - 6, 6, [0.5, 0.4, 0.14]); }
+      else if (kd === 'pipe') v3box(M, d[1], d[2], d[3], d[4], d[5], d[6], [0.46, 0.4, 0.34]);
+      else if (kd === 'lamp') { v3box(M, d[1] - 2, d[2] - 2, 4, 4, 0, d[5], [0.3, 0.3, 0.32]); v3box(M, d[1] - 2, d[2] - 2, 22, 3, d[5] - 4, 3, [0.3, 0.3, 0.32]); v3box(GS.dark, d[1] + 10, d[2] - 5, 14, 9, d[5] - 9, 5, [0.9, 0.86, 0.6]); }
+    });
     // the roofs: a ceiling you see from inside, a flat slab with a rim on top
     for (i = 0; i < FB.length; i++) {
       b = FB[i]; hs.push({ x: b.x, y: b.y, w: b.w, h: b.h });
