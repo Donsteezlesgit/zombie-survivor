@@ -139,7 +139,9 @@ body {
 .stimgo.rdy:active svg { background: #78e0a0; color: #0e1a12; }
 .grengo { top: calc(54% + 58px); --a: 100; --b: 100; background: conic-gradient(rgba(242, 166, 78, 0.95) 0 calc(var(--a) * 0.46%), rgba(58, 44, 34, 0.9) calc(var(--a) * 0.46%) 46%, rgba(0, 0, 0, 0.9) 46% 54%, rgba(242, 166, 78, 0.95) 54% calc(54% + var(--b) * 0.46%), rgba(58, 44, 34, 0.9) calc(54% + var(--b) * 0.46%) 100%); }
 .scopego { width: 64px; height: 64px; top: calc(54% + 116px); touch-action: none; -webkit-user-select: none; user-select: none; }
-.scopego.lk { border-color: #f2c14e; color: #f2c14e; box-shadow: 0 0 12px rgba(242, 193, 78, 0.6); }
+.firego { width: 76px; height: 76px; top: calc(54% + 196px); border-color: #ff5a3a; color: #ff5a3a; }
+.firego svg { width: 62px; height: 62px; padding: 12px; }
+.firego.on { background: rgba(255, 90, 58, 0.45); box-shadow: 0 0 14px rgba(255, 90, 58, 0.6); }
 .scopego svg { background: rgba(0, 0, 0, 0.78); border-radius: 50%; padding: 10px; width: 52px; height: 52px; box-sizing: border-box; }
 .scopego.on { border-color: #5ad8ff; color: #5ad8ff; box-shadow: 0 0 12px rgba(90, 216, 255, 0.55); }
 .grengo svg { background: rgba(0, 0, 0, 0.78); border-radius: 50%; padding: 8px; width: 40px; height: 40px; box-sizing: border-box; }
@@ -168,6 +170,8 @@ body {
   .swapgo { width: 42px; height: 42px; top: 58%; }
   .scopego { width: 56px; height: 56px; }
   .scopego svg { width: 46px; height: 46px; padding: 8px; }
+  .firego { width: 66px; height: 66px; }
+  .firego svg { width: 54px; height: 54px; padding: 10px; }
   .stimgo { top: calc(58% - 50px); }
   .stimgo svg, .grengo svg { width: 32px; height: 32px; padding: 6px; }
   .grengo { top: calc(58% + 50px); }
@@ -600,7 +604,8 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   <button class="swapgo" id="swapGo" type="button" aria-label="Reload"><b>&#8635;</b></button>
   <button class="swapgo stimgo" id="stimGo" type="button" aria-label="Use stim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3l3 3"/><path d="M19.5 4.5l-9 9"/><path d="M16.5 7.5l-9 9L6 18l-2 2 1-3.5"/><path d="M13 5l6 6"/><path d="M9 15l-3 3"/></g></svg></button>
   <button class="swapgo grengo" id="grenGo" type="button" aria-label="Throw grenade" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14.5" r="6.5"/><path d="M10 8V5.5h4V8"/><path d="M14 5.5l3.5-2.5"/><path d="M9.2 12.2l5.6 4.6M14.8 12.2l-5.6 4.6"/></g></svg></button>
-  <button class="swapgo scopego" id="scopeGo" type="button" aria-label="Scope: hold to aim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/></g></svg></button>
+  <button class="swapgo scopego" id="scopeGo" type="button" aria-label="Scope: tap to aim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/></g></svg></button>
+  <button class="swapgo scopego firego" id="fireGo" type="button" aria-label="Shoot: hold to fire, slide to look" hidden><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="8.5"/></g></svg></button>
   <button class="boxbtn" id="boxBtn" type="button" hidden>Mystery box · 120</button>
   <div class="boxui" id="boxUI" hidden><div class="boxcard"><h2>Mystery box</h2><div id="boxBody"></div></div></div>
   <div class="banner" id="banner" hidden><h2 id="bnTitle"></h2><p id="bnText"></p></div>
@@ -4442,7 +4447,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
       pvFire = onLine;
     }
-    if (tgt || pvFire) P.idle = 0; else P.idle += dt;
+    var fpGo = fpAim && !!FIRE.on, goFire = fpAim ? fpGo : !!tgt;   // first person: only the shoot button fires, straight down the crosshair
+    if (goFire || pvFire) P.idle = 0; else P.idle += dt;
 
     // reload / ammo state for the active gun
     var canFire = true;
@@ -4462,13 +4468,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         canFire = false;
         if (ref.res > 0) { ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04); }
         else autoSwitch(P);
-      } else if (autoReload(P) && !tgt && !pvFire && P.idle > 1 && ref.mag < gunMag(gd, P) && ref.res > 0) {
+      } else if (autoReload(P) && !goFire && !pvFire && P.idle > 1 && ref.mag < gunMag(gd, P) && ref.res > 0) {
         ref.reload = gd.reload; ptone(P, 200, 110, 0.07, 'square', 0.04);
       }
     }
 
-    if (fpAim && !isGhost(P) && !isSpecialActive(P) && st.d.cls === 'sniper') canFire = false;   // snipers fire only when the scope is released
-    if (tgt || pvFire) {
+    if (fpAim && !isGhost(P) && !isSpecialActive(P) && st.d.cls === 'sniper' && SC.amt < 0.85) canFire = false;   // snipers only fire while looking down the scope
+    if (goFire || pvFire) {
       P.ang = pvFire ? P.aimAng : (fpAim ? fpYaw : Math.atan2(tgt.y - P.y, tgt.x - P.x));
       P.fireCd -= dt;
       if (canFire) {
@@ -5090,7 +5096,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 205';
+  var updMsg = '', VERSION = 'Version 206';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5754,7 +5760,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function btnDefault() {
     var W = window.innerWidth, H = window.innerHeight, small = H <= 520, bh = small ? 42 : 50, off = small ? 50 : 58, f = small ? 0.58 : 0.54, x = (W - 8 - bh / 2) / W;
-    return { rl: [x, f + bh / 2 / H], st: [x, f - off / H + bh / 2 / H], gr: [x, f + off / H + bh / 2 / H], sc: [x - (bh + 8) / W, f + bh / 2 / H + (bh <= 42 ? 62 : 80) / H] };
+    return { rl: [x, f + bh / 2 / H], st: [x, f - off / H + bh / 2 / H], gr: [x, f + off / H + bh / 2 / H], sc: [x - (bh + 8) / W, f + bh / 2 / H + (bh <= 42 ? 62 : 80) / H], fr: [x - (bh + 8) / W, f + bh / 2 / H + (bh <= 42 ? 62 + 66 : 80 + 78) / H] };
   }
   function closeBtnEd() { btnEd.hidden = true; var o = btnEd.querySelectorAll('.edbtn'), i; for (i = 0; i < o.length; i++) btnEd.removeChild(o[i]); edPos = null; }
   function openBtnEd() {
@@ -6023,7 +6029,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var showStim = playing && !shopOpen && !me.down && (!pvp || pvPhase === 'play'), stTot = pvp ? TUNE.pvp.stimCd : TUNE.stim.cd, sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / stTot)) : 100;
     if (hudCache.stimShow !== showStim) { hudCache.stimShow = showStim; stimGo.hidden = !showStim; grenGo.hidden = !showStim; }
     var scK = (playing && !blocked() && !me.down && !shopOpen && fpOn()) ? scopeKind() : 0;
-    if (hudCache.scK !== scK) { hudCache.scK = scK; scopeGo.hidden = !scK; if (!scK && SC.on) scopeEnd(false); }
+    if (hudCache.scK !== scK) { hudCache.scK = scK; scopeGo.hidden = !scK; if (!scK && SC.on) scopeEnd(); }
+    var frK = (playing && !blocked() && !me.down && !shopOpen && fpOn()) ? 1 : 0;
+    if (hudCache.frK !== frK) { hudCache.frK = frK; fireGo.hidden = !frK; if (!frK && FIRE.on) fireEnd(); }
     var gc = grenCd(me), g0 = me.gr && me.gr[0] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[0] / gc))) : 100, g1 = me.gr && me.gr[1] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[1] / gc))) : 100;
     // line the two buttons up under the ammo box, whatever the screen size
     var nowT = performance.now();
@@ -6038,13 +6046,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         swapGo.style.right = '';
         if (showStim) {
           st0 = Math.max(4, Math.min(st0, maxT - bh - 8));
-          stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px'; grenGo.style.top = (st0 + 2 * (bh + 8)) + 'px'; scopeGo.style.top = (st0 + 3 * (bh + 8)) + 'px'; scopeGo.style.right = '';
-        } else { stimGo.style.top = ''; swapGo.style.top = ''; grenGo.style.top = ''; scopeGo.style.top = ''; }
+          stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px'; grenGo.style.top = (st0 + 2 * (bh + 8)) + 'px'; scopeGo.style.top = (st0 + 3 * (bh + 8)) + 'px'; scopeGo.style.right = ''; fireGo.style.top = (st0 + 3 * (bh + 8) + 74) + 'px'; fireGo.style.right = '';
+        } else { stimGo.style.top = ''; swapGo.style.top = ''; grenGo.style.top = ''; scopeGo.style.top = ''; fireGo.style.top = ''; }
       }
       applyBtnPos();
       if (land && sr.width > 0 && !btnPos[btnOr()].sc) {   // landscape: the scope sits just under the reload button
         var rl = swapGo.getBoundingClientRect(), sd = bh <= 42 ? 62 : 80;
         scopeGo.style.left = Math.round(rl.left + rl.width / 2) + 'px'; scopeGo.style.top = Math.round(rl.top + rl.height / 2 + sd) + 'px'; scopeGo.style.right = 'auto'; scopeGo.style.transform = 'translate(-50%,-50%)';
+      }
+      if (land && sr.width > 0 && !btnPos[btnOr()].fr) {   // landscape: the shoot button sits under the scope button
+        var rl2 = swapGo.getBoundingClientRect(), sd2 = bh <= 42 ? 62 + 66 : 80 + 78;
+        fireGo.style.left = Math.round(rl2.left + rl2.width / 2) + 'px'; fireGo.style.top = Math.round(rl2.top + rl2.height / 2 + sd2) + 'px'; fireGo.style.right = 'auto'; fireGo.style.transform = 'translate(-50%,-50%)';
       }
     }
     if (showStim) {
@@ -6110,46 +6122,52 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (net.mode === 'client') netSend({ k: 'cmd', c: 'scope', a: 1 });
     return true;
   }
-  function scopeEnd(fire, force) {
+  function scopeEnd() {
     if (!SC.on) return;
-    var nowT = performance.now(), held = nowT - SC.t0, k = scopeKind(), ready = SC.amt > 0.85 && held > 350;
-    if (fire && !force && held < 250 && !SC.lock) {   // two quick taps lock the scope on; the next single tap turns it off
-      if (SC.lt && nowT - SC.lt < 380) { SC.lock = true; SC.lt = 0; SC.tid = null; SC.pid = null; SC.t0 = nowT - 1000; scopeGo.classList.add('lk'); return; }
-      SC.lt = nowT;
-    } else SC.lt = 0;
-    SC.on = false; SC.lock = false; SC.tid = null; SC.pid = null; scopeGo.classList.remove('on'); scopeGo.classList.remove('lk');
+    SC.on = false; SC.lock = false; SC.tid = null; SC.pid = null; scopeGo.classList.remove('on');
     if (net.mode === 'client') netSend({ k: 'cmd', c: 'scope', a: 0 });
-    if (fire && k === 2 && ready && state === 'play' && !blocked()) cmd('snipe');
   }
   function scopeLook(x, y) {
     if (fpOn()) { fpYaw += (x - SC.lx) * FP_SENS * sensMul * scF(); fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (y - SC.ly) * FP_SENS * sensMul * scF())); }
     SC.lx = x; SC.ly = y;
   }
-  scopeGo.addEventListener('touchstart', function (e) {
-    e.preventDefault(); var t = e.changedTouches[0];
-    if (SC.lock) { scopeEnd(true, true); return; }   // locked on: a single tap turns it off
-    if (scopeStart()) { SC.tid = t.identifier; SC.lx = t.clientX; SC.ly = t.clientY; }
-  }, { passive: false });
-  scopeGo.addEventListener('touchmove', function (e) {
-    e.preventDefault();
-    for (var i = 0; i < e.changedTouches.length; i++) if (SC.on && e.changedTouches[i].identifier === SC.tid) scopeLook(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-  }, { passive: false });
-  function scTouchEnd(e) {
-    if (!SC.on || SC.tid == null) return;
-    var alive = false, i;
-    for (i = 0; i < e.touches.length; i++) if (e.touches[i].identifier === SC.tid) alive = true;
-    if (!alive) scopeEnd(e.type !== 'touchcancel');
-  }
-  window.addEventListener('touchend', scTouchEnd); window.addEventListener('touchcancel', scTouchEnd);
-  scopeGo.addEventListener('pointerdown', function (e) {
-    if (e.pointerType === 'touch') return; e.preventDefault();
-    if (SC.lock) { scopeEnd(true, true); return; }
-    if (scopeStart()) { SC.pid = e.pointerId; SC.lx = e.clientX; SC.ly = e.clientY; try { scopeGo.setPointerCapture(e.pointerId); } catch (x) {} }
-  });
-  scopeGo.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch' && SC.on && e.pointerId === SC.pid) scopeLook(e.clientX, e.clientY); });
-  scopeGo.addEventListener('pointerup', function (e) { if (e.pointerType !== 'touch' && SC.on && e.pointerId === SC.pid) scopeEnd(true); });
-  scopeGo.addEventListener('pointercancel', function (e) { if (e.pointerType !== 'touch' && SC.on && e.pointerId === SC.pid) scopeEnd(false); });
+  // the scope button is a plain toggle: tap to look down the sights, tap again to come out
+  function scopeTap() { if (SC.on) scopeEnd(); else scopeStart(); }
+  scopeGo.addEventListener('touchstart', function (e) { e.preventDefault(); scopeTap(); }, { passive: false });
+  scopeGo.addEventListener('pointerdown', function (e) { if (e.pointerType === 'touch') return; e.preventDefault(); scopeTap(); });
   scopeGo.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  /* ---- shoot button (first person): hold to fire, slide the same thumb to keep looking around ---- */
+  var FIRE = { on: false, tid: null, pid: null, lx: 0, ly: 0 }, fireGo = $('fireGo');
+  function fireStart() { if (FIRE.on || state !== 'play' || blocked() || !me || me.down) return false; FIRE.on = true; fireGo.classList.add('on'); return true; }
+  function fireEnd() { FIRE.on = false; FIRE.tid = null; FIRE.pid = null; fireGo.classList.remove('on'); }
+  function fireLook(x, y) {
+    if (fpOn()) { fpYaw += (x - FIRE.lx) * FP_SENS * sensMul * scF(); fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (y - FIRE.ly) * FP_SENS * sensMul * scF())); }
+    FIRE.lx = x; FIRE.ly = y;
+  }
+  fireGo.addEventListener('touchstart', function (e) {
+    e.preventDefault(); var t = e.changedTouches[0];
+    if (fireStart()) { FIRE.tid = t.identifier; FIRE.lx = t.clientX; FIRE.ly = t.clientY; }
+  }, { passive: false });
+  fireGo.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    for (var i = 0; i < e.changedTouches.length; i++) if (FIRE.on && e.changedTouches[i].identifier === FIRE.tid) fireLook(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+  }, { passive: false });
+  function fireTouchEnd(e) {
+    if (!FIRE.on || FIRE.tid == null) return;
+    var alive = false, i;
+    for (i = 0; i < e.touches.length; i++) if (e.touches[i].identifier === FIRE.tid) alive = true;
+    if (!alive) fireEnd();
+  }
+  window.addEventListener('touchend', fireTouchEnd); window.addEventListener('touchcancel', fireTouchEnd);
+  fireGo.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'touch') return; e.preventDefault();
+    if (fireStart()) { FIRE.pid = e.pointerId; FIRE.lx = e.clientX; FIRE.ly = e.clientY; try { fireGo.setPointerCapture(e.pointerId); } catch (x) {} }
+  });
+  fireGo.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch' && FIRE.on && e.pointerId === FIRE.pid) fireLook(e.clientX, e.clientY); });
+  fireGo.addEventListener('pointerup', function (e) { if (e.pointerType !== 'touch' && FIRE.on && e.pointerId === FIRE.pid) fireEnd(); });
+  fireGo.addEventListener('pointercancel', function (e) { if (e.pointerType !== 'touch' && FIRE.on && e.pointerId === FIRE.pid) fireEnd(); });
+  fireGo.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  BTNS.push(['fr', fireGo]);
   BTNS.push(['sc', scopeGo]);
   var fpYaw = 0, fpPitch = 0, FP_SENS = 0.007;   // fpPitch: up (+) / down (-) in radians, kept within about 50 degrees
   function fpOn() { return !!(V && V.shown && v3Active()); }
@@ -6294,7 +6312,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (SC.on && !SC.kind) scopeEnd(false);
       SC.amt += ((SC.on ? 1 : 0) - SC.amt) * Math.min(1, scD * (SC.kind === 2 ? 9 : 13)); if (!SC.on && SC.amt < 0.01) SC.amt = 0;
       me.scope = SC.amt;
-      me.fr = !!(!blocked() && state === 'play' && (!pvp || aim.active));
+      me.fr = !!(FIRE.on && !blocked() && state === 'play' && !me.down);
       return;
     }
     if (me.cone) { if (aim.ang !== null) me.aimAng = aim.ang; else if (me.aimAng === null) me.aimAng = me.ang; }
