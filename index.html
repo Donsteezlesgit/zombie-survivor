@@ -4141,7 +4141,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       else a = P.ang + rnd(-d.spread * sprF / 2, d.spread * sprF / 2);
       crit = Math.random() < critP;
       bullets.push({
-        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 26 : undefined, vh: fph ? Math.tan(fpPitch) : undefined, vy: fph ? 38 * Math.sin(fpPitch) - 10 * Math.cos(fpPitch) : undefined, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
+        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 30 : undefined, vh: fph ? Math.tan(fpPitch) : undefined, vy: fph ? 38 * Math.sin(fpPitch) - 10 * Math.cos(fpPitch) : undefined, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * pm * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
         cen: (!pvp && !d.kind && P.cone && P.aimAng !== null && P.aimAng !== undefined) ? 1 : 0, ax: P.x, ay: P.y, aa: P.aimAng,
         kind: d.kind || 'bullet', bt: d.kind ? 0 : btI, blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
@@ -5071,7 +5071,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 198';
+  var updMsg = '', VERSION = 'Version 199';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -7480,9 +7480,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function sc3rm(o) { if (o.parent) o.parent.remove(o); }
   // one part of a figure: pivot (px,py,pz), swing rz about the pivot, then a box centred at offset (ox,oy,oz) with size (sx,sy,sz)
-  function v3part(im, n, px, py, pz, rz, ox, oy, oz, sx, sy, sz, colr) {
+  function v3part(im, n, px, py, pz, rz, ox, oy, oz, sx, sy, sz, colr, ry) {
     var d = V.d;
-    d.position.set(px, py, pz); d.rotation.set(0, 0, rz); d.scale.set(1, 1, 1); d.updateMatrix(); V.A.copy(d.matrix);
+    d.position.set(px, py, pz); d.rotation.set(0, ry || 0, rz); d.scale.set(1, 1, 1); d.updateMatrix(); V.A.copy(d.matrix);
     V.B.makeScale(sx, sy, sz); V.B.setPosition(ox, oy, oz);
     V.M.multiplyMatrices(V.F, V.A); V.M.multiply(V.B);
     im.setMatrixAt(n, V.M); im.setColorAt(n, colr);
@@ -7501,15 +7501,82 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.M.multiplyMatrices(V.F, d.matrix); im.setMatrixAt(n, V.M); im.setColorAt(n, v3col(col));
   }
   // a gun held in front of a figure (other players and bots): same art as the 2D guns, with attachments and skin
-  function v3figgun(gd, lo) {
+  // pose helpers: where a player's gun sits and where each hand goes (all in the figure's own units: x forward, y up, z sideways)
+  function v3hand(ps, lx, ly) {
+    var c = Math.cos(ps.gp), s2 = Math.sin(ps.gp);
+    return [ps.gf + lx * c - ly * s2, ps.gu + lx * s2 + ly * c, ps.gz];
+  }
+  function v3seg(A, B, th, col) {
+    var dx = B[0] - A[0], dy = B[1] - A[1], dz = B[2] - A[2], L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
+    v3x((A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2, L + 0.5, th, th, col, 0, 0, Math.atan2(-dz, dx), Math.asin(Math.max(-1, Math.min(1, dy / L))));
+  }
+  // a two-bone arm from the shoulder to a hand target, elbow bent out and down
+  function v3arm2(sz, H, cloth, skin) {
+    var Sx = 0, Sy = 24.5, Sz = sz, dx = H[0] - Sx, dy = H[1] - Sy, dz = H[2] - Sz, L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01, R = 15.2, a = 7.7;
+    if (L > R) { dx *= R / L; dy *= R / L; dz *= R / L; L = R; H = [Sx + dx, Sy + dy, Sz + dz]; }
+    var ux = dx / L, uy = dy / L, uz = dz / L, al = L / 2, hh = Math.sqrt(Math.max(0, a * a - al * al));
+    var px = 0.1, py = -1, pz = sz > 0 ? 0.7 : -0.7, dp = px * ux + py * uy + pz * uz; px -= dp * ux; py -= dp * uy; pz -= dp * uz;
+    var pl = Math.sqrt(px * px + py * py + pz * pz) || 1, E = [Sx + ux * al + px / pl * hh, Sy + uy * al + py / pl * hh, Sz + uz * al + pz / pl * hh];
+    v3seg([Sx, Sy, Sz], E, 4.2, cloth); v3seg(E, H, 3.7, cloth);
+    v3x(H[0], H[1], H[2], 3.8, 3.7, 3.7, skin); v3x(E[0], E[1], E[2], 4.4, 4.4, 4.4, shade(cloth, -16));
+    return H;
+  }
+  // the pose of a player holding a gun, chosen from what they are doing; blended so it never snaps
+  var POSES = {
+    idle:   { gf: 3.2, gu: 20.5, gz: 1.2, gp: -0.45, lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 0, fx: 0, fy: 0, fz: 0 },
+    run:    { gf: 3.2, gu: 21.5, gz: 1.2, gp: -0.6,  lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 0, fx: 0, fy: 0, fz: 0 },
+    hip:    { gf: 3.8, gu: 22,   gz: 1.4, gp: 0,     lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 0, fx: 0, fy: 0, fz: 0 },
+    aim:    { gf: 4.5, gu: 28.2, gz: 0.6, gp: 0,     lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 0, fx: 0, fy: 0, fz: 0 },
+    reload: { gf: 3.5, gu: 23,   gz: 1.0, gp: 0.4,   lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 0, fx: 0, fy: 0, fz: 0 },
+    throw:  { gf: 3.5, gu: 21,   gz: -1.0, gp: -0.9, lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 1, fx: 12, fy: 29, fz: 4 }
+  };
+  function v3pose(P, rr, gd, mv, step) {
+    var now = performance.now(), Lg = (gd.len + 5) * 0.6, gs = P.gr ? (P.gr[0] + P.gr[1]) : 0, kind = 'idle', t, T, q, k;
+    if (P._gs === undefined) P._gs = gs; if (gs > P._gs + 1) P._gtT = now; P._gs = gs;   // grenade cooldowns jump up the moment one is thrown
+    if (P.flash > 0) P._fT = now;
+    if (P._gtT && now - P._gtT < 650) kind = 'throw';
+    else if (rr && rr.reload > 0) kind = 'reload';
+    else if (P.scope > 0.3) kind = 'aim';
+    else if (P._fT && now - P._fT < 500) kind = 'hip';
+    else if (mv) kind = 'run';
+    T = POSES[kind]; q = P._pp;
+    if (!q) q = P._pp = JSON.parse(JSON.stringify(T));
+    var tg = {}; for (k in T) tg[k] = T[k];
+    tg.lx = 0.4 * Lg; tg.rx = 0.15 * Lg; if (kind === 'idle' || kind === 'run' || kind === 'hip') tg.lx = 0.4 * Lg;
+    if (kind === 'hip' && P.flash > 0) tg.gf -= 1.2;
+    if (kind === 'run') { tg.gu += Math.sin(step * 2) * 0.5; tg.gz += Math.sin(step) * 0.4; }
+    if (kind === 'reload') {
+      var r = Math.max(0, Math.min(1, 1 - rr.reload / Math.max(0.1, gd.reload)));
+      var toMag = r < 0.2 ? r / 0.2 : (r > 0.8 ? 1 - (r - 0.8) / 0.2 : 1), pull = r > 0.2 && r < 0.6 ? Math.sin((r - 0.2) / 0.4 * 3.14) : 0, slap = r > 0.6 && r < 0.8 ? Math.sin((r - 0.6) / 0.2 * 3.14) : 0;
+      tg.lx = (0.4 + (0.2 - 0.4) * toMag) * Lg; tg.ly = -2.2 + (-8 + 2.2) * toMag - pull * 3 + slap * 2.2;
+      tg.gp = 0.4 + pull * 0.12;
+    }
+    if (kind === 'throw') {
+      t = (now - P._gtT) / 650;
+      if (t < 0.3) { var w = t / 0.3; tg.fx = -5; tg.fy = 25 + 7 * w; tg.fz = 6 + 3 * w; }
+      else if (t < 0.55) { var th = (t - 0.3) / 0.25; tg.fx = -5 + 17 * th; tg.fy = 32 - 3 * th; tg.fz = 9 - 5 * th; }
+      else { tg.rw = Math.max(0, 1 - (t - 0.55) / 0.4); tg.fx = 12; tg.fy = 29; tg.fz = 4; }
+    }
+    var kk = kind === 'throw' ? 0.5 : 0.28;
+    for (k in tg) q[k] += (tg[k] - q[k]) * kk;
+    q.kind = kind; q.nade = kind === 'throw' && (now - P._gtT) / 650 < 0.5; q.Lg = Lg;
+    return q;
+  }
+  function v3figgun(gd, lo, ps) {
     var S = 0.6, art = GART[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GART.rifle, kx = (gd.len + 5) / art.tip, mz = gd.len + 5;
     var skC = lo && lo[1] ? GSKIN[lo[1]].c : null, AT = lo ? lo[0] : 0, f0 = 9, u0 = 22.5;
+    var gc = ps ? Math.cos(ps.gp) : 1, gsn = ps ? Math.sin(ps.gp) : 0;
+    function V3(px, py, pz, sx, sy, sz, col, fl) {   // place a gun part: local to the gun, then rotated by the gun pitch and moved to the pose spot
+      if (!ps) { v3x(px, py, pz, sx, sy, sz, col, fl); return; }
+      var dx = px - f0, dy = py - u0;
+      v3x(ps.gf + dx * gc - dy * gsn, ps.gu + dx * gsn + dy * gc, ps.gz + pz, sx, sy, sz, col, fl, 0, 0, ps.gp);
+    }
     art.p.forEach(function (q, qi) {
       var ph = q[3] * 0.7, py = q[1] + q[3] / 2 - ph / 2, col = skC ? (qi % 2 ? shade(skC, -34) : skC) : q[4];
-      v3x(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, 0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), col, 2);
+      V3(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (py + ph / 2) * S, 0, q[2] * kx * S, ph * S, Math.max(1.5, ph * S * 0.95), col, 2);
     });
-    (GDET[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GDET.rifle).forEach(function (q) { v3x(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (q[1] + q[3] / 2) * S, 0, q[2] * kx * S, q[3] * S, Math.max(1.0, q[3] * S * 0.95), q[4], 2); });
-    function A(x, y, w, h, col) { v3x(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, 0, w * S, h * S, Math.max(1.3, h * S * 0.95), col, 2); }
+    (GDET[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GDET.rifle).forEach(function (q) { V3(f0 + (q[0] + q[2] / 2) * kx * S, u0 - (q[1] + q[3] / 2) * S, 0, q[2] * kx * S, q[3] * S, Math.max(1.0, q[3] * S * 0.95), q[4], 2); });
+    function A(x, y, w, h, col) { V3(f0 + (x + w / 2) * S, u0 - (y + h / 2) * S, 0, w * S, h * S, Math.max(1.3, h * S * 0.95), col, 2); }
     if (AT & 4) A(mz - 1, -3, 9, 4, '#25262a');
     if (AT & 1) { A(gd.len * 0.35, -8, 8, 3.2, '#1a1c20'); A(gd.len * 0.35 + 5.4, -7.4, 1.8, 1.8, '#ff4a3a'); }
     if (AT & 2) { A(gd.len * 0.3, 3, 4, 10, '#3a3a40'); A(gd.len * 0.3, 11, 4, 1.4, '#d4a52e'); }
@@ -7847,8 +7914,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     v3part(f[2], n, 0, 13, 2.8, sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
     v3part(f[3], n, 0, 13, -2.8, -sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
     var za = (ext && ext.k) ? 0.3 + 0.08 * Math.sin(step * 0.5) : 0;
-    v3part(f[4], n, 0, 24.5, 6.6, za + 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
-    v3part(f[5], n, 0, 24.5, -6.6, za - 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+    var posed = !!(gun && ext && ext.gd && !ext.k);
+    if (posed) { v3part(f[4], n, 0, 24.5, 6.6, 0, 0, 0, 0, 0.01, 0.01, 0.01, cloth); v3part(f[5], n, 0, 24.5, -6.6, 0, 0, 0, 0, 0.01, 0.01, 0.01, cloth); }
+    else {
+      v3part(f[4], n, 0, 24.5, 6.6, za + 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+      v3part(f[5], n, 0, 24.5, -6.6, za - 0.06 * Math.sin(step * 0.5), 6, 0, 0, 12, 3.6, 3.6, gun ? cloth : skin);
+    }
     if (ext && !ext.lod) {
       V.fl = ext.fl | 0;
       var skH = v3hx(skin), clH = v3hx(cloth), pnH = v3hx(pants), zr = ext.k ? ((ext.seed || 0) * 1000 | 0) % 7 : 0, rzA = za + 0.06 * Math.sin(step * 0.5), rzB = za - 0.06 * Math.sin(step * 0.5);
@@ -7857,8 +7928,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         v3feet(sw, pnH, shade(pnH, -34), '#1a1612', zr === 0, skH); v3arms(rzA, rzB, clH, skH, ext.k !== 'tank' && zr % 2 === 0, false);
       } else {
         v3ply(ext.L, ext.ar, ext.P); v3pdet(ext.L, clH, skH); v3face(skH, HAIRC[ext.L.hc] || HAIRC[1], ext.L.f === 1 ? null : '#7a3a36');
-        v3feet(sw, pnH, ext.ar && ext.ar.legs > 0 ? TIERCOL[ext.ar.legs] : '#2a2a30', '#141416', false, skH); v3arms(rzA, rzB, clH, skH, !gun, !!gun);
-        if (gun && ext.gd) v3figgun(ext.gd, ext.glo);
+        v3feet(sw, pnH, ext.ar && ext.ar.legs > 0 ? TIERCOL[ext.ar.legs] : '#2a2a30', '#141416', false, skH);
+        if (posed) {
+          var ps = v3pose(ext.P, ext.rr, ext.gd, mv, step), rh = v3hand(ps, ps.rx * 1, ps.ry), lh = v3hand(ps, ps.lx, ps.ly);
+          rh[2] = ps.gz + 0.3; lh[2] = ps.gz - 0.3;
+          rh = [rh[0] + (ps.fx - rh[0]) * ps.rw, rh[1] + (ps.fy - rh[1]) * ps.rw, rh[2] + (ps.fz - rh[2]) * ps.rw];
+          v3figgun(ext.gd, ext.glo, ps);
+          rh = v3arm2(6.6, rh, clH, skH); v3arm2(-6.6, lh, clH, skH);
+          if (ps.nade) { v3x(rh[0] + 1.6, rh[1] + 0.4, rh[2], 3, 3.6, 3, '#3a4a2c', 2); v3x(rh[0] + 1.6, rh[1] + 2.4, rh[2], 1.2, 1, 1.2, '#b8b8b8', 2); }
+        } else {
+          v3arms(rzA, rzB, clH, skH, !gun, !!gun);
+          if (gun && ext.gd) v3figgun(ext.gd, ext.glo);
+        }
       }
       V.fl = 0;
     }
@@ -7878,6 +7959,20 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var d = V.d, q = v3loc(f, u, r);
     d.position.set(q.x, q.y, q.z); d.rotation.order = 'YZX'; d.rotation.set(0, -fpYaw, fpPitch); d.scale.set(lx, ly, lz); d.updateMatrix(); d.rotation.order = 'XYZ';
     V.gun.setMatrixAt(V.gn, d.matrix); V.gun.setColorAt(V.gn, colr); V.gn++;
+  }
+  // how far ahead (along the view) the nearest solid thing is, for the gun to be pulled back and lowered before it pokes into it
+  function v3clear(ex, ez, dx, dz) {
+    var best = 999, i, q, t0, t1, a0, a1, tx0, tx1, tz0, tz1, tn, tf;
+    for (i = 0; i < RECTS.length; i++) {
+      q = RECTS[i];
+      if (q.bar || (q.door && q.open) || q.spawn !== undefined || q.w >= 1000 || q.h >= 1000) continue;
+      if (ex >= q.x && ex <= q.x + q.w && ez >= q.y && ez <= q.y + q.h) continue;
+      if (Math.abs(dx) < 1e-6) { if (ex < q.x || ex > q.x + q.w) continue; tx0 = -1e9; tx1 = 1e9; } else { tx0 = (q.x - ex) / dx; tx1 = (q.x + q.w - ex) / dx; if (tx0 > tx1) { a0 = tx0; tx0 = tx1; tx1 = a0; } }
+      if (Math.abs(dz) < 1e-6) { if (ez < q.y || ez > q.y + q.h) continue; tz0 = -1e9; tz1 = 1e9; } else { tz0 = (q.y - ez) / dz; tz1 = (q.y + q.h - ez) / dz; if (tz0 > tz1) { a1 = tz0; tz0 = tz1; tz1 = a1; } }
+      tn = Math.max(tx0, tz0); tf = Math.min(tx1, tz1);
+      if (tf >= Math.max(tn, 0) && tn < best) best = Math.max(0, tn);
+    }
+    return best;
   }
   function v3viewgun(gd, lo, kick, dip, bu, br) {
     var S = 0.55, art = GART[(gd.cls && gd.cls !== 'special') ? gd.cls : (gd.sid || gd.id)] || GART.rifle, kx = (gd.len + 5) / art.tip;
@@ -7904,7 +7999,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (!V.shown) { V.cvs.style.display = 'block'; V.shown = true; }
     var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = true;   /* every first-person map is played at night */
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
-    var eyeY = (me && me.down) ? 9 : 26, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
+    var eyeY = (me && me.down) ? 9 : 30.5, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
     V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
     var cpch = Math.cos(fpPitch), spch = Math.sin(fpPitch);
     V.ge = [focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3]; V.mz = 0;
@@ -7946,7 +8041,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var L = P.look || {}, mv = (P._v3s !== undefined && Math.abs(P.step - P._v3s) > 0.003) ? 1 : 0; P._v3s = P.step;
       var pAr = P.armor || { head: 0, body: 0, legs: 0 }, pJc = L.j === 1 ? '#5a6a3a' : (L.j === 2 ? '#f2a02a' : (LOOK_COLS[L.c] || LOOK_COLS[0])), pLg = pAr.legs > 0 ? TIERCOL[pAr.legs] : (PANTS[L.pn] || PANTS[0]);
       var pgd = rr && defOf(rr), pgl = (pgd && !pgd.special) ? gunLo(L, pgd.id) : null;
-      v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(pJc), v3col(pLg), !!P.down, !P.down, { L: L, ar: pAr, P: P, gd: pgd, glo: pgl });
+      v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(pJc), v3col(pLg), !!P.down, !P.down, { L: L, ar: pAr, P: P, gd: pgd, glo: pgl, rr: rr });
       v3blob(P.x, P.y, 10, 10); n++;
     }
     for (i = 0; i < players.length; i++) {   // pets
@@ -7964,8 +8059,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         var dyaw = fpYaw - (V.gy === undefined ? fpYaw : V.gy), dpit = fpPitch - (V.gp === undefined ? fpPitch : V.gp); V.gy = fpYaw; V.gp = fpPitch;
         V.sw = (V.sw || 0) * Math.exp(-gdt * 9) - Math.max(-0.4, Math.min(0.4, dyaw)) * 9; V.sp = (V.sp || 0) * Math.exp(-gdt * 9) - Math.max(-0.3, Math.min(0.3, dpit)) * 9;
         if (me.flash > 0) V.rc = Math.min(3.2, (V.rc || 0) + 1.4); V.rc = (V.rc || 0) * Math.exp(-gdt * 14);
-        var bph = me.step * 1.0;
-        v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), (me.flash > 0 ? 1.6 : 0) + V.rc, ((gref.reload > 0) ? 5 : 0) + V.rc * 0.35, V.gb * Math.abs(Math.sin(bph)) * -0.9 + Math.max(-2, Math.min(2, V.sp)) * 0.35, V.gb * Math.sin(bph) * 0.7 + Math.max(-3, Math.min(3, V.sw)) * 0.4);
+        var bph = me.step * 1.0, gcl = Math.min(v3clear(V.ge[0], V.ge[2], fcx, fcz), v3clear(V.ge[0] - 9 * Math.sin(fpYaw), V.ge[2] + 9 * Math.cos(fpYaw), fcx, fcz)), gwant = Math.max(0, Math.min(1, (48 - gcl) / 40));
+        V.gcp = (V.gcp || 0) + (gwant - (V.gcp || 0)) * Math.min(1, gdt * 14);   /* wall close ahead: the gun slides back and drops so it never goes through it */
+        v3viewgun(gdd, gdd.special ? null : gunLo(me.look, gdd.id), (me.flash > 0 ? 1.6 : 0) + V.rc + V.gcp * 24, ((gref.reload > 0) ? 5 : 0) + V.rc * 0.35 + V.gcp * V.gcp * 15, V.gb * Math.abs(Math.sin(bph)) * -0.9 + Math.max(-2, Math.min(2, V.sp)) * 0.35, V.gb * Math.sin(bph) * 0.7 + Math.max(-3, Math.min(3, V.sw)) * 0.4);
       }
     }
     for (i = 0; i < 6; i++) { V.fm[i].count = n; V.fm[i].instanceMatrix.needsUpdate = true; if (V.fm[i].instanceColor) V.fm[i].instanceColor.needsUpdate = true; }
