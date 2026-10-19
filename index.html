@@ -5096,7 +5096,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 206';
+  var updMsg = '', VERSION = 'Version 207';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -8125,18 +8125,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // lighting: sunset outside, dimmer and lamp-lit indoors, nearly black at night with a torch
     var ins = (me && v3inside(me.x, me.y)) ? 1 : 0, cp = V.cam.position;
     V.li += (ins - V.li) * 0.15;
-    if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x060608 : 0xe0a47c); V.sc.fog.near = night ? 50 : 350; V.sc.fog.far = night ? 560 : 1700; }
+    if (V.skyN !== night) { v3skyPaint(night); V.sc.fog.color.set(night ? 0x060608 : 0xe0a47c); V.sc.fog.near = night ? 50 : 350; V.sc.fog.far = night ? 620 : 1700; }
     V.sky.position.copy(cp);
     V.sdisc.visible = !night; V.sdisc.position.set(cp.x - 2000, cp.y + 880, cp.z + 800); V.sdisc.lookAt(cp);
-    V.hemi.intensity = night ? 0.4 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.55 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0x8fa8d8 : 0xff9a50);   /* at night the 'sun' is cool moonlight, which also casts the shadows */
-    V.pl.intensity = night ? 3.2 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
+    V.hemi.intensity = night ? 0.5 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 0.62 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0x8fa8d8 : 0xff9a50);   /* at night the 'sun' is cool moonlight, which also casts the shadows */
+    V.pl.intensity = night ? 3.6 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
     if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
     var snx = Math.round(focus.x / 14.375) * 14.375, sny = Math.round(focus.y / 14.375) * 14.375;   /* a whole number of shadow-map texels, so shadows do not shimmer as you walk */
      V.sun.target.position.set(snx, 0, sny); if (night) V.sun.position.set(snx - 600, 800, sny + 300); else V.sun.position.set(snx - 1000, 440, sny + 400);
     V.sf++; V.r.shadowMap.needsUpdate = V.rs;   /* must render a few times at the start or the shadow map does not exist and the whole scene goes black */
-    V.torch.intensity = (night && me && !me.down) ? 6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
+    V.torch.intensity = (night && me && !me.down) ? 6.6 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
     // figures
