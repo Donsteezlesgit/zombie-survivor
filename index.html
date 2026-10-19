@@ -4992,18 +4992,24 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     } else if (screen === 'settings') {
       h += '<h1>Settings</h1>';
+      h += '<div class="sec">Sound</div>';
       h += '<button class="go alt" data-a="mute" type="button">' + (muted ? 'Sound: off' : 'Sound: on') + '</button>';
       h += '<button class="go alt" data-a="hap" type="button">' + (hapOn ? 'Haptics: on' : 'Haptics: off') + '</button>';
+      h += '<div class="sec">Controls</div>';
       h += '<div class="sens"><label for="sensR">Turn speed <b id="sensV">' + Math.round(sensMul * 100) + '%</b></label><input id="sensR" class="sensr" type="range" min="30" max="250" step="5" value="' + Math.round(sensMul * 100) + '"></div>';
-      h += '<button class="go alt" data-a="v3d" type="button">' + (v3off ? '3D maps: off' : '3D maps: on') + '</button>';
-      h += '<button class="go alt" data-a="fps" type="button">' + (fpsOn ? 'FPS counter: on' : 'FPS counter: off') + '</button>';
-      h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
-      h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
       if (net.mode === 'off') h += '<button class="go alt" data-a="ctrl" type="button">' + (ctrlMode === 'two' ? 'Controls: two thumbs' : 'Controls: one finger') + '</button>';
       h += '<div class="swipe">' + (net.mode !== 'off' ? 'Online games use two thumbs: left walks, right aims' : (ctrlMode === 'two' ? 'Left thumb walks, right thumb aims' : 'Drag anywhere, aim is automatic')) + '</div>';
+      h += '<button class="go alt" data-a="btnedit" type="button">Move buttons</button>';
+      h += '<div class="sec">Graphics</div>';
+      h += '<button class="go alt" data-a="v3d" type="button">' + (v3off ? '3D maps: off' : '3D maps: on') + '</button>';
+      h += '<button class="go alt" data-a="fps" type="button">' + (fpsOn ? 'FPS counter: on' : 'FPS counter: off') + '</button>';
+      h += '<div class="sec">Help</div>';
+      h += '<button class="go alt" data-a="guide" type="button">Game guide</button>';
+      h += '<div class="sec">Game and data</div>';
       h += '<button class="go alt" data-a="refresh" type="button">Update game</button>';
       h += '<button class="chip" data-a="copylink" type="button">Copy game link</button>';
       h += '<button class="chip" data-a="backup" type="button">Backup progress</button>';
+      h += '<div class="sec">Advanced</div>';
       h += '<button class="chip" data-a="diag" type="button">Screen info</button>';
       h += DEV.on ? '<button class="chip" data-a="devoff" type="button">Dev mode: on (turn off)</button>' : '<button class="chip" data-a="devpw" type="button">Dev mode</button>';
       h += '<div class="msg">' + esc(updMsg) + '</div><div class="swipe">' + VERSION + '</div>';
@@ -5049,7 +5055,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 196';
+  var updMsg = '', VERSION = 'Version 197';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
