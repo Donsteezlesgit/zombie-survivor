@@ -140,6 +140,8 @@ body {
 .grengo { top: calc(54% + 58px); --a: 100; --b: 100; background: conic-gradient(rgba(242, 166, 78, 0.95) 0 calc(var(--a) * 0.46%), rgba(58, 44, 34, 0.9) calc(var(--a) * 0.46%) 46%, rgba(0, 0, 0, 0.9) 46% 54%, rgba(242, 166, 78, 0.95) 54% calc(54% + var(--b) * 0.46%), rgba(58, 44, 34, 0.9) calc(54% + var(--b) * 0.46%) 100%); }
 .scopego { width: 64px; height: 64px; top: calc(54% + 116px); touch-action: none; -webkit-user-select: none; user-select: none; }
 .firego { width: 76px; height: 76px; top: calc(54% + 196px); border-color: #ff5a3a; color: #ff5a3a; }
+.swapgo.jumpgo { width: 60px; height: 60px; top: auto; bottom: max(12px, env(safe-area-inset-bottom, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); border-color: #78c8ff; color: #78c8ff; touch-action: none; -webkit-user-select: none; user-select: none; z-index: 5; }
+.jumpgo:active { background: rgba(120, 200, 255, 0.4); color: #fff; border-color: #78c8ff; }
 .firego svg { width: 62px; height: 62px; padding: 12px; }
 .firego.on { background: rgba(255, 90, 58, 0.45); box-shadow: 0 0 14px rgba(255, 90, 58, 0.6); }
 .scopego svg { background: rgba(0, 0, 0, 0.78); border-radius: 50%; padding: 10px; width: 52px; height: 52px; box-sizing: border-box; }
@@ -606,6 +608,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   <button class="swapgo grengo" id="grenGo" type="button" aria-label="Throw grenade" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14.5" r="6.5"/><path d="M10 8V5.5h4V8"/><path d="M14 5.5l3.5-2.5"/><path d="M9.2 12.2l5.6 4.6M14.8 12.2l-5.6 4.6"/></g></svg></button>
   <button class="swapgo scopego" id="scopeGo" type="button" aria-label="Scope: tap to aim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/></g></svg></button>
   <button class="swapgo scopego firego" id="fireGo" type="button" aria-label="Shoot: hold to fire, slide to look" hidden><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="8.5"/></g></svg></button>
+  <button class="swapgo jumpgo" id="jumpGo" type="button" aria-label="Jump" hidden><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l7-7 7 7"/><path d="M5 19l7-7 7 7"/></g></svg></button>
   <button class="boxbtn" id="boxBtn" type="button" hidden>Mystery box · 120</button>
   <div class="boxui" id="boxUI" hidden><div class="boxcard"><h2>Mystery box</h2><div id="boxBody"></div></div></div>
   <div class="banner" id="banner" hidden><h2 id="bnTitle"></h2><p id="bnText"></p></div>
@@ -1020,6 +1023,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- buildings ----------
   // RECTS: solid for movement. BLD: the four spawn buildings, each with a pocket and a barrier zombies must smash.
   var RECTS = [], BLD = [], ROOFS = [], DOORS = [], LIGHTS = [], MAPCFG = { sx: 750, sy: 750, nav: false };
+  var LV = { on: false, H: [-40, 0, 54, 108], floors: [], stairs: [], pit: null, pitR: null };   /* floors: only The Factory switches this on */
   var POCKET_D = 54, POCKET_HW = 52, WALL_T = 12;
   function mkRect(cx, cy, alongN, alongT, horizN) {
     var w = horizN ? alongN : alongT, h = horizN ? alongT : alongN;
@@ -1497,24 +1501,39 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
 
   // ---------- doors and zombie pathfinding (Haunted House) ----------
-  var NC = 20, NN = 0, navOn = false, navBase = null, navCost = null, navDist = null, navPar = null, navT = 0, navHeapK = [], navHeapV = [];
+  var NC = 20, NN = 0, NN2 = 0, NL = 1, LO = 0, navOn = false, navBase = null, navCost = null, navDist = null, navPar = null, navStair = null, navT = 0, navHeapK = [], navHeapV = [];
+  // levels: on a map with floors the grid has one layer per level (-1..2), joined only through stairs. On every other map there is one layer and nothing changes.
   function navInit() {
     navOn = !!MAPCFG.nav; navT = 0;
     if (!navOn) return;
-    NN = Math.round(WORLD / NC);
-    navBase = new Uint8Array(NN * NN); navCost = new Float64Array(NN * NN); navDist = new Float64Array(NN * NN); navPar = new Int32Array(NN * NN);
-    var cx, cy, i, j, c, blocked, inf = 15, d;
-    for (cy = 0; cy < NN; cy++) for (cx = 0; cx < NN; cx++) {
-      var x = cx * NC + NC / 2, y = cy * NC + NC / 2;
-      blocked = x < WALL + inf || y < WALL + inf || x > WORLD - WALL - inf || y > WORLD - WALL - inf;
-      for (i = 0; !blocked && i < RECTS.length; i++) { d = RECTS[i]; if (d.door || d.bar) continue; if (distRect(x, y, d) < inf) blocked = true; }
-      navBase[cy * NN + cx] = blocked ? 1 : 0;
+    NN = Math.round(WORLD / NC); NN2 = NN * NN; NL = LV.on ? 4 : 1; LO = LV.on ? 1 : 0;
+    var tot = NN2 * NL;
+    navBase = new Uint8Array(tot); navCost = new Float64Array(tot); navDist = new Float64Array(tot); navPar = new Int32Array(tot);
+    navStair = LV.on ? new Int16Array(NN2) : null;
+    var cx, cy, i, j, c, blocked, inf = 15, d, li, lvv, x, y, si, s, t, h;
+    if (navStair) for (c = 0; c < NN2; c++) navStair[c] = -1;
+    for (li = 0; li < NL; li++) {
+      lvv = li - LO;
+      for (cy = 0; cy < NN; cy++) for (cx = 0; cx < NN; cx++) {
+        x = cx * NC + NC / 2; y = cy * NC + NC / 2;
+        blocked = x < WALL + inf || y < WALL + inf || x > WORLD - WALL - inf || y > WORLD - WALL - inf;
+        for (i = 0; !blocked && i < RECTS.length; i++) { d = RECTS[i]; if (d.door || d.bar) continue; if (LV.on && !rOn(d, lvv)) continue; if (distRect(x, y, d) < inf) blocked = true; }
+        if (LV.on && !blocked) {
+          si = -1;
+          for (i = 0; i < LV.stairs.length; i++) { s = LV.stairs[i]; if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) { si = i; break; } }
+          if (si >= 0) {
+            s = LV.stairs[si]; t = stairT(s, x, y); navStair[cy * NN + cx] = si;
+            if (!((lvv === s.a && t < 0.5) || (lvv === s.b && t >= 0.5))) blocked = true;
+          } else { h = surf(x, y, lvv); if (h !== h) blocked = true; }
+        }
+        navBase[li * NN2 + cy * NN + cx] = blocked ? 1 : 0;
+      }
     }
     function cellsNear(rc) {
       var out = [];
       for (var yy = Math.max(0, Math.floor((rc.y - inf) / NC)); yy <= Math.min(NN - 1, Math.floor((rc.y + rc.h + inf) / NC)); yy++)
         for (var xx = Math.max(0, Math.floor((rc.x - inf) / NC)); xx <= Math.min(NN - 1, Math.floor((rc.x + rc.w + inf) / NC)); xx++) {
-          var cc = yy * NN + xx;
+          var cc = LO * NN2 + yy * NN + xx;
           if (!navBase[cc] && distRect(xx * NC + NC / 2, yy * NC + NC / 2, rc) < inf) out.push(cc);
         }
       return out;
@@ -1524,7 +1543,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function navUpdate() {
     if (!navOn) return;
-    var n = NN * NN, i, j, c, d, inf = Infinity;
+    var n = NN2 * NL, i, j, c, d, inf = Infinity;
     for (i = 0; i < n; i++) { navCost[i] = navBase[i] ? inf : 1; navDist[i] = inf; navPar[i] = -1; }
     for (i = 0; i < DOORS.length; i++) { d = DOORS[i]; if (!d.open) for (j = 0; j < d.cells.length; j++) navCost[d.cells[j]] = 40; }
     for (i = 0; i < BLD.length; i++) { d = BLD[i].bar; if (d.planks > 0) for (j = 0; j < d.cells.length; j++) navCost[d.cells[j]] = inf; }
@@ -1535,13 +1554,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     function pop() { var rv = hv[0], k = hk[--hn], v = hv[hn], p = 0; if (hn > 0) { for (;;) { var l = p * 2 + 1; if (l >= hn) break; if (l + 1 < hn && hk[l + 1] < hk[l]) l++; if (hk[l] >= k) break; hk[p] = hk[l]; hv[p] = hv[l]; p = l; } hk[p] = k; hv[p] = v; } return rv; }
     for (i = 0; i < players.length; i++) {
       var P = players[i]; if (P.down) continue;
-      var pcx = Math.max(0, Math.min(NN - 1, Math.floor(P.x / NC))), pcy = Math.max(0, Math.min(NN - 1, Math.floor(P.y / NC)));
-      c = pcy * NN + pcx;
+      var pcx = Math.max(0, Math.min(NN - 1, Math.floor(P.x / NC))), pcy = Math.max(0, Math.min(NN - 1, Math.floor(P.y / NC))), pl = LV.on ? ((P.lv | 0) + LO) * NN2 : 0;
+      c = pl + pcy * NN + pcx;
       if (navCost[c] === inf) {   // standing in a tight gap the grid thinks is blocked: aim the paths at the nearest open cell instead
         var bc = -1, bdd = 1e9, ax, ay, ac, dd;
         for (ay = -3; ay <= 3; ay++) for (ax = -3; ax <= 3; ax++) {
           var qx = pcx + ax, qy = pcy + ay; if (qx < 0 || qy < 0 || qx >= NN || qy >= NN) continue;
-          ac = qy * NN + qx; if (navCost[ac] === inf) continue;
+          ac = pl + qy * NN + qx; if (navCost[ac] === inf) continue;
           dd = ax * ax + ay * ay; if (dd < bdd) { bdd = dd; bc = ac; }
         }
         if (bc >= 0) c = bc;
@@ -1552,23 +1571,29 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     while (hn > 0) {
       var kd = hk[0]; c = pop();
       if (kd > navDist[c]) continue;
-      var ux = c % NN, uy = (c - ux) / NN;
+      var cell = c % NN2, lb = c - cell, ux = cell % NN, uy = (cell - ux) / NN, ss = LV.on ? navStair[cell] : -1;
       for (j = 0; j < 8; j++) {
         var vx = ux + DX[j], vy = uy + DY[j];
         if (vx < 0 || vy < 0 || vx >= NN || vy >= NN) continue;
-        var vc = vy * NN + vx, cost = navCost[vc];
-        if (cost === inf) continue;
-        if (j >= 4 && (navCost[uy * NN + vx] === inf || navCost[vy * NN + ux] === inf)) continue;
-        var nd = kd + (j >= 4 ? 1.414 : 1) * cost;
-        if (nd < navDist[vc]) { navDist[vc] = nd; navPar[vc] = c; push(nd, vc); }
+        var vcell = vy * NN + vx, vc = lb + vcell, cost = navCost[vc];
+        if (j >= 4 && (navCost[lb + uy * NN + vx] === inf || navCost[lb + vy * NN + ux] === inf)) continue;
+        var nd = kd + (j >= 4 ? 1.414 : 1) * (cost === inf ? 0 : cost);
+        if (cost !== inf && nd < navDist[vc]) { navDist[vc] = nd; navPar[vc] = c; push(nd, vc); }
+        if (ss >= 0 && navStair[vcell] === ss) {   // on a stair the next cell up or down the flight is on the other level
+          var sr = LV.stairs[ss], oli = (lb / NN2 - LO === sr.a) ? sr.b + LO : sr.a + LO, vc2 = oli * NN2 + vcell, cost2 = navCost[vc2];
+          if (cost2 !== inf && !(j >= 4 && (navCost[oli * NN2 + uy * NN + vx] === inf || navCost[oli * NN2 + vy * NN + ux] === inf))) {
+            var nd2 = kd + (j >= 4 ? 1.414 : 1) * cost2;
+            if (nd2 < navDist[vc2]) { navDist[vc2] = nd2; navPar[vc2] = c; push(nd2, vc2); }
+          }
+        }
       }
     }
   }
-  function navLOS(x0, y0, x1, y1) {
-    var dx = x1 - x0, dy = y1 - y0, dist = Math.hypot(dx, dy), steps = Math.ceil(dist / 9), i, cx, cy;
+  function navLOS(x0, y0, x1, y1, lv) {
+    var dx = x1 - x0, dy = y1 - y0, dist = Math.hypot(dx, dy), steps = Math.ceil(dist / 9), i, cx, cy, lo = LV.on ? ((lv | 0) + LO) * NN2 : 0;
     for (i = 1; i < steps; i++) {
       cx = Math.floor((x0 + dx * i / steps) / NC); cy = Math.floor((y0 + dy * i / steps) / NC);
-      if (cx < 0 || cy < 0 || cx >= NN || cy >= NN || navCost[cy * NN + cx] !== 1) return false;
+      if (cx < 0 || cy < 0 || cx >= NN || cy >= NN || navCost[lo + cy * NN + cx] !== 1) return false;
     }
     return true;
   }
@@ -1576,32 +1601,37 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function navSteer(z, T, out) {
     if (!navOn) return false;
     out.way = false;
-    if (navLOS(z.x, z.y, T.x, T.y)) { out.x = T.x; out.y = T.y; return true; }
-    var cx = Math.max(0, Math.min(NN - 1, Math.floor(z.x / NC))), cy = Math.max(0, Math.min(NN - 1, Math.floor(z.y / NC))), c = cy * NN + cx;
+    var zl = LV.on ? (z.lv | 0) : 0, zo = LV.on ? (zl + LO) * NN2 : 0;
+    if ((!LV.on || zl === (T.lv | 0)) && navLOS(z.x, z.y, T.x, T.y, zl)) { out.x = T.x; out.y = T.y; return true; }
+    var cx = Math.max(0, Math.min(NN - 1, Math.floor(z.x / NC))), cy = Math.max(0, Math.min(NN - 1, Math.floor(z.y / NC))), c = zo + cy * NN + cx;
     if (navDist[c] === Infinity) {
       // pressed against a wall (an inflated cell): head for the best open cell close by
       var best = -1, bd = Infinity, bx, by, nd2;
       for (by = -2; by <= 2; by++) for (bx = -2; bx <= 2; bx++) {
         var nx = cx + bx, ny = cy + by;
         if (nx < 0 || ny < 0 || nx >= NN || ny >= NN) continue;
-        nd2 = navDist[ny * NN + nx];
+        nd2 = navDist[zo + ny * NN + nx];
         if (nd2 === Infinity) continue;
         nd2 += Math.hypot(bx, by) * 3;
-        if (nd2 < bd) { bd = nd2; best = ny * NN + nx; }
+        if (nd2 < bd) { bd = nd2; best = zo + ny * NN + nx; }
       }
       if (best < 0) return false;
-      out.x = (best % NN) * NC + NC / 2; out.y = Math.floor(best / NN) * NC + NC / 2; out.way = true;
+      var bcell = best % NN2;
+      out.x = (bcell % NN) * NC + NC / 2; out.y = Math.floor(bcell / NN) * NC + NC / 2; out.way = true;
       return true;
     }
-    var p = c, k, n2;
+    var p = c, k, n2, ncell, nlv;
     for (k = 0; k < 5; k++) {
       n2 = navPar[p];
-      if (n2 < 0) { out.x = T.x; out.y = T.y; return true; }
-      var nx2 = (n2 % NN) * NC + NC / 2, ny2 = Math.floor(n2 / NN) * NC + NC / 2;
-      if (k > 0 && !navLOS(z.x, z.y, nx2, ny2)) break;
+      if (n2 < 0) { if (!LV.on || zl === (T.lv | 0)) { out.x = T.x; out.y = T.y; return true; } break; }
+      ncell = n2 % NN2; nlv = (n2 - ncell) / NN2 - LO;
+      var nx2 = (ncell % NN) * NC + NC / 2, ny2 = Math.floor(ncell / NN) * NC + NC / 2;
+      if (LV.on && nlv !== zl) { p = n2; break; }   // the next step is up or down a stair: head for it
+      if (k > 0 && !navLOS(z.x, z.y, nx2, ny2, zl)) break;
       p = n2;
     }
-    out.x = (p % NN) * NC + NC / 2; out.y = Math.floor(p / NN) * NC + NC / 2; out.way = true;
+    var pcell = p % NN2;
+    out.x = (pcell % NN) * NC + NC / 2; out.y = Math.floor(pcell / NN) * NC + NC / 2; out.way = true;
     return true;
   }
   var navOut = { x: 0, y: 0 };
@@ -2244,13 +2274,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
 
   // ---------- The Factory (3D only). Laid out from the approved blueprint C: blueprint units x FA_K = world units. ----------
   // Step 1 is ground level only: every building, the bent rail pit (flat for now), cover, spawn doors and pens. Floors, stairs, catwalks and jumping come in step 2.
-  var FA_K = 5.6, FB = [], FA_SILO = null;
-  var FA_PIT = [[110, 30], [160, 30], [160, 205], [240, 285], [240, 390], [190, 390], [190, 305], [110, 222]];
-  var FA_RAIL = [[135, 30], [135, 214], [215, 296], [215, 390]];
+  var FA_K = 5.6, FB = [], FA_SILO = null, FA_DOORS = [];
+  var FA_PITW = [[700, 258], [940, 258], [940, 1098], [1344, 1098], [1344, 2156], [1064, 2156], [1064, 1342], [700, 1342]];   /* the rail pit's outline, world units */
+  var FA_PITR = [[700, 258, 240, 840], [700, 1098, 644, 244], [1064, 1342, 280, 814]];   /* the same pit as three boxes */
+  var FA_PIT = FA_PITW.map(function (p) { return [p[0] / FA_K, p[1] / FA_K]; });
+  var FA_RAIL = [[820, 258], [820, 1220], [1204, 1220], [1204, 2156]].map(function (p) { return [p[0] / FA_K, p[1] / FA_K]; });
   function buildFactory() {
-    var T = WALL_T, K = FA_K;
-    FB = []; FA_SILO = null;
+    var T = WALL_T, K = FA_K, ST = 4;
+    FB = []; FA_SILO = null; FA_DOORS = [];
+    LV.pit = FA_PITW; LV.pitR = FA_PITR;
     function R(x, y, w, h, o) { var q = { x: x, y: y, w: w, h: h }, k; if (o) for (k in o) q[k] = o[k]; RECTS.push(q); return q; }
+    function LR(x, y, w, h, l0, l1, o) { var q = R(x, y, w, h, o); q.l0 = l0; q.l1 = l1; return q; }
     function WL(x, y, len, vert, gaps, o) {
       dtGaps(x, y, len, vert, gaps || []).forEach(function (p) { R(p[0] - (vert ? T / 2 : 0), p[1] - (vert ? 0 : T / 2), vert ? T : p[2], vert ? p[3] : T, o); });
     }
@@ -2268,24 +2302,78 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       bar.cx = bar.x + bar.w / 2; bar.cy = bar.y + bar.h / 2; RECTS.push(bar);
       var pk = mkRect(ex + nx * POCKET_D / 2, ey + ny * POCKET_D / 2, POCKET_D, POCKET_HW * 2, hz);
       BLD.push({ roof: roof, bar: bar, pocket: pk, sx: ex + nx * POCKET_D * 0.5, sy: ey + ny * POCKET_D * 0.5, tx: tx, ty: ty, nx: nx, ny: ny, ex: ex, ey: ey, fd: kind });
+      BLD.push({ roof: roof, bar: bar, pocket: pk, sx: ex + nx * POCKET_D * 0.5, sy: ey + ny * POCKET_D * 0.5, tx: tx, ty: ty, nx: nx, ny: ny, ex: ex, ey: ey, fd: kind });
+    }
+    // ---- floors, stairs and rails
+    function subR(p, h) {   // a box with another box cut out of it: the pieces left
+      var o = [], x0 = Math.max(p[0], h[0]), y0 = Math.max(p[1], h[1]), x1 = Math.min(p[0] + p[2], h[0] + h[2]), y1 = Math.min(p[1] + p[3], h[1] + h[3]);
+      if (x0 >= x1 || y0 >= y1) return [p];
+      if (x0 > p[0]) o.push([p[0], p[1], x0 - p[0], p[3]]);
+      if (x1 < p[0] + p[2]) o.push([x1, p[1], p[0] + p[2] - x1, p[3]]);
+      if (y0 > p[1]) o.push([x0, p[1], x1 - x0, y0 - p[1]]);
+      if (y1 < p[1] + p[3]) o.push([x0, y1, x1 - x0, p[1] + p[3] - y1]);
+      return o;
+    }
+    function floorArea(lv, mat, r, holes) {
+      var ps = [r];
+      holes.forEach(function (h) { var nx = []; ps.forEach(function (p) { subR(p, h).forEach(function (q) { nx.push(q); }); }); ps = nx; });
+      ps.forEach(function (p) { LV.floors.push({ x: p[0], y: p[1], w: p[2], h: p[3], lv: lv, mat: mat }); });
+    }
+    // a flight of stairs from level a up to level b, going in direction dir. Walls down both sides, a wall under the top end, a rail round the bottom end on the upper floor.
+    function stairway(x, y, w, h, dir, a, b, o) {
+      var s = { x: x, y: y, w: w, h: h, dir: dir, a: a, b: b }, vert = dir === 'n' || dir === 's', si, tp, bt;
+      LV.stairs.push(s); si = LV.stairs.length - 1;
+      s.hole = vert ? [x - ST, y, w + 2 * ST, h] : [x, y - ST, w, h + 2 * ST];
+      if (o && o.nob) return s;
+      if (vert) { LR(x - ST, y, ST, h, a, b, { stw: si }); LR(x + w, y, ST, h, a, b, { stw: si }); }
+      else { LR(x, y - ST, w, ST, a, b, { stw: si }); LR(x, y + h, w, ST, a, b, { stw: si }); }
+      tp = dir === 'n' ? [x - ST, y - ST, w + 2 * ST, ST] : dir === 's' ? [x - ST, y + h, w + 2 * ST, ST] : dir === 'w' ? [x - ST, y - ST, ST, h + 2 * ST] : [x + w, y - ST, ST, h + 2 * ST];
+      bt = dir === 'n' ? [x - ST, y + h, w + 2 * ST, ST] : dir === 's' ? [x - ST, y - ST, w + 2 * ST, ST] : dir === 'w' ? [x + w, y - ST, ST, h + 2 * ST] : [x - ST, y - ST, ST, h + 2 * ST];
+      LR(tp[0], tp[1], tp[2], tp[3], a, a, { stt: si });
+      LR(bt[0], bt[1], bt[2], bt[3], b, b, { stg: si, rail: 1, rl: lvH(b) });
+      return s;
+    }
+    function rail(x0, y0, x1, y1, lv) {   // a guard rail along an axis line, on level lv
+      var t = 4;
+      if (y0 === y1) return LR(Math.min(x0, x1), y0 - t / 2, Math.abs(x1 - x0), t, lv, lv, { rail: 1, rl: lvH(lv) });
+      return LR(x0 - t / 2, Math.min(y0, y1), t, Math.abs(y1 - y0), lv, lv, { rail: 1, rl: lvH(lv) });
     }
     // a room-building: four walls with doorways and open windows, inside walls, and any spawn doors. All offsets are from the building's top-left corner.
+    // o.up = { st: stairs up to the first floor, fl: first-floor boxes, rl: guard rails, u: first-floor inside walls }
     function room(name, x, y, w, h, H, mat, col, o) {
-      var b = { name: name, x: x, y: y, w: w, h: h, H: H, mat: mat, col: col }, g = { n: [], s: [], w: [], e: [] }, op = { wl: 1, hh: H, mat: mat, col: col };
+      var up = !!o.up, hi = up ? 50 : H, b = { name: name, x: x, y: y, w: w, h: h, H: H, mat: mat, col: col, up: up }, g = { n: [], s: [], w: [], e: [] }, op = { wl: 1, hh: H, mat: mat, col: col };
       FB.push(b);
       (o.d || []).forEach(function (a) { g[a[0]].push([a[1] + T / 2, a[1] + a[2] + T / 2]); });
       (o.w || []).forEach(function (a) { g[a[0]].push([a[1] + T / 2, a[1] + a[2] + T / 2]); });
       WL(x - T / 2, y, w + T, false, g.n, op); WL(x - T / 2, y + h, w + T, false, g.s, op);
       WL(x, y - T / 2, h + T, true, g.w, op); WL(x + w, y - T / 2, h + T, true, g.e, op);
+      function put(s, p, l, o2) {
+        if (s === 'n') return R(x + p, y - T / 2, l, T, o2); if (s === 's') return R(x + p, y + h - T / 2, l, T, o2);
+        if (s === 'w') return R(x - T / 2, y + p, T, l, o2); return R(x + w - T / 2, y + p, T, l, o2);
+      }
+      (o.d || []).forEach(function (a) { var s2 = a[0], p2 = a[1], l2 = a[2]; FA_DOORS.push(s2 === 'n' ? [x + p2, y - T / 2, l2, T] : s2 === 's' ? [x + p2, y + h - T / 2, l2, T] : s2 === 'w' ? [x - T / 2, y + p2, T, l2] : [x + w - T / 2, y + p2, T, l2]); });
+      if (up) (o.d || []).forEach(function (a) { put(a[0], a[1], a[2], { lint: 1, wb: 48, hh: H, mat: mat, col: col, l0: 1, l1: 2 }); });   // over every doorway the wall carries on upstairs
       (o.w || []).forEach(function (a) {
-        var s = a[0], p = a[1], l = a[2], wo = { furn: 'deco', win: 1, hh: H, mat: mat, col: col };
-        if (s === 'n') R(x + p, y - T / 2, l, T, wo); else if (s === 's') R(x + p, y + h - T / 2, l, T, wo);
-        else if (s === 'w') R(x - T / 2, y + p, T, l, wo); else R(x + w - T / 2, y + p, T, l, wo);
+        var wo = { furn: 'deco', win: 1, rail: 1, wb: 0, hh: up ? 54 : H, mat: mat, col: col };
+        if (up) { wo.l0 = 0; wo.l1 = 0; }
+        put(a[0], a[1], a[2], wo);
+        if (up) put(a[0], a[1], a[2], { furn: 'deco', win: 1, rail: 1, wb: 54, hh: H, mat: mat, col: col, l0: 1, l1: 1 });
       });
       (o.i || []).forEach(function (a) {   // ['h'|'v', position, from, to, gaps]
-        var io = { wl: 1, hh: H, mat: 'plaster', col: [0.78, 0.74, 0.68] };
+        var io = { wl: 1, hh: hi, mat: 'plaster', col: [0.78, 0.74, 0.68] };
+        if (up) { io.l0 = 0; io.l1 = 0; }
         if (a[0] === 'h') WL(x + a[2], y + a[1], a[3] - a[2], false, a[4], io); else WL(x + a[1], y + a[2], a[3] - a[2], true, a[4], io);
       });
+      if (up) {
+        var holes = [];
+        (o.up.st || []).forEach(function (s) { holes.push(stairway(x + s[0], y + s[1], s[2], s[3], s[4], 0, 1).hole); });
+        (o.up.fl || []).forEach(function (f) { floorArea(1, 'plaster', [x + f[0], y + f[1], f[2], f[3]], holes); });
+        (o.up.rl || []).forEach(function (r) { rail(x + r[0], y + r[1], x + r[2], y + r[3], 1); });
+        (o.up.u || []).forEach(function (a) {
+          var io = { wl: 1, hh: H, wb: 54, mat: 'plaster', col: [0.74, 0.7, 0.64], l0: 1, l1: 1 };
+          if (a[0] === 'h') WL(x + a[2], y + a[1], a[3] - a[2], false, a[4], io); else WL(x + a[1], y + a[2], a[3] - a[2], true, a[4], io);
+        });
+      }
       (o.p || []).forEach(function (a) { R(x + a[0], y + a[1], 36, 36, { prop: 'pillar', hh: H }); });
       (o.sp || []).forEach(function (a) {
         var s = a[0], p = a[1];
@@ -2294,51 +2382,106 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       });
       return b;
     }
-    // ---- the eight buildings (heights in world units; the player's eye is about 30)
-    room('Boiler house', 190, 224, 370, 448, 64, 'brick', [0.82, 0.5, 0.4], {
+    // ---- the eight buildings (heights in world units; the player's eye is about 30, the first floor is 54 up)
+    room('Boiler house', 190, 224, 370, 448, 108, 'brick', [0.82, 0.5, 0.4], {
       d: [['s', 150, 70], ['w', 300, 70], ['n', 60, 70]], w: [['e', 30, 60], ['e', 330, 60], ['n', 220, 60], ['w', 60, 60], ['w', 170, 60]],
-      i: [['h', 224, 0, 370, [[60, 130], [250, 320]]], ['v', 185, 0, 224, [[80, 150]]]], sp: [['e', 224]]
+      i: [['h', 224, 0, 370, [[60, 130], [250, 320]]], ['v', 185, 0, 224, [[80, 150]]]], sp: [['e', 224]],
+      up: { st: [[290, 262, 56, 140, 'n']], fl: [[6, 6, 358, 436]] }
     });
-    room('Stores', 190, 784, 370, 392, 56, 'brick', [0.72, 0.52, 0.44], {
+    room('Stores', 190, 784, 370, 392, 108, 'brick', [0.72, 0.52, 0.44], {
       d: [['n', 150, 70], ['s', 60, 70], ['w', 150, 70]], w: [['e', 40, 60], ['e', 290, 60], ['n', 280, 60], ['w', 280, 60]],
-      i: [['v', 150, 0, 392, [[150, 220]]], ['h', 200, 150, 370, [[100, 170]]]], sp: [['e', 196]]
+      i: [['v', 150, 0, 392, [[150, 220]]], ['h', 200, 150, 370, [[100, 170]]]], sp: [['e', 196]],
+      up: { st: [[304, 215, 56, 125, 'n']], fl: [[6, 6, 358, 380]] }
     });
-    room('Paint shop', 190, 1372, 470, 700, 60, 'metal', [0.58, 0.62, 0.64], {
+    room('Paint shop', 190, 1372, 470, 700, 108, 'metal', [0.58, 0.62, 0.64], {
       d: [['s', 300, 70], ['w', 330, 70], ['e', 560, 70]], w: [['w', 60, 60], ['w', 150, 60], ['w', 450, 60], ['w', 540, 60], ['e', 70, 60], ['e', 500, 60], ['n', 80, 60], ['n', 330, 60], ['s', 60, 60], ['s', 160, 60]],
-      i: [['h', 300, 0, 470, [[60, 130], [300, 370]]], ['v', 235, 300, 700, [[150, 220]]]], sp: [['e', 350], ['n', 235]]
+      i: [['h', 300, 0, 470, [[60, 130], [300, 370]]], ['v', 235, 300, 700, [[150, 220]]]], sp: [['e', 350], ['n', 235]],
+      up: { st: [[394, 60, 56, 130, 'n']], fl: [[6, 6, 458, 288]], rl: [[6, 294, 464, 294]] }
     });
     room('Gatehouse', 1036, 157, 426, 157, 52, 'brick', [0.78, 0.46, 0.38], {
       d: [['s', 180, 70]], w: [['n', 60, 60], ['n', 300, 60], ['e', 50, 60], ['s', 50, 60], ['s', 330, 60]],
       i: [['v', 213, 0, 157, [[40, 100]]]], sp: [['w', 78]]
     });
-    room('Main hall', 1008, 392, 504, 560, 92, 'metal', [0.62, 0.66, 0.68], {
+    room('Main hall', 1008, 392, 504, 560, 132, 'metal', [0.62, 0.66, 0.68], {
       d: [['w', 250, 80], ['w', 440, 70], ['n', 100, 80], ['e', 330, 80]],
       w: [['w', 60, 60], ['w', 140, 60], ['e', 150, 60], ['e', 430, 60], ['n', 260, 60], ['n', 350, 60], ['s', 40, 60], ['s', 110, 60], ['s', 340, 60], ['s', 420, 60]],
-      i: [['h', 160, 0, 504, [[60, 150], [350, 440]]], ['v', 252, 0, 160, [[50, 120]]]], p: [[122, 282], [346, 282], [122, 432], [346, 432]], sp: [['s', 252]]
+      i: [['h', 160, 0, 504, [[60, 150], [350, 440]]], ['v', 252, 0, 160, [[50, 120]]]], p: [[122, 282], [346, 282], [122, 432], [346, 432]], sp: [['s', 252]],
+      up: { st: [[440, 176, 56, 125, 'n']], fl: [[6, 6, 492, 170], [6, 176, 124, 372]], rl: [[130, 176, 436, 176], [130, 176, 130, 548]] }
     });
-    room('Offices', 1568, 190, 370, 482, 80, 'brick', [0.76, 0.5, 0.42], {
+    room('Offices', 1568, 190, 370, 482, 108, 'brick', [0.76, 0.5, 0.42], {
       d: [['w', 200, 70], ['s', 40, 70], ['s', 270, 70], ['e', 250, 70]], w: [['n', 60, 60], ['n', 240, 60], ['e', 60, 60], ['e', 360, 60], ['w', 60, 60], ['w', 330, 60]],
-      i: [['v', 120, 0, 482, [[40, 110], [260, 330], [370, 440]]], ['h', 160, 120, 370, [[60, 130]]], ['h', 320, 120, 370, [[150, 220]]]], sp: [['s', 185]]
+      i: [['v', 120, 0, 482, [[40, 110], [260, 330], [370, 440]]], ['h', 160, 120, 370, [[60, 130]]], ['h', 320, 120, 370, [[150, 220]]]], sp: [['s', 185]],
+      up: { st: [[40, 60, 56, 130, 'n']], fl: [[6, 6, 358, 470]], u: [['v', 190, 0, 482, [[40, 110], [200, 270], [370, 440]]], ['h', 240, 190, 370, [[60, 130]]]] }
     });
-    room('Foundry', 1512, 1064, 426, 392, 76, 'metal', [0.66, 0.6, 0.55], {
+    room('Foundry', 1512, 1064, 426, 392, 116, 'metal', [0.66, 0.6, 0.55], {
       d: [['n', 60, 70], ['n', 300, 70], ['s', 250, 70], ['e', 100, 70]], w: [['n', 180, 60], ['e', 220, 60], ['e', 300, 60], ['s', 60, 60], ['s', 330, 60], ['w', 40, 60], ['w', 300, 60]],
-      i: [['v', 213, 0, 392, [[60, 130], [250, 320]]], ['h', 196, 0, 213, [[80, 150]]]], sp: [['w', 196]]
+      i: [['v', 213, 0, 392, [[60, 130], [250, 320]]], ['h', 196, 0, 213, [[80, 150]]]], sp: [['w', 196]],
+      up: { st: [[300, 50, 56, 130, 'n']], fl: [[232, 6, 188, 380]], rl: [[232, 6, 232, 386]] }
     });
-    // the silo: a solid eight-sided tower for now (inside and levels come in step 2)
-    var sx0 = 1680, sy0 = 1848, sr = 224, so = { silo: 1, hh: 100 };
-    FA_SILO = { x: sx0, y: sy0, r: sr, H: 100 };
-    var sA = R(sx0 - sr * 0.95, sy0 - sr * 0.42, sr * 1.9, sr * 0.84, so); R(sx0 - sr * 0.42, sy0 - sr * 0.95, sr * 0.84, sr * 1.9, so); R(sx0 - sr * 0.7, sy0 - sr * 0.7, sr * 1.4, sr * 1.4, so);
-    spawnDoor(sx0 - sr * 0.95, sy0, -1, 0, sA, 'door');
+    // ---- the silo: an eight-sided tower you can go into. Doors north and south, stairs up inside to two floors, windows on the east side.
+    var cx = 1680, cy = 1848, SH = 170, RC = 200, HE = 82.84, sg = [0.62, 0.64, 0.66], sm = { wl: 1, hh: SH, mat: 'metal', col: sg }, wW;
+    FA_SILO = { x: cx, y: cy, r: 224.1, H: SH, ri: 207 };
+    R(cx + 193, cy - 90, 14, 60, sm); R(cx + 193, cy + 30, 14, 60, sm);   // east face, with a window slot between
+    LR(cx + 193, cy - 30, 14, 60, 0, 0, { wl: 1, hh: 54, mat: 'metal', col: sg });
+    LR(cx + 193, cy - 30, 14, 60, 1, 1, { furn: 'deco', win: 1, rail: 1, wb: 54, hh: 108, mat: 'metal', col: sg });
+    LR(cx + 193, cy - 30, 14, 60, 2, 2, { furn: 'deco', win: 1, rail: 1, wb: 108, hh: SH, mat: 'metal', col: sg });
+    [-1, 1].forEach(function (sd) {   // north and south faces, each with a doorway
+      var yy = sd < 0 ? cy - 207 : cy + 193;
+      R(cx - 90, yy, 55, 14, sm); R(cx + 35, yy, 55, 14, sm);
+      LR(cx - 35, yy, 70, 14, 1, 2, { lint: 1, wb: 48, hh: SH, mat: 'metal', col: sg });
+      FA_DOORS.push([cx - 35, yy, 70, 14]);
+    });
+    wW = R(cx - 207, cy - 90, 14, 180, sm);   // west face, solid, with a spawn door
+    function diag(x0, y0, x1, y1) { var n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 8), k; for (k = 0; k <= n; k++) R(cx + x0 + (x1 - x0) * k / n - 6, cy + y0 + (y1 - y0) * k / n - 6, 12, 12, { dg: 1 }); }
+    diag(RC, -HE, HE, -RC); diag(-HE, -RC, -RC, -HE); diag(-RC, HE, -HE, RC); diag(HE, RC, RC, HE);
+    spawnDoor(cx - 207, cy, -1, 0, wW, 'door');
+    var s1 = stairway(cx + 0, cy - 60, 56, 125, 'n', 0, 1), s2 = stairway(cx - 100, cy - 65, 56, 125, 's', 1, 2), SQ = 136;
+    [1, 2].forEach(function (lv) {
+      floorArea(lv, 'metal', [cx - SQ, cy - SQ, 2 * SQ, 2 * SQ], [lv === 1 ? s1.hole : s2.hole]);
+      floorArea(lv, 'metal', [cx + SQ, cy - 40, 193 - SQ, 80], []);
+      rail(cx - SQ, cy - SQ, cx + SQ, cy - SQ, lv); rail(cx - SQ, cy + SQ, cx + SQ, cy + SQ, lv); rail(cx - SQ, cy - SQ, cx - SQ, cy + SQ, lv);
+      rail(cx + SQ, cy - SQ, cx + SQ, cy - 40, lv); rail(cx + SQ, cy + 40, cx + SQ, cy + SQ, lv);
+      rail(cx + SQ, cy - 40, cx + 193, cy - 40, lv); rail(cx + SQ, cy + 40, cx + 193, cy + 40, lv);
+    });
+    // ---- the rail pit: a lip fence round the top (jumpable, with gaps at the ramps and bridges), a solid wall round the bottom, two ramps and two bridges
+    (function () {
+      var P = FA_PITW, gp = { 0: [[700, 940]], 4: [[1064, 1344]], 1: [[690, 750]], 7: [[690, 750]], 3: [[1650, 1710]], 5: [[1650, 1710]] }, n = P.length, ar = 0, i;
+      for (i = 0; i < n; i++) ar += P[i][0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * P[i][1];
+      function convex(i) { var a = P[(i + n - 1) % n], b = P[i], c = P[(i + 1) % n]; return ((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])) * ar > 0; }
+      P.forEach(function (p, i) {
+        var q = P[(i + 1) % n], hz = p[1] === q[1], lo = Math.min(hz ? p[0] : p[1], hz ? q[0] : q[1]), hi = Math.max(hz ? p[0] : p[1], hz ? q[0] : q[1]), c = hz ? p[1] : p[0], mid = (lo + hi) / 2, out = (hz ? inPoly(mid, c + 3, P) : inPoly(c + 3, mid, P)) ? -1 : 1, segs = [[lo, hi]];
+        var pa = hz ? (p[0] < q[0] ? i : (i + 1) % n) : (p[1] < q[1] ? i : (i + 1) % n), pb = hz ? (p[0] < q[0] ? (i + 1) % n : i) : (p[1] < q[1] ? (i + 1) % n : i);
+        var elo = convex(pa) ? 1 : 0, ehi = convex(pb) ? 1 : 0;
+        function seg(t, a0, a1, l0) {
+          var o2 = { rail: 1, rl: 0 };
+          if (l0 === -1) o2 = { pw: 1 };
+          if (hz) LR(a0, out > 0 ? c : c - t, a1 - a0, t, l0, l0, o2); else LR(out > 0 ? c : c - t, a0, t, a1 - a0, l0, l0, o2);
+        }
+        seg(20, lo - 20 * elo, hi + 20 * ehi, -1);
+        (gp[i] || []).forEach(function (g) {
+          var n2 = [];
+          segs.forEach(function (s) { if (g[1] <= s[0] || g[0] >= s[1]) n2.push(s); else { if (g[0] > s[0]) n2.push([s[0], g[0]]); if (g[1] < s[1]) n2.push([g[1], s[1]]); } });
+          segs = n2;
+        });
+        segs.forEach(function (s) { seg(4, s[0] - (s[0] === lo ? 4 * elo : 0), s[1] + (s[1] === hi ? 4 * ehi : 0), 0); });
+      });
+    })();
+    stairway(700, 258, 240, 120, 'n', -1, 0, { nob: 1 }); stairway(1064, 2036, 280, 120, 's', -1, 0, { nob: 1 });
+    [[700, 690, 240, 60], [1064, 1650, 280, 60]].forEach(function (br) {
+      LV.floors.push({ x: br[0], y: br[1], w: br[2], h: br[3], lv: 0, mat: 'metal', br: 1 });
+      rail(br[0], br[1], br[0] + br[2], br[1], 0); rail(br[0], br[1] + br[3], br[0] + br[2], br[1] + br[3], 0);
+    });
     // ---- outdoor pens: a little spot against the boundary wall with the normal plank barrier
     spawnDoor(767, 112, 0, 1, vT, 'pen'); spawnDoor(1215, 2240, 0, -1, vB, 'pen'); spawnDoor(112, 1274, 1, 0, vL, 'pen'); spawnDoor(2016, 868, -1, 0, vR, 'pen');
     // ---- cover (from the blueprint): containers in the yards, wooden crate stacks down in the pit
-    [[661, 336, 112, 67, 'crate'], [728, 672, 123, 67, 'crate'], [683, 980, 112, 67, 'crate'], [896, 1378, 112, 67, 'crate'], [1120, 1848, 123, 67, 'crate'], [1154, 2027, 123, 67, 'crate'],
-     [260, 1254, 202, 67, 'cont'], [1064, 1098, 202, 67, 'cont'], [1658, 784, 168, 67, 'cont'], [1400, 2128, 168, 67, 'cont']].forEach(function (c, i) { R(c[0], c[1], c[2], c[3], { prop: c[4], pi: i }); });
-    // ---- clutter scattered with a fixed seed, away from walls, pens, buildings and the start
+    [[740, 420, 112, 67, 'crate', -1], [780, 560, 123, 67, 'crate', -1], [740, 900, 112, 67, 'crate', -1], [1000, 1180, 112, 67, 'crate', -1], [1060, 1140, 202, 67, 'cont', -1], [1120, 1850, 123, 67, 'crate', -1], [1154, 1950, 112, 67, 'crate', -1],
+     [896, 1378, 112, 67, 'crate', 0], [260, 1254, 202, 67, 'cont', 0], [1658, 784, 168, 67, 'cont', 0], [1400, 2128, 168, 67, 'cont', 0]].forEach(function (c, i) { R(c[0], c[1], c[2], c[3], { prop: c[4], pi: i, l0: c[5], l1: c[5] }); });
+    // ---- clutter scattered with a fixed seed, away from walls, pens, buildings, the pit and the start
     var rg = dtRng(4242), tries = 0;
     function open(x, y, rad) {
-      var i, q;
-      if (x < 160 || x > 1968 || y < 160 || y > 2192 || Math.hypot(x - 1400, y - 1020) < 170) return false;
+      var i, q, m = rad + 44;
+      if (x < 160 || x > 1968 || y < 160 || y > 2192 || Math.hypot(x - 1400, y - 1020) < 170 || Math.hypot(x - cx, y - cy) < 224 + rad + 40) return false;
+      for (i = 0; i < FA_PITR.length; i++) { q = FA_PITR[i]; if (x > q[0] - m && x < q[0] + q[2] + m && y > q[1] - m && y < q[1] + q[3] + m) return false; }
       for (i = 0; i < RECTS.length; i++) { q = RECTS[i]; if (q.void) continue; if (distRect(x, y, q) < rad + 34) return false; }
       for (i = 0; i < BLD.length; i++) if (distRect(x, y, BLD[i].pocket) < rad + 70) return false;
       for (i = 0; i < FB.length; i++) { q = FB[i]; if (x > q.x - rad - 30 && x < q.x + q.w + rad + 30 && y > q.y - rad - 30 && y < q.y + q.h + rad + 30) return false; }
@@ -2349,7 +2492,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (tries = 0; n < cnt && tries < 400; tries++) {
         x = 170 + rg() * 1790; y = 170 + rg() * 2010;
         if (!open(x, y, s[3])) continue;
-        R(Math.round(x - s[1] / 2), Math.round(y - s[2] / 2), s[1], s[2], s[4] ? { prop: s[0], furn: 'deco', pi: n } : { prop: s[0], pi: n }); n++;
+        R(Math.round(x - s[1] / 2), Math.round(y - s[2] / 2), s[1], s[2], s[4] ? { prop: s[0], furn: 'deco', pi: n, l0: 0, l1: 0 } : { prop: s[0], pi: n, l0: 0, l1: 0 }); n++;
       }
     });
   }
@@ -2407,7 +2550,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       c.fillRect(r.x, r.y, r.w, r.h); c.fillStyle = 'rgba(255,255,255,0.1)'; c.fillRect(r.x, r.y, r.w, 2);
     }
     for (i = 0; i < FB.length; i++) { b = FB[i]; c.fillStyle = 'rgba(70,64,58,0.82)'; c.fillRect(b.x - 6, b.y - 6, b.w + 12, b.h + 12); c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 3; c.strokeRect(b.x - 6, b.y - 6, b.w + 12, b.h + 12); }
-    if (FA_SILO) { c.fillStyle = '#6a6e70'; c.beginPath(); c.arc(FA_SILO.x, FA_SILO.y, FA_SILO.r, 0, 6.283); c.fill(); c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 3; c.stroke(); }
+    if (FA_SILO) { c.fillStyle = '#6a6e70'; c.beginPath(); for (i = 0; i < 8; i++) c.lineTo(FA_SILO.x + Math.cos((22.5 + 45 * i) * Math.PI / 180) * FA_SILO.r, FA_SILO.y + Math.sin((22.5 + 45 * i) * Math.PI / 180) * FA_SILO.r); c.closePath(); c.fill(); c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 3; c.stroke(); }
   }
 
   var MAPS = [
@@ -2415,7 +2558,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { id: 'haunted', name: 'Haunted House', blurb: 'Rooms, corridors and doors. Something is stirring in the cauldron.', world: 2000, gs: 1, build: buildHaunted, ground: paintHauntedGround, bld: paintHauntedBld, cfg: { sx: 1000, sy: 960, nav: true } },
     { id: 'hangar', name: 'The Hangar', blurb: 'Pitch dark. You only see by your torch. Built for PvP, great for zombies too.', world: 1400, gs: 1.5, build: buildHangar, ground: paintHangarGround, bld: paintHangarBld, cfg: { sx: 700, sy: 700, nav: true }, need: { map: 'beginners', wave: 10 } },
     { id: 'dummytown', name: 'Bomb Town', blurb: 'Sunset. Two houses face each other across a long street. Built for PvP, great for zombies too.', world: 1800, gs: 1.1, v3d: true, build: buildDummy, ground: paintDummyGround, bld: paintDummyBld, cfg: { sx: 700, sy: 880, nav: true, day: true, pvg: true, b: { x0: 10, y0: 400, x1: 1790, y1: 1400 } }, need: { map: 'beginners', wave: 10 } },
-    { id: 'factory', name: 'The Factory', blurb: 'Night. A huge abandoned factory with a bent rail pit through the middle. Built for PvP, great for zombies too.', world: 2400, gs: 0.9, v3d: true, build: buildFactory, ground: paintFactoryGround, bld: paintFactoryBld, cfg: { sx: 1400, sy: 1020, nav: true, near: true, b: { x0: 112, y0: 112, x1: 2016, y1: 2240 } }, need: { map: 'beginners', wave: 10 } }
+    { id: 'factory', name: 'The Factory', blurb: 'Night. A huge abandoned factory with a bent rail pit through the middle. Built for PvP, great for zombies too.', world: 2400, gs: 0.9, v3d: true, build: buildFactory, ground: paintFactoryGround, bld: paintFactoryBld, cfg: { sx: 1400, sy: 1020, nav: true, near: true, lv: true, b: { x0: 112, y0: 112, x1: 2016, y1: 2240 } }, need: { map: 'beginners', wave: 10 } }
   ];
   function mapDef(id) { for (var i = 0; i < MAPS.length; i++) if (MAPS[i].id === id) return MAPS[i]; return MAPS[0]; }
   var mapId = '', P3 = false, DT3 = [];   /* P3: first-person 3D map, so tall props are not painted flat on the floor */
@@ -2426,7 +2569,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     mapId = d.id; WORLD = d.world; GS = d.gs; P3 = want3d(d); DT3.length = 0;
     sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
     RECTS.length = 0; BLD.length = 0; ROOFS.length = 0; DOORS.length = 0; LIGHTS.length = 0; bats = [];
-    MAPCFG = d.cfg;
+    MAPCFG = d.cfg; LV.on = !!d.cfg.lv; LV.floors.length = 0; LV.stairs.length = 0; LV.pit = null; LV.pitR = null;
     d.build(); d.ground(); d.bld();
     bakeArt();
     bloodOn = false;
@@ -2475,11 +2618,51 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     o.x += nx * push; o.y += ny * push;
     return { nx: nx, ny: ny };
   }
+  // ---------- floors (The Factory only). Every walker has a level lv (-1 pit, 0 ground, 1 and 2 up) and a height z. A wall or rail says which levels it stands on (l0..l1); rails and windows can be jumped. ----------
+  function lvH(l) { return LV.H[l + 1]; }
+  function rOn(r, L) { return r.l0 === undefined || (L >= r.l0 && L <= r.l1); }
+  function stairT(s, x, y) { var t = s.dir === 'e' ? (x - s.x) / s.w : s.dir === 'w' ? 1 - (x - s.x) / s.w : s.dir === 's' ? (y - s.y) / s.h : 1 - (y - s.y) / s.h; return t < 0 ? 0 : t > 1 ? 1 : t; }
+  function inPoly(px, py, p) {
+    var i, j, c = false;
+    for (i = 0, j = p.length - 1; i < p.length; j = i++) if (((p[i][1] > py) !== (p[j][1] > py)) && (px < (p[j][0] - p[i][0]) * (py - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0])) c = !c;
+    return c;
+  }
+  // the height of the walkable surface at (x,y) on level l, or NaN when there is nothing to stand on there
+  function surf(x, y, l) {
+    var i, s, f;
+    for (i = 0; i < LV.stairs.length; i++) { s = LV.stairs[i]; if ((l === s.a || l === s.b) && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return lvH(s.a) + (lvH(s.b) - lvH(s.a)) * stairT(s, x, y); }
+    if (l === -1) return LV.pit && inPoly(x, y, LV.pit) ? lvH(-1) : NaN;
+    if (l === 0 && (!LV.pit || !inPoly(x, y, LV.pit))) return 0;
+    for (i = 0; i < LV.floors.length; i++) { f = LV.floors[i]; if (f.lv === l && x >= f.x && x <= f.x + f.w && y >= f.y && y <= f.y + f.h) return lvH(l); }
+    return NaN;
+  }
+  function lvBand(h) { for (var l = 2; l > 0; l--) if (h >= lvH(l) - 2) return l; return h >= -2 ? 0 : -1; }
+  // the floor a bullet would hit going down, and whether it just went up through a floor
+  function lvGround(b) { var h = b.h0 + b.vh * b.dist, l, v; for (l = lvBand(h); l >= -1; l--) { v = surf(b.x, b.y, l); if (v === v) return v; } return -999; }
+  function lvCeil(b, sd) { var h = b.h0 + b.vh * b.dist, p = h - b.vh * sd, l = lvBand(h), v; if (l <= lvBand(p)) return false; v = surf(b.x, b.y, l); return v === lvH(l); }
+  function lvSame(a, b) { return !LV.on || Math.abs((a.z || 0) - (b.z || 0)) < 30; }
+  // one step of standing, climbing, jumping and falling. Falling does no damage.
+  function lvStep(o, dt) {
+    var L = o.lv | 0, st = null, t, z0, l, h, i, s;
+    if (o.z === undefined) o.z = lvH(L);
+    if (o.air) {
+      z0 = o.z; o.vz -= 1100 * dt; o.z += o.vz * dt;
+      if (o.vz <= 0) for (l = 2; l >= -1; l--) { h = surf(o.x, o.y, l); if (h === h && z0 >= h - 0.5 && o.z <= h) { o.lv = l; o.z = h; o.air = false; o.vz = 0; return; } }
+      if (o.z < -64) { o.air = false; o.vz = 0; o.lv = 0; o.z = 0; if (LV.pit && inPoly(o.x, o.y, LV.pit)) { o.lv = -1; o.z = lvH(-1); } }
+      return;
+    }
+    for (i = 0; i < LV.stairs.length; i++) { s = LV.stairs[i]; if ((L === s.a || L === s.b) && o.x >= s.x && o.x <= s.x + s.w && o.y >= s.y && o.y <= s.y + s.h) { st = s; break; } }
+    if (st) { t = stairT(st, o.x, o.y); o.lv = t < 0.5 ? st.a : st.b; o.z = lvH(st.a) + (lvH(st.b) - lvH(st.a)) * t; return; }
+    h = surf(o.x, o.y, L);
+    if (h === h) { o.z = h; return; }
+    o.air = true; o.vz = 0;
+  }
   function collide(o) {
-    var hit = null, i, r, n;
+    var hit = null, i, r, n, L = LV.on ? (o.lv | 0) : 0, jmp = LV.on && o.air;
     for (i = 0; i < RECTS.length; i++) {
       r = RECTS[i];
       if ((r.bar && r.planks <= 0) || (r.door && r.open)) continue;
+      if (LV.on && ((r.l0 !== undefined && (L < r.l0 || L > r.l1)) || (jmp && r.rail))) continue;
       n = pushOut(o, r);
       if (n) { hit = n; hit.door = !!r.door; }
     }
@@ -2505,23 +2688,25 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return -1;
   }
   // walls and shut doors stop bullets; planks over a window and open doors do not
-  function solidAt(x, y) {
+  function solidAt(x, y, L) {
     for (var i = 0; i < RECTS.length; i++) {
       var q = RECTS[i];
       if (q.bar || q.furn || (q.door && q.open)) continue;
+      if (L !== undefined && q.l0 !== undefined && (L < q.l0 || L > q.l1)) continue;
       if (x >= q.x && x <= q.x + q.w && y >= q.y && y <= q.y + q.h) return true;
     }
     return false;
   }
-  function shotClear(x0, y0, x1, y1) {
+  function shotClear(x0, y0, x1, y1, L) {
     var dx = x1 - x0, dy = y1 - y0, n = Math.ceil(Math.hypot(dx, dy) / 6), i;
-    for (i = 1; i < n; i++) if (solidAt(x0 + dx * i / n, y0 + dy * i / n)) return false;
+    for (i = 1; i < n; i++) if (solidAt(x0 + dx * i / n, y0 + dy * i / n, L)) return false;
     return true;
   }
-  function wallHit(x, y, rad) {
+  function wallHit(x, y, rad, L) {
     for (var i = 0; i < RECTS.length; i++) {
       var r = RECTS[i];
       if ((r.bar && r.planks <= 0) || (r.door && r.open)) continue;
+      if (L !== undefined && r.l0 !== undefined && (L < r.l0 || L > r.l1)) continue;
       if (distRect(x, y, r) < rad) return true;
     }
     return false;
@@ -3450,12 +3635,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (navOn && (x < 150 || x > WORLD - 150 || y < 150 || y > WORLD - 150)) ok = false;
       for (i = 0; ok && i < RECTS.length; i++) if (RECTS[i].door ? distRect(x, y, RECTS[i]) < 30 : distRect(x, y, RECTS[i]) < 50) ok = false;
       for (i = 0; ok && i < boxes.length; i++) if (Math.hypot(x - boxes[i].x, y - boxes[i].y) < 350) ok = false;
+      if (ok && LV.on && LV.pitR) for (i = 0; i < LV.pitR.length; i++) { var pq = LV.pitR[i]; if (x > pq[0] - 70 && x < pq[0] + pq[2] + 70 && y > pq[1] - 70 && y < pq[1] + pq[3] + 70) ok = false; }
       if (ok) { boxes.push({ x: x, y: y }); n++; }
     }
   }
   function inPlay(x, y, m) { var b = MAPCFG.b; return !b || (x > b.x0 + m && x < b.x1 - m && y > b.y0 + m && y < b.y1 - m); }
   function nearBox(P) {
-    for (var i = 0; i < boxes.length; i++) if (Math.hypot(boxes[i].x - P.x, boxes[i].y - P.y) < 52) return boxes[i];
+    for (var i = 0; i < boxes.length; i++) if (Math.hypot(boxes[i].x - P.x, boxes[i].y - P.y) < 52 && lvSame(P, boxes[i])) return boxes[i];
     return null;
   }
 
@@ -3692,6 +3878,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var X = a * C + C / 2, Y = b * C + C / 2, j;
       if (X < lo || X > WORLD - lo || Y < lo || Y > WORLD - lo) return false;
       if (wallHit(X, Y, PR + 5)) return false;
+      if (LV.on && LV.pit && inPoly(X, Y, LV.pit)) return false;
       for (j = 0; j < BLD.length; j++) if (inRect(X, Y, BLD[j].pocket)) return false;
       return true;
     }
@@ -3739,7 +3926,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function pvpDeploy(P) {
     var sp = pvpSpawnPoint(P);
     pvpEquip(P);
-    P.x = sp.x; P.y = sp.y; P.hp = maxHpNow(P); P.down = false; P.inv = TUNE.pvp.prot; P.rt = 0; P.dn = 0; P.go = false; P.rev = 0;
+    P.x = sp.x; P.y = sp.y; if (LV.on) { P.lv = 0; P.z = 0; P.air = false; P.vz = 0; } P.hp = maxHpNow(P); P.down = false; P.inv = TUNE.pvp.prot; P.rt = 0; P.dn = 0; P.go = false; P.rev = 0;
     P.fireCd = 0.2; P.idle = 0; P.tgt = null; P.hcd = 0; P.flash = 0;
     ptone(P, 400, 700, 0.12, 'square', 0.05);
   }
@@ -3935,7 +4122,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = pickups.length - 1; i >= 0; i--) {
       pu = pickups[i];
       for (j = 0; j < players.length; j++) {
-        P = players[j]; if (P.down || Math.hypot(P.x - pu.x, P.y - pu.y) > 24) continue;
+        P = players[j]; if (P.down || Math.hypot(P.x - pu.x, P.y - pu.y) > 24 || !lvSame(P, pu)) continue;
         gain = false;
         for (k = 0; k < 2; k++) {
           g = P.slots[k]; if (!g) continue;
@@ -4242,8 +4429,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     showScreen('over');
   }
 
+  var pkZ = 0;   /* the height a drop starts at (the zombie that dropped it) */
   function addPickup(x, y, kind, id, life) {
-    var np = { x: x + rnd(-10, 10), y: y + rnd(-10, 10), kind: kind, id: id, t: life };
+    var np = { x: x + rnd(-10, 10), y: y + rnd(-10, 10), kind: kind, id: id, t: life, z: LV.on ? pkZ : 0 };
     evictFromPockets(np, false);
     pickups.push(np);
     return np;
@@ -4287,14 +4475,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // coins carry the killer's coin upgrades; anyone can pick them up
     var val = TYPES[z.type].coins * (1 + TUNE.coinWave * (wave - 1)) * (1 + 0.1 * (O ? O.upg.cval : 0)) * (O && O.perkT.dp > 0 ? 2 : 1) * (inBonus(O) ? 2 : 1) * (waveEv === 'rush' ? 2 : 1) * (wave >= TUNE.l25.wave ? TUNE.l25.coin : 1) * (1 + TUNE.lateCoin * lateN(wave)) * (1 + TUNE.coopCoin * Math.max(0, players.length - 1));
     var n = z.boss ? 8 : (z.type === 'tank' ? 4 : (z.type === 'ghost' ? 3 : 1)), autoTo = inBonus(O) ? ownerId : -1;
-    for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n, to: autoTo }; evictFromPockets(nc, true);
+    for (k = 0; k < n; k++) { var nc = { x: z.x + rnd(-6, 6), y: z.y + rnd(-6, 6), vx: rnd(-110, 110), vy: rnd(-110, 110), v: val / n, to: autoTo, z: z.z || 0 }; evictFromPockets(nc, true);
       if (coins.length >= 400) { var nn = coins[Math.floor(Math.random() * coins.length)]; nn.v += nc.v; } else coins.push(nc); }
     // drops
+    pkZ = z.z || 0;
     if ((z.boss && Math.random() < TUNE.dropBossSpecial) || (z.type === 'tank' && Math.random() < TUNE.dropTank)) addPickup(z.x, z.y, 'special', rollSpecialId(), TUNE.crateLife);
     if (z.boss) addPickup(z.x, z.y, 'health', 'big', 1e9);
     else if (Math.random() < TUNE.dropHealth) addPickup(z.x, z.y, 'health', 'health', 1e9);
     if (Math.random() < TUNE.dropAmmo[z.boss ? 'boss' : z.type] * (inBonus(O) ? TUNE.bonusAmmo : 1) * (wave > 17 ? 0.75 : 1)) addPickup(z.x, z.y, 'ammo', 'ammo', 1e9).to = autoTo;
     if (Math.random() < TUNE.dropPerk[z.boss ? 'boss' : z.type] * perkFactor(wave) * (ammoLow() ? 1.5 : 1)) addPickup(z.x, z.y, 'perk', pickPerk(), TUNE.perkLife);
+    pkZ = 0;
     if (killSnd <= 0) { stone(150, 50, 0.2, 'sawtooth', 0.05); killSnd = 0.05; }
     if (z.boss) { shakeAt(z.x, z.y, 8); stone(70, 30, 0.8, 'sawtooth', 0.1); }
   }
@@ -4370,7 +4560,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       else a = P.ang + rnd(-d.spread * sprF / 2, d.spread * sprF / 2);
       crit = Math.random() < critP;
       bullets.push({
-        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 30 : undefined, vh: fph ? Math.tan(fpPitch) : undefined, vy: fph ? 38 * Math.sin(fpPitch) - 10 * Math.cos(fpPitch) : undefined, dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
+        x: mx, y: my, vox: vox, voy: voy, h0: fph ? 30 + (LV.on ? (P.z || 0) : 0) : (LV.on ? 30 + (P.z || 0) : undefined), vh: fph ? Math.tan(fpPitch) : (LV.on ? 0 : undefined), vy: fph ? 38 * Math.sin(fpPitch) - 10 * Math.cos(fpPitch) : (LV.on ? 0 : undefined), dx: Math.cos(a), dy: Math.sin(a), dist: 0, max: d.range + 50, speed: d.speed,
         dmg: st.dmg * pm * (crit ? 2 : 1), crit: crit, pierce: d.pierce, hit: [], owner: P.id,
         cen: (!pvp && !d.kind && P.cone && P.aimAng !== null && P.aimAng !== undefined) ? 1 : 0, ax: P.x, ay: P.y, aa: P.aimAng,
         kind: d.kind || 'bullet', bt: d.kind ? 0 : btI, blast: (d.blast || 0) * (d.special ? 1 + 0.1 * specStage() : 1), r: d.kind === 'rocket' ? 5 : (d.kind === 'fire' ? 6 : (d.kind === 'ray' ? 6 : (d.kind === 'goo' ? 5 : 3))),
@@ -4481,7 +4671,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       return;
     }
     // two-thumb mode: a shot at a zombie the aim line runs straight through (dead centre) is a critical hit
-    var hs = b.vh !== undefined && b.kind === 'bullet' && b.h0 + b.vh * b.dist > zHeight(z) * 0.78;   // first person: a hit up near the head is a critical
+    var hs = b.vh !== undefined && b.kind === 'bullet' && b.h0 + b.vh * b.dist - (LV.on ? (z.z || 0) : 0) > zHeight(z) * 0.78;   // first person: a hit up near the head is a critical
     // first person: ONLY a headshot is a critical (the two-thumb dead-centre crit is for the top-down view)
     var cc = !b.crit && (b.vh !== undefined ? hs : (b.cen && centred(z, b))), dm = b.dmg * (cc ? 2 : 1), ar;
     if (cc && hs && hitMk) hitMk.k = 2;
@@ -4508,8 +4698,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var b = bullets[i], move = b.speed * dt, steps = Math.max(1, Math.ceil(move / 5)), sd = move / steps, dead = false;
       for (var s = 0; s < steps && !dead; s++) {
         b.x += b.dx * sd; b.y += b.dy * sd; b.dist += sd;
-        if (b.vh !== undefined && b.h0 + b.vh * b.dist < 0) { addFx(b.x, b.y, 2, 60, 0.15, 2, '180,170,150'); impactFx(b.x, b.y, 1, 0, 0); dead = true; break; }   // into the ground
-        if (solidAt(b.x, b.y)) {
+        if (b.vh !== undefined && b.h0 + b.vh * b.dist < (LV.on ? lvGround(b) : 0)) { addFx(b.x, b.y, 2, 60, 0.15, 2, '180,170,150'); impactFx(b.x, b.y, 1, 0, 0); dead = true; break; }   // into the ground
+        if (LV.on && b.vh !== undefined && lvCeil(b, sd)) { addFx(b.x, b.y, 2, 60, 0.15, 2, '180,170,150'); dead = true; break; }   // up into a floor above
+        if (solidAt(b.x, b.y, LV.on && b.vh !== undefined ? lvBand(b.h0 + b.vh * b.dist) : undefined)) {
           if (b.kind === 'rocket') explode(b.x - b.dx * sd, b.y - b.dy * sd, b.blast, b.dmg, null, false, b.owner, b.kbm);
           else { addFx(b.x - b.dx * sd, b.y - b.dy * sd, 2, 70, 0.18, 2, '200,190,170'); if (b.kind === 'bullet') impactFx(b.x - b.dx * sd, b.y - b.dy * sd, b.vh !== undefined ? Math.max(1, b.h0 + b.vh * b.dist) : 18, b.dx, b.dy); }
           dead = true; break;
@@ -4518,6 +4709,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
           for (var pj = 0; pj < players.length && !dead; pj++) {
             var Q = players[pj];
             if (Q.id === b.owner || Q.down || Q.inv > 0 || b.hit.indexOf(Q) >= 0) continue;
+            if (LV.on && b.vh !== undefined) { var bqh = b.h0 + b.vh * b.dist; if (bqh < (Q.z || 0) - 3 || bqh > (Q.z || 0) + 40) continue; }
             if (Math.hypot(Q.x - b.x, Q.y - b.y) < PR + TUNE.pvp.hitR + b.r) {
               b.hit.push(Q); pvpHit(Q, b);
               if (b.pierce > 0) b.pierce--; else dead = true;
@@ -4529,7 +4721,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
           var z = zombies[j];
           if (!z) break;
           if (b.hit.indexOf(z) >= 0) continue;
-          if (b.vh !== undefined) { var bhh = b.h0 + b.vh * b.dist; if (bhh < -3 || bhh > zHeight(z) + 3) continue; }   // over its head or under its feet
+          if (b.vh !== undefined) { var bhh = b.h0 + b.vh * b.dist, zb0 = LV.on ? (z.z || 0) : 0; if (bhh < zb0 - 3 || bhh > zb0 + zHeight(z) + 3) continue; }   // over its head or under its feet
           if (Math.hypot(z.x - b.x, z.y - b.y) < z.r + b.r) {
             if (b.kind === 'rocket') { explode(b.x, b.y, b.blast, b.dmg, null, false, b.owner, b.kbm); dead = true; break; }
             if (b.kind === 'ray') {
@@ -4596,6 +4788,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     P.r = PR - 1; collide(P);
     P.x = Math.max(lim, Math.min(WORLD - lim, P.x));
     P.y = Math.max(lim, Math.min(WORLD - lim, P.y));
+    if (LV.on) { if (P.jmp) { P.jmp = false; if (!P.air && !P.down) { P.air = true; P.vz = 330; } } lvStep(P, dt); }
     if (len > 0) P.step += len * sp * dt * 0.09;
     return len;
   }
@@ -4633,13 +4826,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         z = zombies[i];
         var fdx = z.x - P.x, fdy = z.y - P.y, fal = fdx * fcy + fdy * fsy;
         if (fal <= 0 || fal >= fbest || Math.abs(-fdx * fsy + fdy * fcy) > z.r + 3) continue;
-        var fhh = 30 + ftp * fal; if (fhh < -3 || fhh > zHeight(z) + 3) continue;
-        if (shotClear(P.x, P.y, z.x, z.y)) { fbest = fal; tgt = z; }
+        var fzb = LV.on ? (z.z || 0) : 0, fhh = 30 + (LV.on ? (P.z || 0) : 0) + ftp * fal; if (fhh < fzb - 3 || fhh > fzb + zHeight(z) + 3) continue;
+        if (shotClear(P.x, P.y, z.x, z.y, LV.on ? (P.lv | 0) : undefined)) { fbest = fal; tgt = z; }
       }
     } else for (i = 0; i < zombies.length; i++) {
       z = zombies[i];
       var ddx = z.x - P.x, ddy = z.y - P.y, dd = ddx * ddx + ddy * ddy;
-      if (dd < bd && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF) && shotClear(P.x, P.y, z.x, z.y)) { bd = dd; tgt = z; }
+      if (dd < bd && lvSame(P, z) && (!useCone || angDiff(Math.atan2(ddy, ddx), P.aimAng) < CONE_HALF) && shotClear(P.x, P.y, z.x, z.y, LV.on ? (P.lv | 0) : undefined)) { bd = dd; tgt = z; }
     }
     // two-thumb zombies: the gun only fires while the right thumb is held, still at zombies inside the cone
     if (!pvp && useCone && !P.fr && !fpAim) tgt = null;
@@ -4652,7 +4845,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (i = 0; i < players.length && !onLine; i++) {
         Q = players[i]; if (Q === P || Q.down) continue;
         qx = Q.x - P.x; qy = Q.y - P.y; al = qx * ca + qy * sa;
-        if (al > 0 && al < rng + 10 && Math.abs(-qx * sa + qy * ca) < PR + 8 && shotClear(P.x, P.y, Q.x, Q.y)) onLine = true;
+        if (al > 0 && al < rng + 10 && Math.abs(-qx * sa + qy * ca) < PR + 8 && lvSame(P, Q) && shotClear(P.x, P.y, Q.x, Q.y, LV.on ? (P.lv | 0) : undefined)) onLine = true;
       }
       pvFire = onLine;
     }
@@ -4783,7 +4976,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         if (z.atk <= 0) {
           for (j = 0; j < players.length; j++) {
             P = players[j];
-            if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg, z); z.atk = z.cd; break; }
+            if (!P.down && lvSame(P, z) && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg, z); z.atk = z.cd; break; }
           }
         }
         if (z.atk < -1) z.atk = -1;
@@ -4901,7 +5094,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (z.atk <= 0) {
         for (j = 0; j < players.length; j++) {
           P = players[j];
-          if (!P.down && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg, z); z.atk = z.cd; break; }
+          if (!P.down && lvSame(P, z) && Math.hypot(P.x - z.x, P.y - z.y) <= z.r + PR + 3) { hurtPlayer(P, z.dmg, z); z.atk = z.cd; break; }
         }
       }
       if (z.atk < -1) z.atk = -1;
@@ -4926,6 +5119,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       collideZ(z);
       z.x = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.x));
       z.y = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.y));
+      if (LV.on) lvStep(z, dt);
     }
 
     // barriers: stand next to one to rebuild it (the coins go to whoever is repairing)
@@ -4934,7 +5128,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (br.planks < br.max) {
         for (j = 0; j < players.length; j++) {
           P = players[j];
-          if (!P.down && distRect(P.x, P.y, br) < 60 && !inRect(P.x, P.y, BLD[i].pocket)) { rp = P; break; }
+          if (!P.down && lvSame(P, br) && distRect(P.x, P.y, br) < 60 && !inRect(P.x, P.y, BLD[i].pocket)) { rp = P; break; }
         }
       }
       if (rp) {
@@ -4976,6 +5170,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var cown = c.to >= 0 ? pById(c.to) : null; if (cown && !cown.down) T = cown; else c.to = -1;
       var cdmp = Math.pow(0.03, dt); c.vx *= cdmp; c.vy *= cdmp;
       c.x += c.vx * dt; c.y += c.vy * dt;
+      if (LV.on && T) c.z = (c.z || 0) + ((T.z || 0) - (c.z || 0)) * Math.min(1, dt * 5);
       var cd = 1e9;
       if (T) {
         var cdx = T.x - c.x, cdy = T.y - c.y, magR = TUNE.magBase * (1 + 0.25 * T.upg.mag);
@@ -5016,9 +5211,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         pu.x += (bdx / bd) * bst; pu.y += (bdy / bd) * bst;
       } else if (T && pu.kind === 'ammo') {
         var adx = T.x - pu.x, ady = T.y - pu.y, ad = Math.hypot(adx, ady) || 1, aR = TUNE.magBase * (1 + 0.25 * T.upg.mag);
-        if (ad < aR) { var apull = 200 + (1 - ad / aR) * 300; pu.x += (adx / ad) * apull * dt; pu.y += (ady / ad) * apull * dt; }
+        if (ad < aR && lvSame(T, pu)) { var apull = 200 + (1 - ad / aR) * 300; pu.x += (adx / ad) * apull * dt; pu.y += (ady / ad) * apull * dt; }
       }
-      if (T && Math.hypot(T.x - pu.x, T.y - pu.y) < 22) { var got = pu; pickups.splice(i, 1); collect(T, got); }
+      if (T && Math.hypot(T.x - pu.x, T.y - pu.y) < 22 && lvSame(T, pu)) { var got = pu; pickups.splice(i, 1); collect(T, got); }
       else if (pu.t <= 0) pickups.splice(i, 1);
     }
 
@@ -5310,7 +5505,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 213';
+  var updMsg = '', VERSION = 'Version 214';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5642,7 +5837,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       list.push({ t: 'Bomb Town', art: 'bar', b: ['Sunset on a worn-out street. Two houses face each other, with a garage at each end of the lane.', 'Zombies burst out of the two house doors (planks on the street side and the hall side) and the two garages. Stand next to broken planks to rebuild them.', 'Houses have smashed windows you can climb through. Bus, sandbags and hedges stop bullets. Cars and fences only stop walking.'] });
       list.push({ t: 'Stay alive', art: 'stay', b: ['You start with 50 coins. Kills drop more, to spend on guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
     } else if (mapId === 'factory') {
-      list.push({ t: 'The Factory', art: 'bar', b: ['A huge abandoned factory at night, with a bent rail pit running through the middle.', 'Zombies come out of doors in the buildings and little pens by the outer wall. Stand next to broken planks to rebuild them.', 'Doors close to you spawn the most, but the far ones still send a few.'] });
+      list.push({ t: 'The Factory', art: 'bar', b: ['A huge abandoned factory at night, with a bent rail pit running through the middle.', 'Zombies come out of doors in the buildings and little pens by the outer wall. Stand next to broken planks to rebuild them.', 'Doors close to you spawn the most, but the far ones still send a few.', 'Climb the stairs to upper floors, the silo and the pit ramps. Hit the jump button to leap out of windows and over rails. Falls never hurt, and zombies cannot jump.'] });
       list.push({ t: 'Stay alive', art: 'stay', b: ['You start with 50 coins. Kills drop more, to spend on guns, armour and upgrades in the Shop.', 'Mystery boxes give a random gun for 120 coins.', 'Every 5th wave brings a boss.'] });
     } else if (mapId === 'hangar') {
       list.push({ t: 'The Hangar', art: 'hangar', b: ['It is pitch dark. You only see by your torch, which points where you aim.', 'The beam stops at containers, crates and walls. Use corners to hide.', 'Zombies come through four windows, one on each wall. A dim red lamp marks each one. Stand next to broken planks to rebuild them.'] });
@@ -5963,6 +6158,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   fastTap(swapGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('reload'); });
   fastTap(stimGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('stim'); });
   fastTap(grenGo, function () { ensureAudio(); if (state === 'play' && !blocked()) cmd('gren'); });
+  var jumpGo = $('jumpGo');
+  fastTap(jumpGo, function () { if (state === 'play' && !blocked() && me && !me.down && LV.on) { me.jmp = true; me.jn = (me.jn | 0) + 1; } });
 
   // ---------- move the buttons: reload, stim and grenade can be dragged anywhere, saved per phone and per screen direction ----------
   var btnPos = { p: {}, l: {} }, BTNS = [['rl', swapGo], ['st', stimGo], ['gr', grenGo]], btnEd = $('btnEd'), edPos = null;
@@ -6249,6 +6446,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (hudCache.scK !== scK) { hudCache.scK = scK; scopeGo.hidden = !scK || fpMode === 'hold'; if (!scK && SC.on) scopeEnd(); }
     var frK = (playing && !blocked() && !me.down && !shopOpen && fpOn()) ? 1 : 0;
     if (hudCache.frK !== frK) { hudCache.frK = frK; fireGo.hidden = !frK; if (!frK && FIRE.on) fireEnd(); }
+    var jmK = (frK && LV.on) ? 1 : 0;
+    if (hudCache.jmK !== jmK) { hudCache.jmK = jmK; jumpGo.hidden = !jmK; }
     var gc = grenCd(me), g0 = me.gr && me.gr[0] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[0] / gc))) : 100, g1 = me.gr && me.gr[1] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[1] / gc))) : 100;
     // line the two buttons up under the ammo box, whatever the screen size
     var nowT = performance.now();
@@ -7085,12 +7284,30 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // small radar: you in the middle, view radius 480 world units
   // PvP UAV: every few seconds all living opponents show for a moment (1 = just pinged, fading to 0)
   function uavA() { if (!pvp || pvPhase !== 'play') return 0; var ph = (performance.now() / 1000) % TUNE.pvp.uavEvery; return ph < TUNE.pvp.uavShow ? 1 - ph / TUNE.pvp.uavShow : 0; }
+  // The Factory's minimap and big map: walls on the floor you are on, windows, and every doorway marked
+  function mmFactory(g, ox, oy, k, cull) {
+    var i, r, X, Y, W, H, L = me.lv | 0, c2 = cull, f = 0;
+    function out(X, Y, W, H) { return c2 && Math.hypot(X + W / 2 - c2, Y + H / 2 - c2) > c2 * 1.45 + Math.max(W, H); }
+    g.globalAlpha = 1;
+    if (LV.pit) { g.fillStyle = 'rgba(0,0,0,0.4)'; g.beginPath(); LV.pit.forEach(function (p, n) { if (n) g.lineTo(p[0] * k + ox, p[1] * k + oy); else g.moveTo(p[0] * k + ox, p[1] * k + oy); }); g.closePath(); g.fill(); g.strokeStyle = 'rgba(224,190,60,0.55)'; g.lineWidth = 1; g.stroke(); }
+    for (i = 0; i < RECTS.length; i++) {
+      r = RECTS[i]; if (!(r.wl || r.dg || r.win) || !rOn(r, L)) continue;
+      X = r.x * k + ox; Y = r.y * k + oy; W = Math.max(1.2, r.w * k); H = Math.max(1.2, r.h * k);
+      if (out(X, Y, W, H)) continue;
+      g.fillStyle = r.win ? '#6f9ab4' : r.wl && r.hh < 60 && r.wb === undefined && r.l0 === undefined ? 'rgba(205,195,172,0.5)' : 'rgba(215,205,182,0.85)'; g.fillRect(X, Y, W, H);
+    }
+    g.fillStyle = '#e8d070';
+    for (i = 0; i < LV.stairs.length; i++) { r = LV.stairs[i]; if (r.a !== L && r.b !== L) continue; X = r.x * k + ox; Y = r.y * k + oy; W = r.w * k; H = r.h * k; if (out(X, Y, W, H)) continue; g.globalAlpha = 0.55; g.fillRect(X, Y, Math.max(1.5, W), Math.max(1.5, H)); }
+    g.globalAlpha = 1; g.fillStyle = '#54f0a0';
+    for (i = 0; i < FA_DOORS.length; i++) { r = FA_DOORS[i]; X = r[0] * k + ox; Y = r[1] * k + oy; W = Math.max(2, r[2] * k); H = Math.max(2, r[3] * k); if (out(X, Y, W, H)) continue; g.fillRect(X, Y, W, H); }
+  }
   function drawMini() {
     var S = 96, R = 480, k = (S / 2) / R, c = S / 2, i, o, x, y, d;
     mmx.setTransform(mmDpr, 0, 0, mmDpr, 0, 0);
     mmx.clearRect(0, 0, S, S);
     var edge = c - 3, px = me.x, py = me.y, mmRot = fpOn();
     if (mmRot) { mmx.save(); mmx.translate(c, c); mmx.rotate(-Math.PI / 2 - fpYaw); mmx.translate(-c, -c); }   /* first person: what you are looking at is always up */
+    if (LV.on) mmFactory(mmx, c - px * k, c - py * k, k, c);
     mmx.fillStyle = '#c43a2a';
     for (i = 0; i < BLD.length; i++) {
       o = BLD[i].bar; x = (o.cx - px) * k; y = (o.cy - py) * k;
@@ -7194,6 +7411,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     c.clearRect(0, 0, S, S);
     c.drawImage(groundL.c, 0, 0, S, S);
     c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, S, S);
+    if (LV.on) mmFactory(c, 0, 0, k, 0);
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
     function lab(t, tx, ty, col, sz) { c.font = '700 ' + (sz || fs) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,0.85)'; var hw = c.measureText(t).width / 2 + 2; tx = Math.max(hw, Math.min(S - hw, tx)); c.strokeText(t, tx, ty); c.fillStyle = col || '#ebe3d4'; c.fillText(t, tx, ty); }
     if (mapId === 'haunted') {
@@ -7731,16 +7949,54 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function v3factory() {
     var T = THREE, GS = { brick: v3grp(64), plaster: v3grp(96), wood: v3grp(48), leaf: v3grp(48), metal: v3grp(80), roof: v3grp(64), dark: v3grp(64) }, i, k, r, b, hs = [], G;
+    var LVON = LV.on, wbs, M = GS.metal;
     for (i = 0; i < RECTS.length; i++) {
-      r = RECTS[i]; if (r.bar || r.void || r.silo) continue;
-      if (r.wl) { v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, 0, r.hh, r.col); continue; }
+      r = RECTS[i]; if (r.bar || r.void || r.dg || r.pw || r.stw !== undefined) continue;
+      wbs = r.wb || 0;
+      if (r.stt !== undefined) { k = LV.stairs[r.stt]; v3box(GS.plaster, r.x, r.y, r.w, r.h, lvH(k.a), lvH(k.b) - 4 - lvH(k.a), [0.5, 0.48, 0.45]); continue; }   // the solid wall under the top of a flight
+      if (r.lint) { v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, wbs, r.hh - wbs, r.col); continue; }
       if (r.win) {   // an open window: wall below the sill and above the lintel, nothing between
-        v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, 0, 16, r.col); v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, 44, r.hh - 44, r.col);
-        v3box(GS.dark, r.x - (r.w < r.h ? 1.5 : 0), r.y - (r.w < r.h ? 0 : 1.5), r.w + (r.w < r.h ? 3 : 0), r.h + (r.w < r.h ? 0 : 3), 14, 3, [0.3, 0.28, 0.26]);   // the sill
+        v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, wbs, 16, r.col); if (r.hh - wbs - 44 > 0) v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, wbs + 44, r.hh - wbs - 44, r.col);
+        v3box(GS.dark, r.x - (r.w < r.h ? 1.5 : 0), r.y - (r.w < r.h ? 0 : 1.5), r.w + (r.w < r.h ? 3 : 0), r.h + (r.w < r.h ? 0 : 3), wbs + 14, 3, [0.3, 0.28, 0.26]);   // the sill
         continue;
       }
+      if (r.rl !== undefined) {   // a guard rail: top bar, middle bar and posts
+        var rh = r.w >= r.h, rn = Math.max(1, Math.round((rh ? r.w : r.h) / 40)), pk2;
+        v3box(M, r.x, r.y, r.w, r.h, r.rl + 22, 3, [0.7, 0.62, 0.2]); v3box(M, r.x + (rh ? 0 : 0.5), r.y + (rh ? 0.5 : 0), r.w - (rh ? 0 : 1), r.h - (rh ? 1 : 0), r.rl + 11, 2, [0.55, 0.5, 0.2]);
+        for (pk2 = 0; pk2 <= rn; pk2++) v3box(M, rh ? r.x + pk2 * (r.w - 4) / rn : r.x - 0.5, rh ? r.y - 0.5 : r.y + pk2 * (r.h - 4) / rn, rh ? 4 : r.w + 1, rh ? r.h + 1 : 4, r.rl, 24, [0.6, 0.54, 0.22]);
+        continue;
+      }
+      if (r.wl) { v3box(GS[r.mat] || GS.brick, r.x, r.y, r.w, r.h, wbs, r.hh - wbs, r.col); continue; }
       if (r.side) { v3box(GS.wood, r.x, r.y, r.w, r.h, 0, 34, [0.74, 0.6, 0.44]); continue; }
       if (r.prop) v3fprop(GS, r);
+    }
+    if (LVON) {
+      // first and second floors: a slab with a visible underside; bridges are thin decks
+      LV.floors.forEach(function (f) {
+        var y1 = lvH(f.lv), cc = f.mat === 'metal' ? [0.46, 0.48, 0.5] : [0.52, 0.5, 0.46], sl = f.br ? 8 : 4, Gm = f.mat === 'metal' ? M : GS.plaster;
+        v3box(Gm, f.x, f.y, f.w, f.h, y1 - sl, sl, cc);
+        v3poly(GS.dark, [[f.x, y1 - sl, f.y], [f.x + f.w, y1 - sl, f.y], [f.x + f.w, y1 - sl, f.y + f.h], [f.x, y1 - sl, f.y + f.h]], [0.34, 0.33, 0.31], 0.9, [[f.x / 64, f.y / 64], [(f.x + f.w) / 64, f.y / 64], [(f.x + f.w) / 64, (f.y + f.h) / 64], [f.x / 64, (f.y + f.h) / 64]]);
+      });
+      // stairs and ramps: solid steps with a stepped wall down each side
+      LV.stairs.forEach(function (s) {
+        var vt = s.dir === 'n' || s.dir === 's', len = vt ? s.h : s.w, n = Math.max(6, Math.round(len / 10)), y0 = lvH(s.a), rise = lvH(s.b) - y0, q, t0, t1, px, pz, pw, pd, side = s.b - s.a >= 1 && !(s.a === -1), c = s.a === -1 ? [0.44, 0.42, 0.4] : [0.5, 0.48, 0.45];
+        for (q = 0; q < n; q++) {
+          t0 = q / n; t1 = (q + 1) / n;
+          if (s.dir === 'n') { pz = s.y + s.h - t1 * len; pd = len / n; px = s.x; pw = s.w; }
+          else if (s.dir === 's') { pz = s.y + t0 * len; pd = len / n; px = s.x; pw = s.w; }
+          else if (s.dir === 'e') { px = s.x + t0 * len; pw = len / n; pz = s.y; pd = s.h; }
+          else { px = s.x + s.w - t1 * len; pw = len / n; pz = s.y; pd = s.h; }
+          v3box(GS.plaster, px, pz, pw, pd, y0, rise * t1, c);
+          if (side) { if (vt) { v3box(M, s.x - 4, pz, 4, pd, y0 + rise * t1, 24, [0.6, 0.54, 0.22]); v3box(M, s.x + s.w, pz, 4, pd, y0 + rise * t1, 24, [0.6, 0.54, 0.22]); } else { v3box(M, px, s.y - 4, pw, 4, y0 + rise * t1, 24, [0.6, 0.54, 0.22]); v3box(M, px, s.y + s.h, pw, 4, y0 + rise * t1, 24, [0.6, 0.54, 0.22]); } }
+        }
+      });
+      // the pit walls: raw concrete from the lip down to the floor
+      var PW = FA_PITW, pc = [0.5, 0.48, 0.45], pe, pa, pb, pl, S2 = GS.plaster.S;
+      for (pe = 0; pe < PW.length; pe++) {
+        pa = PW[pe]; pb = PW[(pe + 1) % PW.length]; pl = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
+        v3poly(GS.plaster, [[pa[0], lvH(-1), pa[1]], [pb[0], lvH(-1), pb[1]], [pb[0], 0, pb[1]], [pa[0], 0, pa[1]]], pc, 0.9, [[0, lvH(-1) / S2], [pl / S2, lvH(-1) / S2], [pl / S2, 0], [0, 0]]);
+        v3poly(GS.metal, [[pa[0], 0, pa[1]], [pb[0], 0, pb[1]], [pb[0], 1.5, pb[1]], [pa[0], 1.5, pa[1]]], [0.6, 0.56, 0.5], 1, [[0, 0], [pl / S2, 0], [pl / S2, 0.1], [0, 0.1]]);
+      }
     }
     // the roofs: a ceiling you see from inside, a flat slab with a rim on top
     for (i = 0; i < FB.length; i++) {
@@ -7758,11 +8014,23 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3box(GS.dark, b.ex + b.nx * 7 - w2 / 2, b.ey + b.ny * 7 - d2 / 2, w2, d2, 0, 52, [0.3, 0.24, 0.2]);
       v3box(GS.metal, b.ex + b.nx * 7 - w2 / 2 - (vx ? 0.5 : 0), b.ey + b.ny * 7 - d2 / 2 - (vx ? 0 : 0.5), vx ? 6 : 88, vx ? 88 : 6, 50, 4, [0.4, 0.4, 0.42]);
     }
-    // the silo: an eight-sided steel tower with a cone cap
+    // the silo: an eight-sided steel tower with a flat roof; the four straight faces are real walls (doors, windows), the four slanted ones are drawn here
     if (FA_SILO) {
-      var s = FA_SILO; v3cyl(GS.metal, s.x, s.y, s.r * 1.04, 0, s.H, 16, [0.62, 0.64, 0.66]); v3cyl(GS.metal, s.x, s.y, s.r * 1.06, s.H * 0.5, 8, 16, [0.5, 0.52, 0.54]); v3cyl(GS.metal, s.x, s.y, s.r * 1.06, 6, 8, 16, [0.5, 0.52, 0.54]);
-      for (k = 0; k < 16; k++) { var ang = k / 16 * 6.283; v3box(GS.dark, s.x + Math.cos(ang) * s.r * 1.04 - 2, s.y + Math.sin(ang) * s.r * 1.04 - 2, 4, 4, 0, s.H, [0.35, 0.36, 0.38]); }
-      var cap = [], ci; for (ci = 0; ci < 16; ci++) { var a0 = ci / 16 * 6.283, a1 = (ci + 1) / 16 * 6.283; v3poly(GS.roof, [[s.x + Math.cos(a0) * s.r * 1.04, s.H, s.y + Math.sin(a0) * s.r * 1.04], [s.x + Math.cos(a1) * s.r * 1.04, s.H, s.y + Math.sin(a1) * s.r * 1.04], [s.x, s.H + 46, s.y]], [0.5, 0.48, 0.46], 0.95, [[0, 0], [1, 0], [0.5, 1]]); }
+      var so = FA_SILO, ro = so.r, rin = (so.ri - 14) / Math.cos(Math.PI / 8), SSx = M.S, ka, kb, A0, A1, ox0, oz0, ox1, oz1, ix0, iz0, ix1, iz1, sc = [0.62, 0.64, 0.66], el;
+      for (ka = 0; ka < 8; ka++) {
+        A0 = (22.5 + 45 * ka) * Math.PI / 180; A1 = (22.5 + 45 * (ka + 1)) * Math.PI / 180;
+        ox0 = so.x + Math.cos(A0) * ro; oz0 = so.y + Math.sin(A0) * ro; ox1 = so.x + Math.cos(A1) * ro; oz1 = so.y + Math.sin(A1) * ro;
+        ix0 = so.x + Math.cos(A0) * rin; iz0 = so.y + Math.sin(A0) * rin; ix1 = so.x + Math.cos(A1) * rin; iz1 = so.y + Math.sin(A1) * rin;
+        el = Math.hypot(ox1 - ox0, oz1 - oz0) / SSx;
+        if (ka % 2 === 0) {   // a slanted face (the faces between are the straight walls from the collision list)
+          v3poly(M, [[ox0, 0, oz0], [ox1, 0, oz1], [ox1, so.H, oz1], [ox0, so.H, oz0]], sc, 0.9 + 0.2 * Math.abs(Math.cos((A0 + A1) / 2)), [[0, 0], [el, 0], [el, so.H / SSx], [0, so.H / SSx]]);
+          v3poly(M, [[ix0, 0, iz0], [ix1, 0, iz1], [ix1, so.H, iz1], [ix0, so.H, iz0]], sc, 0.75, [[0, 0], [el, 0], [el, so.H / SSx], [0, so.H / SSx]]);
+        }
+        v3poly(GS.roof, [[so.x, so.H, so.y], [ox0, so.H, oz0], [ox1, so.H, oz1]], [0.5, 0.48, 0.46], 1.05, [[0.5, 0.5], [0, 0], [1, 0]]);
+      }
+      for (ka = 0; ka < 8; ka++) { A0 = (22.5 + 45 * ka) * Math.PI / 180; v3box(GS.dark, so.x + Math.cos(A0) * ro - 3, so.y + Math.sin(A0) * ro - 3, 6, 6, 0, so.H, [0.35, 0.36, 0.38]); }
+      v3cyl(GS.roof, so.x, so.y, 4, so.H, 14, 6, [0.5, 0.52, 0.54]);
+      hs.push({ x: so.x - 193, y: so.y - 193, w: 386, h: 386 });
     }
     // the tall boundary wall round the yard
     var pb = MAPCFG.b, pw = [0.5, 0.48, 0.46];
@@ -7887,6 +8155,28 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     };
     return m;
   }
+  // the flat ground as boxes of quads: everything but the rail pit at height dy, and the pit floor at the pit depth (+dy). Same texture coordinates as a single plane.
+  function v3pitGeo(dy) {
+    var T = THREE, base = [[0, 0, WORLD, WORLD]], pos = [], nor = [], uv = [], idx = [], list = [], i, j, q, nb;
+    function sub(p, h) {
+      var o = [], x0 = Math.max(p[0], h[0]), y0 = Math.max(p[1], h[1]), x1 = Math.min(p[0] + p[2], h[0] + h[2]), y1 = Math.min(p[1] + p[3], h[1] + h[3]);
+      if (x0 >= x1 || y0 >= y1) return [p];
+      if (x0 > p[0]) o.push([p[0], p[1], x0 - p[0], p[3]]); if (x1 < p[0] + p[2]) o.push([x1, p[1], p[0] + p[2] - x1, p[3]]);
+      if (y0 > p[1]) o.push([x0, p[1], x1 - x0, y0 - p[1]]); if (y1 < p[1] + p[3]) o.push([x0, y1, x1 - x0, p[1] + p[3] - y1]);
+      return o;
+    }
+    LV.pitR.forEach(function (h) { nb = []; base.forEach(function (p) { sub(p, h).forEach(function (r) { nb.push(r); }); }); base = nb; });
+    base.forEach(function (r) { list.push([r, dy]); }); LV.pitR.forEach(function (r) { list.push([r, lvH(-1) + dy]); });
+    list.forEach(function (e) {
+      var r = e[0], y = e[1], x0 = r[0], z0 = r[1], x1 = r[0] + r[2], z1 = r[1] + r[3], b = pos.length / 3;
+      pos.push(x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0); for (j = 0; j < 4; j++) nor.push(0, 1, 0);
+      uv.push(x0 / WORLD, 1 - z0 / WORLD, x0 / WORLD, 1 - z1 / WORLD, x1 / WORLD, 1 - z1 / WORLD, x1 / WORLD, 1 - z0 / WORLD);
+      idx.push(b, b + 1, b + 3, b + 1, b + 2, b + 3);
+    });
+    var g = new T.BufferGeometry();
+    g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+    return g;
+  }
   function v3setup() {
     var T = THREE;
     if (V.walls) { sc3rm(V.walls); V.walls.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
@@ -7894,11 +8184,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (V.blood) { sc3rm(V.blood); V.bTex.dispose(); V.blood.geometry.dispose(); }
     V.walls = v3walls(); V.sc.add(V.walls); V.walls.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     V.gTex = new T.CanvasTexture(groundL.c); V.gTex.colorSpace = T.SRGBColorSpace; V.gTex.minFilter = T.LinearFilter; V.gTex.generateMipmaps = false;
-    V.ground = new T.Mesh(new T.PlaneGeometry(WORLD, WORLD), v3gmat(V.gTex));
-    V.ground.rotation.x = -Math.PI / 2; V.ground.position.set(WORLD / 2, 0, WORLD / 2); V.ground.receiveShadow = true; V.sc.add(V.ground);
+    V.ground = new T.Mesh(LV.on && LV.pitR ? v3pitGeo(0) : new T.PlaneGeometry(WORLD, WORLD), v3gmat(V.gTex));
+    if (LV.on && LV.pitR) V.ground.position.set(0, 0, 0); else { V.ground.rotation.x = -Math.PI / 2; V.ground.position.set(WORLD / 2, 0, WORLD / 2); } V.ground.receiveShadow = true; V.sc.add(V.ground);
     V.bTex = new T.CanvasTexture(bloodL.c); V.bTex.colorSpace = T.SRGBColorSpace; V.bTex.minFilter = T.LinearFilter; V.bTex.generateMipmaps = false;
-    V.blood = new T.Mesh(new T.PlaneGeometry(WORLD, WORLD), new T.MeshLambertMaterial({ map: V.bTex, transparent: true, depthWrite: false }));
-    V.blood.rotation.x = -Math.PI / 2; V.blood.position.set(WORLD / 2, 0.4, WORLD / 2); V.blood.visible = false; V.blood.renderOrder = -5; V.sc.add(V.blood);   /* drawn before anything see-through, so walls and objects cover it */
+    V.blood = new T.Mesh(LV.on && LV.pitR ? v3pitGeo(0.4) : new T.PlaneGeometry(WORLD, WORLD), new T.MeshLambertMaterial({ map: V.bTex, transparent: true, depthWrite: false }));
+    if (LV.on && LV.pitR) V.blood.position.set(0, 0, 0); else { V.blood.rotation.x = -Math.PI / 2; V.blood.position.set(WORLD / 2, 0.4, WORLD / 2); } V.blood.visible = false; V.blood.renderOrder = -5; V.sc.add(V.blood);   /* drawn before anything see-through, so walls and objects cover it */
     var nb = 0, i; for (i = 0; i < BLD.length; i++) nb += BLD[i].bar.max;
     if (V.bars) { sc3rm(V.bars); }
     V.bars = new T.InstancedMesh(V.box, new T.MeshLambertMaterial({ color: 0xb08050, map: v3tex('wood'), bumpMap: v3bump('wood'), bumpScale: 1.6 }), Math.max(1, nb)); V.bars.frustumCulled = false; V.bars.castShadow = true; V.bars.receiveShadow = true; V.sc.add(V.bars);
@@ -8282,14 +8572,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var bob = Math.sin(time * 3 + i) * 2, sp = time * 1.2 + i * 1.7;
     V.fl = 0; v3blob(x, z, 8, 8);
     if (kind === 'health') {
-      v3frame(x, 0, z, sp * 0.4, 1);
+      v3frame(x, V.zo || 0, z, sp * 0.4, 1);
       v3x(0, 4.5, 0, 12, 9, 10, '#f2f2f2', 2); v3x(0, 4.5, 0, 12.2, 1.4, 10.2, '#cfd4d8', 2); v3x(0, 9.3, 0, 7, 0.6, 2.2, '#d6252e', 3); v3x(0, 9.3, 0, 2.2, 0.6, 7, '#d6252e', 3); v3x(0, 9.4, 0, 3, 1.2, 3.4, '#8a8f95', 2);
       v3x(0, 10.4, 0, 5.4, 1, 1.6, '#8a8f95', 2); v3x(2.6, 10.4, 0, 0.8, 1.6, 1.6, '#6a6f75', 2); v3x(-2.6, 10.4, 0, 0.8, 1.6, 1.6, '#6a6f75', 2);   /* handle */
       v3x(6.2, 5.6, 0, 0.6, 2.4, 2.4, '#9aa0a6', 2); v3x(6.15, 7.4, 4, 0.4, 1, 3, '#d6252e', 3); v3x(6.15, 7.4, -4, 0.4, 1, 3, '#d6252e', 3);   /* latch and label bars */
       v3x(0, 9.1, 4.6, 12.6, 0.5, 0.8, '#b8bec4', 2); v3x(0, 9.1, -4.6, 12.6, 0.5, 0.8, '#b8bec4', 2); v3x(-5.9, 5.2, 0, 0.8, 7, 9, '#cfd4d8', 2);   /* rim and hinge */
       v3x(0, 0.6, 0, 12.6, 1.2, 10.4, '#aab0b6', 2); v3x(4.5, 9.2, 3.2, 1.2, 0.6, 1.2, '#f2f2f2', 2);
     } else if (kind === 'ammo') {
-      v3frame(x, 0, z, sp * 0.4, 1);
+      v3frame(x, V.zo || 0, z, sp * 0.4, 1);
       v3x(0, 4, 0, 13, 8, 9, '#5a6a3a', 2); v3x(0, 4, 0, 13.2, 1.5, 9.2, '#f2c14e', 2);
       for (var q = 0; q < 3; q++) { v3x(-3 + q * 3, 9.8, 0, 1.6, 3.4, 1.6, '#d4a52e', 3); v3x(-3 + q * 3, 11.8, 0, 1.3, 1.4, 1.3, '#c97a4a', 3); }
       v3x(0, 8.4, 0, 3, 0.7, 9.4, '#2a3220', 2); v3x(6.6, 4, 2.6, 0.4, 3.2, 2.4, '#e8e2c8', 2); v3x(6.6, 4, -2.6, 0.4, 3.2, 1, '#e8e2c8', 2);   /* strap and stencil */
@@ -8297,16 +8587,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (var q2 = 0; q2 < 4; q2++) v3x(q2 < 2 ? -6 : 6, 7.6, q2 % 2 ? 4.2 : -4.2, 0.9, 0.9, 0.9, '#8a8f95', 2);   /* rivets */
     } else if (kind === 'special') {   // the weapon itself, turning slowly above a glowing plate
       var sgd = WEAPONS['k_' + pid] || SPECIALS[pid], gS = 1.15, gcx = (9 + ((sgd ? sgd.len : 30) + 5) * 0.3) * gS, ga = sp * 0.5;
-      v3frame(x, 0, z, 0, 1); v3x(0, 0.8, 0, 14, 0.8, 14, '#d2692a', 3, 0, ga, 0); v3x(0, 0.8, 0, 14, 0.8, 3, '#ffb060', 3, 0, ga + 1.5708, 0);
+      v3frame(x, V.zo || 0, z, 0, 1); v3x(0, 0.8, 0, 14, 0.8, 14, '#d2692a', 3, 0, ga, 0); v3x(0, 0.8, 0, 14, 0.8, 3, '#ffb060', 3, 0, ga + 1.5708, 0);
       if (sgd) {
         v3frame(x - gcx * Math.cos(ga), 14 + bob - 22.5 * gS, z - gcx * Math.sin(ga), ga, gS);
         v3figgun(sgd, null, null);
       }
-      v3frame(x, 0, z, 0, 1); v3x(0, 32 + bob * 0.5, 0, 2.6, 2.6, 2.6, '#ffd25a', 3, sp, sp * 1.3, 0);
+      v3frame(x, V.zo || 0, z, 0, 1); v3x(0, 32 + bob * 0.5, 0, 2.6, 2.6, 2.6, '#ffd25a', 3, sp, sp * 1.3, 0);
     } else if (kind === 'perk') {
       v3perk(x, z, i, pid, bob, sp);
     } else {   // item / treasure
-      v3frame(x, 0, z, 0, 1);
+      v3frame(x, V.zo || 0, z, 0, 1);
       v3x(0, 11 + bob, 0, 8, 8, 8, '#6aff9a', 3, 0.7, sp * 1.6, 0.7); v3x(0, 11 + bob, 0, 5, 5, 5, '#d8ffe4', 3, sp, 0.5, sp);
       v3x(0, 11 + bob, 0, 6, 11, 6, '#3acc72', 3, 0, sp * 1.6, 0.4); v3x(0, 11 + bob, 0, 11, 3, 3, '#9affc0', 3, 0.3, sp * 1.6, sp);
       v3x(0, 2.2, 0, 8, 1.6, 8, '#2a2d33', 2); v3x(0, 3.6, 0, 5, 1.4, 5, '#3a3e48', 2);
@@ -8328,16 +8618,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function v3coin(x, z, i) {
     var sp = time * 3 + i * 1.3;
-    V.fl = 0; v3frame(x, 0, z, sp, 1);
+    V.fl = 0; v3frame(x, V.zo || 0, z, sp, 1);
     var cy = 6 + Math.sin(time * 4 + i) * 1.2;
     v3x(0, cy, 0, 1.1, 5.4, 5.4, '#f2c14e', 3); v3x(0, cy, 0, 1.1, 5.4, 5.4, '#e0a92e', 3, 0.785); v3x(0.3, cy, 0, 1.1, 3.4, 3.4, '#ffe68a', 3);
     var gl0 = (time * 1.3 + i * 0.37) % 1; if (gl0 < 0.22) { var gz = Math.sin(gl0 / 0.22 * 3.1416) * 3.4; v3x(1.2, cy + 3.4, 1.2, 0.5, gz, 0.5, '#fff6c8', 1); v3x(1.2, cy + 3.4, 1.2, 0.5, 0.5, gz, '#fff6c8', 1); }   /* a little glint */
     v3x(0.6, cy, 0, 0.5, 2.6, 0.7, '#b8841c', 3); v3x(0.6, cy + 0.9, 0, 0.5, 0.6, 1.8, '#b8841c', 3); v3x(0.6, cy - 0.9, 0, 0.5, 0.6, 1.8, '#b8841c', 3);   /* embossed S */
   }
-  function v3blob(x, z, rx, rz) { if (!V.rs && V.shn < 600) v3put(V.sh, V.shn++, x, 0.7, z, 0, rx, 1, rz); }
+  function v3blob(x, z, rx, rz) { if (!V.rs && V.shn < 600) v3put(V.sh, V.shn++, x, 0.7 + (V.zo || 0), z, 0, rx, 1, rz); }
   function v3fig(n, x, z, ang, s, step, mv, skin, cloth, pants, down, gun, ext) {
     var d = V.d, f = V.fm, sw = Math.sin(step) * 0.75 * mv;
-    d.position.set(x, down ? 5 : 0, z); d.rotation.set(0, -ang, down ? 1.5708 : 0); d.scale.set(s, s, s); d.updateMatrix(); V.F.copy(d.matrix);
+    d.position.set(x, (down ? 5 : 0) + (V.zo || 0), z); d.rotation.set(0, -ang, down ? 1.5708 : 0); d.scale.set(s, s, s); d.updateMatrix(); V.F.copy(d.matrix);
     v3part(f[0], n, 0, 19.5, 0, 0, 0, 0, 0, 6.5, 13, 11, cloth);
     v3part(f[1], n, 0.6, 29.5, 0, 0, 0, 0, 0, 7.6, 8, 7.6, skin);
     v3part(f[2], n, 0, 13, 2.8, sw, 0, -6.5, 0, 4.4, 13, 4.4, pants);
@@ -8395,6 +8685,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < RECTS.length; i++) {
       q = RECTS[i];
       if (q.bar || (q.door && q.open) || q.spawn !== undefined || q.w >= 1000 || q.h >= 1000) continue;
+      if (LV.on && me && !rOn(q, me.lv | 0)) continue;
       if (ex >= q.x && ex <= q.x + q.w && ez >= q.y && ez <= q.y + q.h) continue;
       if (Math.abs(dx) < 1e-6) { if (ex < q.x || ex > q.x + q.w) continue; tx0 = -1e9; tx1 = 1e9; } else { tx0 = (q.x - ex) / dx; tx1 = (q.x + q.w - ex) / dx; if (tx0 > tx1) { a0 = tx0; tx0 = tx1; tx1 = a0; } }
       if (Math.abs(dz) < 1e-6) { if (ez < q.y || ez > q.y + q.h) continue; tz0 = -1e9; tz1 = 1e9; } else { tz0 = (q.y - ez) / dz; tz1 = (q.y + q.h - ez) / dz; if (tz0 > tz1) { a1 = tz0; tz0 = tz1; tz1 = a1; } }
@@ -8438,7 +8729,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (!V.shown) { V.cvs.style.display = 'block'; V.shown = true; }
     var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = true;   /* every first-person map is played at night */
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
-    var eyeY = (me && me.down) ? 9 : 30.5, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
+    var eyeY = ((me && me.down) ? 9 : 30.5) + ((LV.on && me) ? (me.z || 0) : 0), fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
     var bobA = (me && !me.down && V.gb) ? V.gb * (1 - SC.amt * 0.85) : 0, bobY = bobA * Math.sin((me ? me.step : 0) * 2) * 0.45, bobX = bobA * Math.sin(me ? me.step : 0) * 0.25;   /* a slight walking bob: the eye dips with each step and sways a little side to side */
     V.cam.position.set(focus.x + sx * 0.3 - Math.sin(fpYaw) * bobX, eyeY + bobY, focus.y + sy * 0.3 + Math.cos(fpYaw) * bobX);
     var tfov = V.fov0 || V.cam.fov;
@@ -8454,7 +8745,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     V.sky.position.copy(cp);
     V.sdisc.visible = true; V.sdisc.material.color.setHex(night ? 0xff8a40 : 0xffd9a0); V.sdisc.position.set(cp.x - 2000, cp.y + (night ? 330 : 880), cp.z + (night ? 900 : 800)); V.sdisc.lookAt(cp);
     V.hemi.color.setHex(night ? 0xffa878 : 0xffd8b8); V.hemi.groundColor.setHex(night ? 0x44343a : 0x6a5440); V.hemi.intensity = night ? 0.85 : 2.0 - V.li * 0.8; V.sun.intensity = night ? 1.15 * (1 - V.li * 0.9) : 1.7 - V.li * 1.5; V.sun.color.setHex(night ? 0xff8a48 : 0xff9a50);   /* a low warm sun that casts long shadows */
-    V.pl.intensity = night ? 4.0 : V.li * 2.4; V.pl.position.set(focus.x, 34, focus.y);
+    V.pl.intensity = night ? 4.0 : V.li * 2.4; V.pl.position.set(focus.x, 34 + (LV.on && me ? (me.z || 0) : 0), focus.y);
     V.mf.intensity = (me && me.flash > 0 && !me.down) ? 7 : 0; var mzp = v3loc(42 + V.mz, -9.5, 9); V.mf.position.set(mzp.x, mzp.y, mzp.z);
     var tnow = performance.now(); if (V.tp) V.ft = V.ft ? V.ft * 0.95 + (tnow - V.tp) * 0.05 : (tnow - V.tp); V.tp = tnow;
     if (V.rs && V.ft > (V.slowMs || 40) && ++V.slow > 150) { V.rs = false; V.sun.castShadow = false; }   /* phone struggling: fall back to blob shadows */
@@ -8466,7 +8757,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (fpi = 0; fpi < firePatches.length; fpi++) { fpt = firePatches[fpi]; var fdd = Math.hypot(fpt.x - focus.x, fpt.y - focus.y); if (fdd < bestFd && fdd < 700) { bestFd = fdd; glx = fpt.x; gly = fpt.y; glI = 2.8 * (0.75 + 0.25 * Math.sin(time * 19 + fpi) + 0.1 * Math.sin(time * 31)); } }
     if (exGlow) { exGlow.t -= 0.016; if (exGlow.t <= 0) exGlow = null; else if (6 * exGlow.t / exGlow.m > glI) { glI = 6 * exGlow.t / exGlow.m; glx = exGlow.x; gly = exGlow.y; } }
     V.gl.intensity = glI; V.gl.position.set(glx, 26, gly);
-    V.torch.intensity = (night && me && !me.down) ? 7.2 : 0; V.torch.position.set(focus.x + fcx * 85, 22, focus.y + fcz * 85);
+    V.torch.intensity = (night && me && !me.down) ? 7.2 : 0; V.torch.position.set(focus.x + fcx * 85, 22 + (LV.on && me ? (me.z || 0) : 0), focus.y + fcz * 85);
     // blood
     if (bloodOn) { V.blood.visible = true; V.bT -= 1 / 60; if (V.bT <= 0 && bloodDirty) { V.bTex.needsUpdate = true; V.bT = 1.2; bloodDirty = false; } } else V.blood.visible = false;
     // figures
@@ -8479,8 +8770,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (k === 'ghost') { v3ghost(z, fl, z.ang); v3blob(z.x, z.y, 8, 8); continue; }
       var sk = fl === 2 ? '#e8403a' : fl ? '#f4ece0' : (k === 'ghost' ? '#bcd8ee' : cc.skin), cth = fl === 2 ? '#c4302a' : fl ? '#e8dccb' : (k === 'ghost' ? '#a8c8e0' : cc.cloth), pn = fl === 2 ? '#9a2420' : fl ? '#d8ccbb' : (k === 'ghost' ? '#a8c8e0' : cc.pants);
       if (z.stun > 0 && !fl) { sk = '#9fc4e8'; }
+      V.zo = LV.on ? (z.z || 0) : 0;
       v3fig(n, z.x, z.y, z.ang, S[0] * 1.02, time * (3 + ((TYPES[k] || {}).spd || 60) * 0.075) + z.seed * 3, 1, v3col(sk), v3col(cth), v3col(pn), false, false, { k: k, fl: fl, seed: z.seed, lod: ((z.x - focus.x) * (z.x - focus.x) + (z.y - focus.y) * (z.y - focus.y)) > 640000 });
-      v3blob(z.x, z.y, Math.max(8, z.r * 1.15), Math.max(8, z.r * 1.15)); n++;
+      v3blob(z.x, z.y, Math.max(8, z.r * 1.15), Math.max(8, z.r * 1.15)); n++; V.zo = 0;
     }
     for (i = 0; i < players.length; i++) {
       P = players[i]; rr = viewRef(P); if (!rr) continue;
@@ -8489,8 +8781,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var L = P.look || {}, mv = (P._v3s !== undefined && Math.abs(P.step - P._v3s) > 0.003) ? 1 : 0; P._v3s = P.step;
       var pAr = P.armor || { head: 0, body: 0, legs: 0 }, pJc = L.j === 1 ? '#5a6a3a' : (L.j === 2 ? '#f2a02a' : (LOOK_COLS[L.c] || LOOK_COLS[0])), pLg = pAr.legs > 0 ? TIERCOL[pAr.legs] : (PANTS[L.pn] || PANTS[0]);
       var pgd = rr && defOf(rr), pgl = (pgd && !pgd.special) ? gunLo(L, pgd.id) : null;
+      V.zo = LV.on ? (P.z || 0) : 0;
       v3fig(n, P.x, P.y, P.ang, 1, P.step, mv, v3col(SKINS[L.sk] || SKINS[2]), v3col(pJc), v3col(pLg), !!P.down, !P.down, { L: L, ar: pAr, P: P, gd: pgd, glo: pgl, rr: rr });
-      v3blob(P.x, P.y, 10, 10); n++;
+      v3blob(P.x, P.y, 10, 10); n++; V.zo = 0;
     }
     for (i = 0; i < players.length; i++) {   // pets
       P = players[i]; if (P.down && !P.look) continue;
@@ -8545,8 +8838,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3put(V.or, on++, g.x, 5 + gh, g.y, 0, 4.8, 4.8, 4.8, v3col(GREN_COL[g.k | 0]));
     }
     var fcx2 = focus.x, fcy2 = focus.y;
-    for (i = 0; i < coins.length && i < 90; i++) { e = coins[i]; if (Math.abs(e.x - fcx2) < 800 && Math.abs(e.y - fcy2) < 800) v3coin(e.x, e.y, i); }
-    for (i = 0; i < pickups.length && i < 60; i++) { e = pickups[i]; if (Math.abs(e.x - fcx2) < 900 && Math.abs(e.y - fcy2) < 900 && !pickBlink(e)) v3item(e.kind, e.x, e.y, i, e.id); }
+    for (i = 0; i < coins.length && i < 90; i++) { e = coins[i]; if (Math.abs(e.x - fcx2) < 800 && Math.abs(e.y - fcy2) < 800) { V.zo = LV.on ? (e.z || 0) : 0; v3coin(e.x, e.y, i); V.zo = 0; } }
+    for (i = 0; i < pickups.length && i < 60; i++) { e = pickups[i]; if (Math.abs(e.x - fcx2) < 900 && Math.abs(e.y - fcy2) < 900 && !pickBlink(e)) { V.zo = LV.on ? (e.z || 0) : 0; v3item(e.kind, e.x, e.y, i, e.id); V.zo = 0; } }
     for (i = V.pkn || 0; V.pm && i < V.pm.length; i++) V.pm[i].visible = false;
     V.pkn = 0;
     for (i = 0; i < boxes.length && i < 8; i++) { e = boxes[i]; v3chest(e.x, e.y); }
@@ -9200,6 +9493,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (P) {
         P.inx = Math.max(-1, Math.min(1, (+m.x || 0) / 100)); P.iny = Math.max(-1, Math.min(1, (+m.y || 0) / 100));
         P.cone = !!m.cn; P.aimAng = m.cn ? Math.max(-7, Math.min(7, (+m.a || 0) / 100)) : null; P.fr = !!m.fr;
+        if (m.jn !== undefined && (m.jn | 0) !== (P.jn | 0)) { P.jn = m.jn | 0; P.jmp = true; }
       }
     } else if (m.k === 'cmd' && seat) {
       P = pById(seat.id);
@@ -9261,11 +9555,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
-      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry, P.deaths, r1(P.rt), P.go ? 1 : 0, r1(P.dtT || 0), P.dead ? 1 : 0, Math.round((P.scope || 0) * 10), rr.reload > 0 ? 1 : 0, P.gtN | 0];
+      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry, P.deaths, r1(P.rt), P.go ? 1 : 0, r1(P.dtT || 0), P.dead ? 1 : 0, Math.round((P.scope || 0) * 10), rr.reload > 0 ? 1 : 0, P.gtN | 0, r1(P.z || 0), P.lv | 0];
     });
     o.G = [gbDone, gbOn ? 1 : 0];
     o.Z = zombies.map(function (z) {
-      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? (z.cf ? 2 : 1) : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA), z.gooT > 0 ? (z.fuse > 0 && z.fuse < 0.35 ? 2 : 1) : 0];
+      return [z.id, TYPE_KEYS.indexOf(z.type), r1(z.x), r1(z.y), r2(z.ang), Math.round(z.hp), Math.round(z.maxhp), z.flash > 0 ? (z.cf ? 2 : 1) : 0, z.warn > 0 ? r2(z.warn) : 0, z.breath > 0 ? 1 : 0, r2(z.dashA), z.gooT > 0 ? (z.fuse > 0 && z.fuse < 0.35 ? 2 : 1) : 0, z.lv | 0, r1(z.z || 0)];
     });
     o.B = bullets.slice(0, 140).map(function (b) {
       return [BK.indexOf(b.kind), r1(b.x), r1(b.y), r2(b.dx), r2(b.dy), (b.crit ? 1 : 0) | (b.long ? 2 : 0) | (b.explosive ? 4 : 0) | ((b.bt | 0) << 3), r2(Math.min(1, b.dist / b.max)), Math.round(b.speed)];
@@ -9274,8 +9568,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     o.GR = grenades.map(function (g) { return [r1(g.x), r1(g.y), r2(Math.min(1, g.t / g.T)), r2(Math.max(0, g.t - g.T)), g.k | 0]; });
     o.FP = firePatches.map(function (f) { return [r1(f.x), r1(f.y), r1(f.r), r1(f.t)]; });
     o.E = ebullets.map(function (e) { return [e.id, r1(e.x), r1(e.y), r2(e.dx), r2(e.dy), e.r, r1(e.spin), e.spd]; });
-    o.C = coins.slice(0, 450).map(function (c) { return [r1(c.x), r1(c.y)]; });
-    o.K = pickups.map(function (p) { return [PK.indexOf(p.kind), p.id, r1(p.x), r1(p.y), r1(Math.min(99, p.t))]; });
+    o.C = coins.slice(0, 450).map(function (c) { return LV.on ? [r1(c.x), r1(c.y), r1(c.z || 0)] : [r1(c.x), r1(c.y)]; });
+    o.K = pickups.map(function (p) { return LV.on ? [PK.indexOf(p.kind), p.id, r1(p.x), r1(p.y), r1(Math.min(99, p.t)), r1(p.z || 0)] : [PK.indexOf(p.kind), p.id, r1(p.x), r1(p.y), r1(Math.min(99, p.t))]; });
     o.X = boxes.map(function (b) { return [b.x, b.y]; });
     o.R = BLD.map(function (b) { return [b.bar.planks, r2(b.bar.rt)]; });
     if (DOORS.length) o.D = DOORS.map(function (d) { return [d.open ? 1 : 0, r2(d.prog), r2(d.zt)]; });
@@ -9411,7 +9705,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // players
     for (i = 0; i < m.P.length; i++) {
       r = m.P[i]; P = ensurePlayer(r[0]);
-      P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11], rl: r[22] ? 1 : 0 }; if (P !== me) P.scope = (r[21] || 0) / 10; P.gtN = r[23] | 0;
+      P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11], rl: r[22] ? 1 : 0 }; if (P !== me) P.scope = (r[21] || 0) / 10; P.gtN = r[23] | 0; if (LV.on) { if (P === me) { P.sz = r[24] || 0; P.slv = r[25] | 0; if (!P.air && Math.abs((P.z || 0) - P.sz) > 20) { P.z = P.sz; P.lv = P.slv; } } else { P.z = r[24] || 0; P.lv = r[25] | 0; P.air = false; } }
       if (r[12]) P.flash = 0.06;
       P.carry = r[15] === undefined ? -1 : r[15];
       P.deaths = r[16] || 0; P.rt = r[17] || 0; P.go = !!r[18]; P.dtT = r[19] || 0; P.dead = !!r[20];
@@ -9425,8 +9719,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = players.length - 1; i >= 0; i--) if (players[i] !== me && !m.Pm[players[i].id]) players.splice(i, 1);
     if (m.m) applyMine(m.m);
     // slow-changing world bits
-    coins = m.C.map(function (c) { return { x: c[0], y: c[1] }; });
-    pickups = m.K.map(function (p) { return { kind: PK[p[0]], id: p[1], x: p[2], y: p[3], t: p[4] }; });
+    coins = m.C.map(function (c) { return { x: c[0], y: c[1], z: c[2] || 0 }; });
+    pickups = m.K.map(function (p) { return { kind: PK[p[0]], id: p[1], x: p[2], y: p[3], t: p[4], z: p[5] || 0 }; });
     boxes = m.X.map(function (b) { return { x: b[0], y: b[1] }; });
     for (i = 0; i < BLD.length && i < m.R.length; i++) { BLD[i].bar.planks = m.R[i][0]; BLD[i].bar.rt = m.R[i][1]; }
     if (m.D) for (i = 0; i < DOORS.length && i < m.D.length; i++) { DOORS[i].open = !!m.D[i][0]; DOORS[i].prog = m.D[i][1]; DOORS[i].zt = m.D[i][2]; }
@@ -9482,7 +9776,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       z = {
         id: r1_[0], type: TYPE_KEYS[r1_[1]], r: t.r, skin: t.skin, cloth: t.cloth, boss: !!t.boss, kind: t.kind || '', seed: (r1_[0] * 7.31) % 10,
         x: r0[2] + (r1_[2] - r0[2]) * a, y: r0[3] + (r1_[3] - r0[3]) * a, ang: angLerp(r0[4], r1_[4], a),
-        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, cf: r1_[7] === 2, warn: r1_[8], breath: r1_[9], dashA: r1_[10], goo: r1_[11] || 0
+        hp: r1_[5], maxhp: r1_[6], flash: r1_[7] ? 0.08 : 0, cf: r1_[7] === 2, warn: r1_[8], breath: r1_[9], dashA: r1_[10], goo: r1_[11] || 0, lv: r1_[12] | 0, z: r1_[13] || 0
       };
       if (z.breath > 0 && z.kind === 'fire') pyroFx(z);
       zs.push(z);
@@ -9569,8 +9863,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (state === 'play' && inT >= TUNE.inDt) {
         inT = 0;
         var ca = me.cone && me.aimAng !== null ? Math.round(me.aimAng * 100) : 0;
-        var is = Math.round(me.inx * 100) + ',' + Math.round(me.iny * 100) + ',' + (me.cone ? 1 : 0) + ',' + ca + ',' + (me.fr ? 1 : 0);
-        if (is !== lastIn || now - lastInAt > 250) { lastIn = is; lastInAt = now; netSend({ k: 'in', x: Math.round(me.inx * 100), y: Math.round(me.iny * 100), cn: me.cone ? 1 : 0, a: ca, fr: me.fr ? 1 : 0 }); }
+        var is = Math.round(me.inx * 100) + ',' + Math.round(me.iny * 100) + ',' + (me.cone ? 1 : 0) + ',' + ca + ',' + (me.fr ? 1 : 0) + ',' + (me.jn | 0);
+        if (is !== lastIn || now - lastInAt > 250) { lastIn = is; lastInAt = now; netSend({ k: 'in', x: Math.round(me.inx * 100), y: Math.round(me.iny * 100), cn: me.cone ? 1 : 0, a: ca, fr: me.fr ? 1 : 0, jn: me.jn | 0 }); }
       }
     } else {
       if (state === 'play' && !frozen()) update(dt);
