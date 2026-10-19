@@ -138,6 +138,9 @@ body {
 .stimgo.rdy { border-color: #78e0a0; color: #78e0a0; box-shadow: 0 0 10px rgba(120, 224, 160, 0.5); }
 .stimgo.rdy:active svg { background: #78e0a0; color: #0e1a12; }
 .grengo { top: calc(54% + 58px); --a: 100; --b: 100; background: conic-gradient(rgba(242, 166, 78, 0.95) 0 calc(var(--a) * 0.46%), rgba(58, 44, 34, 0.9) calc(var(--a) * 0.46%) 46%, rgba(0, 0, 0, 0.9) 46% 54%, rgba(242, 166, 78, 0.95) 54% calc(54% + var(--b) * 0.46%), rgba(58, 44, 34, 0.9) calc(54% + var(--b) * 0.46%) 100%); }
+.scopego { top: calc(54% + 116px); touch-action: none; -webkit-user-select: none; user-select: none; }
+.scopego svg { background: rgba(0, 0, 0, 0.78); border-radius: 50%; padding: 8px; width: 40px; height: 40px; box-sizing: border-box; }
+.scopego.on { border-color: #5ad8ff; color: #5ad8ff; box-shadow: 0 0 12px rgba(90, 216, 255, 0.55); }
 .grengo svg { background: rgba(0, 0, 0, 0.78); border-radius: 50%; padding: 8px; width: 40px; height: 40px; box-sizing: border-box; }
 .grengo.rdy { border-color: #f2a64e; color: #f2a64e; box-shadow: 0 0 10px rgba(242, 166, 78, 0.45); }
 .grengo:not(.rdy) { color: #7a6a5a; }
@@ -594,6 +597,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
   <button class="swapgo" id="swapGo" type="button" aria-label="Reload"><b>&#8635;</b></button>
   <button class="swapgo stimgo" id="stimGo" type="button" aria-label="Use stim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3l3 3"/><path d="M19.5 4.5l-9 9"/><path d="M16.5 7.5l-9 9L6 18l-2 2 1-3.5"/><path d="M13 5l6 6"/><path d="M9 15l-3 3"/></g></svg></button>
   <button class="swapgo grengo" id="grenGo" type="button" aria-label="Throw grenade" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14.5" r="6.5"/><path d="M10 8V5.5h4V8"/><path d="M14 5.5l3.5-2.5"/><path d="M9.2 12.2l5.6 4.6M14.8 12.2l-5.6 4.6"/></g></svg></button>
+  <button class="swapgo scopego" id="scopeGo" type="button" aria-label="Scope: hold to aim" hidden><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6"/></g></svg></button>
   <button class="boxbtn" id="boxBtn" type="button" hidden>Mystery box · 120</button>
   <div class="boxui" id="boxUI" hidden><div class="boxcard"><h2>Mystery box</h2><div id="boxBody"></div></div></div>
   <div class="banner" id="banner" hidden><h2 id="bnTitle"></h2><p id="bnText"></p></div>
@@ -3631,7 +3635,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (tg) { tx = tg.x; ty = tg.y; } else { a = P.ang; tx = P.x + Math.cos(a) * 170; ty = P.y + Math.sin(a) * 170; }
     }
     var e = grenStop(P.x, P.y, tx, ty), kind = grenKind(P), rad = G.R * (1 + 0.1 * (P.upg.gren | 0)) * GREN_R[kind];
-    P.gr[slot] = grenCd(P); if (pvp) P.inv = 0;
+    P.gr[slot] = grenCd(P); if (pvp) P.inv = 0; P.gtN = (P.gtN | 0) + 1;
     grenades.push({ x: P.x, y: P.y, sx: P.x, sy: P.y, tx: e.x, ty: e.y, t: 0, T: Math.max(0.3, G.fly * Math.min(1, Math.hypot(e.x - P.x, e.y - P.y) / G.range + 0.3)), fuse: G.fuse, owner: P.id, k: kind, R: rad, stk: null, sf: 0 });
     ptone(P, 420, 220, 0.08, 'triangle', 0.06); ptone(P, 900, 500, 0.05, 'square', 0.03, 0.04); hapFor(P, 'gren');
   }
@@ -3987,6 +3991,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (m.c === 'lo') pvpCmd(P, String(m.a || ''), String(m.id || ''));
     else if (m.c === 'stim') stimUse(P);
     else if (m.c === 'gren') grenUse(P);
+    else if (m.c === 'snipe') snipeShot(P);
+    else if (m.c === 'scope') P.scope = m.a ? 1 : 0;
   }
 
   // ---------- simulation ----------
@@ -4128,12 +4134,21 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
   }
 
+  // sniper: the shot goes off when the scope is let go
+  function snipeShot(P) {
+    if (!P || P.down || state !== 'play' || isGhost(P) || isSpecialActive(P)) return;
+    var ref = curRef(P), d = ref && defOf(ref);
+    if (!d || d.special || d.cls !== 'sniper' || ref.reload > 0 || ref.mag <= 0 || P.fireCd > 0) return;
+    var st = wstats(P, ref);
+    if (P === me && fpOn()) P.ang = fpYaw; else if (P.aimAng !== null && P.aimAng !== undefined) P.ang = P.aimAng;
+    shoot(P); P.fireCd = 1 / st.rate;
+  }
   function shoot(P) {
     var ref = curRef(P), st = wstats(P, ref), d = st.d, i, a, crit;
     var AM = d.special ? 0 : atM(P, d.id), critP = 0.1 * P.upg.crit + ((AM & 32) ? 0.1 : 0), expl = P.perkT.ex > 0, pm = pvp ? (TUNE.pvp.dmg[d.id] || 1) : 1;
     var mx = P.x + Math.cos(P.ang) * (d.len + 10), my = P.y + Math.sin(P.ang) * (d.len + 10);
     if (pvp) P.inv = 0;   // spawn protection ends the moment you fire
-    var sprF = d.special ? 1 : ((AM & 1) ? 0.75 : 1) * ((AM & 16) ? 0.85 : 1), btI = d.special ? 0 : ((gunLo(P.look, d.id) || [0, 0, 0])[2] | 0);
+    var sprF = d.special ? 1 : ((AM & 1) ? 0.75 : 1) * ((AM & 16) ? 0.85 : 1) * (P.scope > 0.8 ? 0.4 : 1), btI = d.special ? 0 : ((gunLo(P.look, d.id) || [0, 0, 0])[2] | 0);
     var vox, voy, fph = !pvp && P === me && fpOn();   // first person: where the barrel tip is, relative to where the shot really starts
     if (P === me && fpOn()) { vox = P.x + Math.cos(fpYaw) * 38 - Math.sin(fpYaw) * 10 - mx; voy = P.y + Math.sin(fpYaw) * 38 + Math.cos(fpYaw) * 10 - my; }
     for (i = 0; d.kind !== 'zap' && i < d.pellets; i++) {
@@ -4401,7 +4416,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         z = zombies[i];
         var fdx = z.x - P.x, fdy = z.y - P.y, fal = fdx * fcy + fdy * fsy;
         if (fal <= 0 || fal >= fbest || Math.abs(-fdx * fsy + fdy * fcy) > z.r + 3) continue;
-        var fhh = 26 + ftp * fal; if (fhh < -3 || fhh > zHeight(z) + 3) continue;
+        var fhh = 30 + ftp * fal; if (fhh < -3 || fhh > zHeight(z) + 3) continue;
         if (shotClear(P.x, P.y, z.x, z.y)) { fbest = fal; tgt = z; }
       }
     } else for (i = 0; i < zombies.length; i++) {
@@ -4449,6 +4464,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     }
 
+    if (fpAim && !isGhost(P) && !isSpecialActive(P) && st.d.cls === 'sniper') canFire = false;   // snipers fire only when the scope is released
     if (tgt || pvFire) {
       P.ang = pvFire ? P.aimAng : (fpAim ? fpYaw : Math.atan2(tgt.y - P.y, tgt.x - P.x));
       P.fireCd -= dt;
@@ -5071,7 +5087,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 199';
+  var updMsg = '', VERSION = 'Version 200';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -5735,7 +5751,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   function btnDefault() {
     var W = window.innerWidth, H = window.innerHeight, small = H <= 520, bh = small ? 42 : 50, off = small ? 50 : 58, f = small ? 0.58 : 0.54, x = (W - 8 - bh / 2) / W;
-    return { rl: [x, f + bh / 2 / H], st: [x, f - off / H + bh / 2 / H], gr: [x, f + off / H + bh / 2 / H] };
+    return { rl: [x, f + bh / 2 / H], st: [x, f - off / H + bh / 2 / H], gr: [x, f + off / H + bh / 2 / H], sc: [x - (bh + 12) / W, f + bh / 2 / H] };
   }
   function closeBtnEd() { btnEd.hidden = true; var o = btnEd.querySelectorAll('.edbtn'), i; for (i = 0; i < o.length; i++) btnEd.removeChild(o[i]); edPos = null; }
   function openBtnEd() {
@@ -6003,6 +6019,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // PvP stim button: green ring fills while it recharges
     var showStim = playing && !shopOpen && !me.down && (!pvp || pvPhase === 'play'), stTot = pvp ? TUNE.pvp.stimCd : TUNE.stim.cd, sc = me.stimCd > 0 ? Math.round(100 * (1 - me.stimCd / stTot)) : 100;
     if (hudCache.stimShow !== showStim) { hudCache.stimShow = showStim; stimGo.hidden = !showStim; grenGo.hidden = !showStim; }
+    var scK = (playing && !blocked() && !me.down && !shopOpen && fpOn()) ? scopeKind() : 0;
+    if (hudCache.scK !== scK) { hudCache.scK = scK; scopeGo.hidden = !scK; if (!scK && SC.on) scopeEnd(false); }
     var gc = grenCd(me), g0 = me.gr && me.gr[0] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[0] / gc))) : 100, g1 = me.gr && me.gr[1] > 0 ? Math.max(0, Math.round(100 * (1 - me.gr[1] / gc))) : 100;
     // line the two buttons up under the ammo box, whatever the screen size
     var nowT = performance.now();
@@ -6013,12 +6031,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         // landscape: reload sits just left of the gun box, out from under the thumb. Stim stays under the box
         swapGo.style.top = Math.round(sr.top + (sr.height - bh) / 2) + 'px'; swapGo.style.right = Math.round(window.innerWidth - sr.left + 8) + 'px';
         if (showStim) { var stT = Math.max(4, Math.min(st0, window.innerHeight - 2 * bh - 20)); stimGo.style.top = stT + 'px'; grenGo.style.top = (stT + bh + 8) + 'px'; } else { stimGo.style.top = ''; grenGo.style.top = ''; }
+        scopeGo.style.top = swapGo.style.top; scopeGo.style.right = (parseFloat(swapGo.style.right) + bh + 8) + 'px';
       } else {
         swapGo.style.right = '';
         if (showStim) {
           st0 = Math.max(4, Math.min(st0, maxT - bh - 8));
-          stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px'; grenGo.style.top = (st0 + 2 * (bh + 8)) + 'px';
-        } else { stimGo.style.top = ''; swapGo.style.top = ''; grenGo.style.top = ''; }
+          stimGo.style.top = st0 + 'px'; swapGo.style.top = (st0 + bh + 8) + 'px'; grenGo.style.top = (st0 + 2 * (bh + 8)) + 'px'; scopeGo.style.top = (st0 + 3 * (bh + 8)) + 'px'; scopeGo.style.right = '';
+        } else { stimGo.style.top = ''; swapGo.style.top = ''; grenGo.style.top = ''; scopeGo.style.top = ''; }
       }
       applyBtnPos();
     }
@@ -6071,6 +6090,55 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- input ----------
   var JR = 56, aim = { active: false, id: null, ox: 0, oy: 0, x: 0, y: 0, ang: null };
   // first person (Bomb Town 3D): fpYaw is where you look, in radians (0 = east, grows clockwise seen from above). Right thumb drags to turn.
+  /* ---- scope: hold the button to look down the sights (you can still slide that thumb to steer). Snipers only fire when you let go. */
+  var SC = { on: false, tid: null, pid: null, t0: 0, lx: 0, ly: 0, amt: 0, zm: 1, kind: 0, tn: 0 }, scopeGo = $('scopeGo');
+  function scopeKind() {   // 0 = this gun has no scope, 1 = rifle optic (2x), 2 = sniper scope (4x)
+    var rf = me && curRef(me), d = rf && defOf(rf);
+    if (!d || d.special || isGhost(me) || isSpecialActive(me)) return 0;
+    return d.cls === 'sniper' ? 2 : (d.cls === 'rifle' ? 1 : 0);
+  }
+  function scF() { return 1 / (1 + (SC.zm - 1) * SC.amt * 0.85); }   // slower turning while zoomed
+  function scopeStart() {
+    if (SC.on || state !== 'play' || blocked() || !me || me.down || !scopeKind()) return false;
+    SC.on = true; SC.t0 = performance.now(); scopeGo.classList.add('on');
+    if (net.mode === 'client') netSend({ k: 'cmd', c: 'scope', a: 1 });
+    return true;
+  }
+  function scopeEnd(fire) {
+    if (!SC.on) return;
+    var held = performance.now() - SC.t0, k = scopeKind(), ready = SC.amt > 0.85 && held > 350;
+    SC.on = false; SC.tid = null; SC.pid = null; scopeGo.classList.remove('on');
+    if (net.mode === 'client') netSend({ k: 'cmd', c: 'scope', a: 0 });
+    if (fire && k === 2 && ready && state === 'play' && !blocked()) cmd('snipe');
+  }
+  function scopeLook(x, y) {
+    if (fpOn()) { fpYaw += (x - SC.lx) * FP_SENS * sensMul * scF(); fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (y - SC.ly) * FP_SENS * sensMul * scF())); }
+    SC.lx = x; SC.ly = y;
+  }
+  scopeGo.addEventListener('touchstart', function (e) {
+    e.preventDefault(); var t = e.changedTouches[0];
+    if (scopeStart()) { SC.tid = t.identifier; SC.lx = t.clientX; SC.ly = t.clientY; }
+  }, { passive: false });
+  scopeGo.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    for (var i = 0; i < e.changedTouches.length; i++) if (SC.on && e.changedTouches[i].identifier === SC.tid) scopeLook(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+  }, { passive: false });
+  function scTouchEnd(e) {
+    if (!SC.on || SC.tid == null) return;
+    var alive = false, i;
+    for (i = 0; i < e.touches.length; i++) if (e.touches[i].identifier === SC.tid) alive = true;
+    if (!alive) scopeEnd(e.type !== 'touchcancel');
+  }
+  window.addEventListener('touchend', scTouchEnd); window.addEventListener('touchcancel', scTouchEnd);
+  scopeGo.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'touch') return; e.preventDefault();
+    if (scopeStart()) { SC.pid = e.pointerId; SC.lx = e.clientX; SC.ly = e.clientY; try { scopeGo.setPointerCapture(e.pointerId); } catch (x) {} }
+  });
+  scopeGo.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch' && SC.on && e.pointerId === SC.pid) scopeLook(e.clientX, e.clientY); });
+  scopeGo.addEventListener('pointerup', function (e) { if (e.pointerType !== 'touch' && SC.on && e.pointerId === SC.pid) scopeEnd(true); });
+  scopeGo.addEventListener('pointercancel', function (e) { if (e.pointerType !== 'touch' && SC.on && e.pointerId === SC.pid) scopeEnd(false); });
+  scopeGo.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  BTNS.push(['sc', scopeGo]);
   var fpYaw = 0, fpPitch = 0, FP_SENS = 0.007;   // fpPitch: up (+) / down (-) in radians, kept within about 50 degrees
   function fpOn() { return !!(V && V.shown && v3Active()); }
   function ctrlEff() { return (net.mode === 'off' && !fpOn()) ? ctrlMode : 'two'; }
@@ -6133,7 +6201,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (joy.active && t.identifier === joy.tid) dragStick(joy, t);
       else if (aim.active && t.identifier === aim.tid) {
         dragStick(aim, t); if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
-        if (fpOn() && aim.lx !== undefined) { fpYaw += (t.clientX - aim.lx) * FP_SENS * sensMul; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (t.clientY - aim.ly) * FP_SENS * sensMul)); }
+        if (fpOn() && aim.lx !== undefined) { fpYaw += (t.clientX - aim.lx) * FP_SENS * sensMul * scF(); fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (t.clientY - aim.ly) * FP_SENS * sensMul * scF())); }
         aim.lx = t.clientX; aim.ly = t.clientY;
       }
     }
@@ -6159,7 +6227,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     else if (aim.active && e.pointerId === aim.id) {
       dragStick(aim, e);
       if (Math.hypot(aim.x, aim.y) > 0.18) aim.ang = Math.atan2(aim.y, aim.x);
-      if (fpOn() && aim.lx !== undefined) { fpYaw += (e.clientX - aim.lx) * FP_SENS * sensMul; fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (e.clientY - aim.ly) * FP_SENS * sensMul)); }
+      if (fpOn() && aim.lx !== undefined) { fpYaw += (e.clientX - aim.lx) * FP_SENS * sensMul * scF(); fpPitch = Math.max(-0.9, Math.min(0.9, fpPitch - (e.clientY - aim.ly) * FP_SENS * sensMul * scF())); }
       aim.lx = e.clientX; aim.ly = e.clientY;
     }
   });
@@ -6205,9 +6273,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     }
     me.inx = mx; me.iny = my;
     me.cone = fp || ctrlEff() === 'two';
+    if (!fp) { if (SC.on) scopeEnd(false); SC.amt = 0; me.scope = 0; }
     if (fp) {
       // the aim cone points where the crosshair points; zombies fire on their own, PvP still needs the right thumb down
       me.aimAng = fpYaw;
+      var scN = performance.now(), scD = Math.min(0.1, Math.max(0.001, (scN - (SC.tn || scN)) / 1000)); SC.tn = scN;
+      SC.kind = scopeKind(); SC.zm = SC.kind === 2 ? 4 : (SC.kind === 1 ? 2 : 1);
+      if (SC.on && !SC.kind) scopeEnd(false);
+      SC.amt += ((SC.on ? 1 : 0) - SC.amt) * Math.min(1, scD * (SC.kind === 2 ? 9 : 13)); if (!SC.on && SC.amt < 0.01) SC.amt = 0;
+      me.scope = SC.amt;
       me.fr = !!(!blocked() && state === 'play' && (!pvp || aim.active));
       return;
     }
@@ -7531,11 +7605,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     throw:  { gf: 3.5, gu: 21,   gz: -1.0, gp: -0.9, lx: 0.4, ly: -2.2, rx: 0.15, ry: -3.2, rw: 1, fx: 12, fy: 29, fz: 4 }
   };
   function v3pose(P, rr, gd, mv, step) {
-    var now = performance.now(), Lg = (gd.len + 5) * 0.6, gs = P.gr ? (P.gr[0] + P.gr[1]) : 0, kind = 'idle', t, T, q, k;
-    if (P._gs === undefined) P._gs = gs; if (gs > P._gs + 1) P._gtT = now; P._gs = gs;   // grenade cooldowns jump up the moment one is thrown
+    var now = performance.now(), Lg = (gd.len + 5) * 0.6, kind = 'idle', t, T, q, k, rlOn = !!(rr && (rr.reload > 0 || rr.rl));
+    if (P._gn !== undefined && P.gtN !== P._gn) P._gtT = now; P._gn = P.gtN;   // a grenade was thrown
+    if (rlOn && !P._rlOn) P._rl0 = now; P._rlOn = rlOn;
     if (P.flash > 0) P._fT = now;
     if (P._gtT && now - P._gtT < 650) kind = 'throw';
-    else if (rr && rr.reload > 0) kind = 'reload';
+    else if (rlOn) kind = 'reload';
     else if (P.scope > 0.3) kind = 'aim';
     else if (P._fT && now - P._fT < 500) kind = 'hip';
     else if (mv) kind = 'run';
@@ -7546,7 +7621,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (kind === 'hip' && P.flash > 0) tg.gf -= 1.2;
     if (kind === 'run') { tg.gu += Math.sin(step * 2) * 0.5; tg.gz += Math.sin(step) * 0.4; }
     if (kind === 'reload') {
-      var r = Math.max(0, Math.min(1, 1 - rr.reload / Math.max(0.1, gd.reload)));
+      var r = Math.max(0, Math.min(1, (now - P._rl0) / 1000 / Math.max(0.1, gd.reload)));
       var toMag = r < 0.2 ? r / 0.2 : (r > 0.8 ? 1 - (r - 0.8) / 0.2 : 1), pull = r > 0.2 && r < 0.6 ? Math.sin((r - 0.2) / 0.4 * 3.14) : 0, slap = r > 0.6 && r < 0.8 ? Math.sin((r - 0.6) / 0.2 * 3.14) : 0;
       tg.lx = (0.4 + (0.2 - 0.4) * toMag) * Lg; tg.ly = -2.2 + (-8 + 2.2) * toMag - pull * 3 + slap * 2.2;
       tg.gp = 0.4 + pull * 0.12;
@@ -7995,12 +8070,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function render3d(vw, vh, sx, sy) {
     var T = THREE, i, z, P, rr, n, d = V.d;
     if (V.map !== mapId) v3setup();
-    if (W !== V.w || H !== V.h || dpr !== V.dpr) { V.r.setPixelRatio(dpr); V.r.setSize(W, H, false); V.w = W; V.h = H; V.dpr = dpr; V.cam.aspect = W / H; V.cam.fov = Math.max(55, Math.min(100, 2 * Math.atan(Math.tan(0.742) / (W / H)) * 57.2958)); V.cam.updateProjectionMatrix(); }   // first person: about 85 degrees across, whatever the screen shape
+    if (W !== V.w || H !== V.h || dpr !== V.dpr) { V.r.setPixelRatio(dpr); V.r.setSize(W, H, false); V.w = W; V.h = H; V.dpr = dpr; V.cam.aspect = W / H; V.cam.fov = Math.max(55, Math.min(100, 2 * Math.atan(Math.tan(0.742) / (W / H)) * 57.2958)); V.fov0 = V.cam.fov; V.cam.updateProjectionMatrix(); }   // first person: about 85 degrees across, whatever the screen shape
     if (!V.shown) { V.cvs.style.display = 'block'; V.shown = true; }
     var focus = me || { x: WORLD / 2, y: WORLD / 2 }, night = true;   /* every first-person map is played at night */
     // camera: first person, eye height, looking along fpYaw (level, no up/down look)
     var eyeY = (me && me.down) ? 9 : 30.5, fcx = Math.cos(fpYaw), fcz = Math.sin(fpYaw);
     V.cam.position.set(focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3);
+    var tfov = V.fov0 || V.cam.fov;
+    if (SC.amt > 0.001) tfov = 2 * Math.atan(Math.tan(V.fov0 * 0.00872665) / (1 + (SC.zm - 1) * SC.amt)) * 57.2958;
+    if (Math.abs(V.cam.fov - tfov) > 0.01) { V.cam.fov = tfov; V.cam.updateProjectionMatrix(); }
     var cpch = Math.cos(fpPitch), spch = Math.sin(fpPitch);
     V.ge = [focus.x + sx * 0.3, eyeY, focus.y + sy * 0.3]; V.mz = 0;
     V.cam.lookAt(focus.x + sx * 0.3 + fcx * cpch * 100, eyeY + spch * 100, focus.y + sy * 0.3 + fcz * cpch * 100);
@@ -8049,7 +8127,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (!pvp || P === me) { var pS = petUpdate(P, performance.now()); if (pS) v3pet(pS); }
     }
     // your own gun, low on the right of the view
-    if (me && !me.down) {
+    if (me && !me.down && SC.amt < 0.25) {
       var gref = curRef(me), gdd = gref && defOf(gref);
       if (gdd) {
         /* walking bob, turning sway and a recoil kick that settles back */
@@ -8235,7 +8313,24 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     }
     // crosshair, dead centre. Gaps in the middle so it never hides a zombie.
-    if (state === 'play' && me && !me.down) {
+    if (state === 'play' && me && !me.down && SC.amt > 0.02 && fpOn()) {
+      var sa = SC.amt, sw2 = W / 2, sh2 = H / 2, sR = Math.min(W, H) * 0.46;
+      if (SC.zm >= 4) {   // sniper scope: black all round the lens, fine cross-hairs with thick posts and mil dots
+        ctx.save(); ctx.fillStyle = 'rgba(0,0,0,' + Math.min(1, sa * 1.05).toFixed(3) + ')'; var hR = sR * (1.35 - 0.35 * sa); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.moveTo(sw2 + hR, sh2); ctx.arc(sw2, sh2, hR, 0, 6.283, false); ctx.closePath(); ctx.fill('evenodd');
+        ctx.strokeStyle = 'rgba(0,0,0,' + (0.85 * sa).toFixed(3) + ')'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sw2, sh2, hR, 0, 6.283); ctx.stroke();
+        ctx.lineCap = 'butt'; ctx.strokeStyle = 'rgba(0,0,0,' + (0.9 * sa).toFixed(3) + ')';
+        ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(sw2 - sR, sh2); ctx.lineTo(sw2 - 10, sh2); ctx.moveTo(sw2 + 10, sh2); ctx.lineTo(sw2 + sR, sh2); ctx.moveTo(sw2, sh2 - sR); ctx.lineTo(sw2, sh2 - 10); ctx.moveTo(sw2, sh2 + 10); ctx.lineTo(sw2, sh2 + sR); ctx.stroke();
+        ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(sw2 - sR, sh2); ctx.lineTo(sw2 - sR * 0.55, sh2); ctx.moveTo(sw2 + sR * 0.55, sh2); ctx.lineTo(sw2 + sR, sh2); ctx.moveTo(sw2, sh2 + sR * 0.55); ctx.lineTo(sw2, sh2 + sR); ctx.moveTo(sw2, sh2 - sR); ctx.lineTo(sw2, sh2 - sR * 0.55); ctx.stroke();
+        ctx.fillStyle = 'rgba(0,0,0,' + (0.9 * sa).toFixed(3) + ')'; for (var md = 1; md <= 4; md++) { ctx.fillRect(sw2 + md * 18 - 1.5, sh2 - 1.5, 3, 3); ctx.fillRect(sw2 - md * 18 - 1.5, sh2 - 1.5, 3, 3); ctx.fillRect(sw2 - 1.5, sh2 + md * 18 - 1.5, 3, 3); }
+        ctx.fillStyle = 'rgba(255,60,50,' + (0.9 * sa).toFixed(3) + ')'; ctx.fillRect(sw2 - 1.5, sh2 - 1.5, 3, 3);
+        ctx.restore();
+      } else {   // rifle optic: soft dark edges, a small ring and red dot
+        ctx.save(); var vg2 = ctx.createRadialGradient(sw2, sh2, sR * 0.55, sw2, sh2, sR * 1.45); vg2.addColorStop(0, 'rgba(0,0,0,0)'); vg2.addColorStop(1, 'rgba(0,0,0,' + (0.8 * sa).toFixed(3) + ')'); ctx.fillStyle = vg2; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(255,70,60,' + (0.9 * sa).toFixed(3) + ')'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(sw2, sh2, 15, 0, 6.283); ctx.moveTo(sw2 - 22, sh2); ctx.lineTo(sw2 - 15, sh2); ctx.moveTo(sw2 + 15, sh2); ctx.lineTo(sw2 + 22, sh2); ctx.moveTo(sw2, sh2 + 15); ctx.lineTo(sw2, sh2 + 22); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,70,60,' + sa.toFixed(3) + ')'; ctx.fillRect(sw2 - 1.5, sh2 - 1.5, 3, 3); ctx.restore();
+      }
+    }
+    if (state === 'play' && me && !me.down && SC.amt < 0.3) {
       var cxh = W / 2, cyh = H / 2;
       ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(cxh - 13, cyh); ctx.lineTo(cxh - 5, cyh); ctx.moveTo(cxh + 5, cyh); ctx.lineTo(cxh + 13, cyh); ctx.moveTo(cxh, cyh - 13); ctx.lineTo(cxh, cyh - 5); ctx.moveTo(cxh, cyh + 5); ctx.lineTo(cxh, cyh + 13); ctx.stroke();
@@ -8753,7 +8848,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     var i, p, z, b, e, rr;
     o.P = players.map(function (P) {
       rr = curRef(P);
-      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry, P.deaths, r1(P.rt), P.go ? 1 : 0, r1(P.dtT || 0), P.dead ? 1 : 0];
+      return [P.id, r1(P.x), r1(P.y), r2(P.ang), Math.ceil(P.hp), Math.round(maxHpNow(P)), P.down ? 1 : 0, r2(P.rev), P.inv > 0 ? 1 : 0, r1(P.step), rr.id, rr.tier || 1, P.flash > 0 ? 1 : 0, P.kills, P.armor.head * 100 + P.armor.body * 10 + P.armor.legs, P.carry, P.deaths, r1(P.rt), P.go ? 1 : 0, r1(P.dtT || 0), P.dead ? 1 : 0, Math.round((P.scope || 0) * 10), rr.reload > 0 ? 1 : 0, P.gtN | 0];
     });
     o.G = [gbDone, gbOn ? 1 : 0];
     o.Z = zombies.map(function (z) {
@@ -8903,7 +8998,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // players
     for (i = 0; i < m.P.length; i++) {
       r = m.P[i]; P = ensurePlayer(r[0]);
-      P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11] };
+      P.hp = r[4]; P.mhp = r[5]; P.down = !!r[6]; P.rev = r[7]; P.inv = r[8] ? 0.2 : 0; P.cur = { id: r[10], tier: r[11], rl: r[22] ? 1 : 0 }; if (P !== me) P.scope = (r[21] || 0) / 10; P.gtN = r[23] | 0;
       if (r[12]) P.flash = 0.06;
       P.carry = r[15] === undefined ? -1 : r[15];
       P.deaths = r[16] || 0; P.rt = r[17] || 0; P.go = !!r[18]; P.dtT = r[19] || 0; P.dead = !!r[20];
