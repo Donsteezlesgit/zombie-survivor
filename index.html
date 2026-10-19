@@ -1876,7 +1876,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function paintDummyGround() {
     var c = groundL.x, W = WORLD, O = DT_OY, rr = dtRng(5151), i, j, k;
     function ra(a, b) { return a + rr() * (b - a); }
-    function F(col, x, y, w, h) { c.fillStyle = col; c.fillRect(x, y, w, h); }
+    var frec = 0;
+    function F(col, x, y, w, h) { if (frec) { if (col.charAt(0) === '#') DT3.push({ k: 'f', col: col, x: x, y: y, w: w, h: h, hi: frec - 1 }); return; } c.fillStyle = col; c.fillRect(x, y, w, h); }
     function blob(x, y, r, col) { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, r, r * ra(0.5, 0.9), ra(0, 3.14), 0, 6.283); c.fill(); }
     function crack(x, y, len, col, lw) {
       c.strokeStyle = col; c.lineWidth = lw || 1.3; c.beginPath(); c.moveTo(x, y);
@@ -1944,19 +1945,19 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     F('#e2cf92', 640, 190, 70, 60); c.strokeStyle = '#8a6f3a'; c.lineWidth = 5; c.strokeRect(640, 190, 70, 60);
     F('rgba(0,0,0,0.12)', 640, 190, 70, 8);
     // toys: bucket, spade, tipped teddy, ball, toy car, a lost sandal
-    c.fillStyle = '#d63a30'; c.beginPath(); c.ellipse(662, 222, 7, 5, 0.4, 0, 6.283); c.fill(); c.fillStyle = '#7a1a14'; c.beginPath(); c.ellipse(660, 221, 3.6, 2.4, 0.4, 0, 6.283); c.fill();
+    if (!P3) { c.fillStyle = '#d63a30'; c.beginPath(); c.ellipse(662, 222, 7, 5, 0.4, 0, 6.283); c.fill(); c.fillStyle = '#7a1a14'; c.beginPath(); c.ellipse(660, 221, 3.6, 2.4, 0.4, 0, 6.283); c.fill();
     c.fillStyle = '#2f7bd0'; c.fillRect(686, 214, 3, 14); c.fillRect(683, 210, 9, 5);
     c.fillStyle = '#9c6a3a'; c.beginPath(); c.arc(430, 202, 7, 0, 6.283); c.fill(); c.beginPath(); c.arc(424, 195, 3, 0, 6.283); c.arc(436, 195, 3, 0, 6.283); c.fill(); c.beginPath(); c.arc(430, 212, 5, 0, 6.283); c.fill();
     c.fillStyle = '#d63a30'; c.beginPath(); c.arc(612, 246, 6, 0, 6.283); c.fill(); c.fillStyle = '#fff'; c.fillRect(606, 245, 12, 2);
     c.fillStyle = '#f2c14e'; c.fillRect(698, 120, 14, 8); c.fillStyle = '#222'; c.fillRect(699, 127, 3, 3); c.fillRect(708, 127, 3, 3);
-    c.fillStyle = '#e8708a'; c.beginPath(); c.ellipse(520, 160, 6, 3, 0.5, 0, 6.283); c.fill();
+    c.fillStyle = '#e8708a'; c.beginPath(); c.ellipse(520, 160, 6, 3, 0.5, 0, 6.283); c.fill(); }
     // ---- garden details
     // yellow garden: trampled flower bed, tipped bin and toppled gnome, washing line with fallen clothes
     F('#5b3f2a', 48, 244, 90, 34); for (i = 0; i < 26; i++) { c.fillStyle = ['#e8708a', '#f2c14e', '#f4f0e0', '#c05ad0'][i % 4]; c.beginPath(); c.arc(ra(52, 134), ra(248, 274), ra(1.6, 3), 0, 6.283); c.fill(); }
     for (i = 0; i < 10; i++) { c.fillStyle = 'rgba(70,40,25,0.7)'; c.beginPath(); c.ellipse(ra(52, 134), ra(248, 274), 7, 4, ra(0, 3), 0, 6.283); c.fill(); }
-    c.fillStyle = '#4a5a64'; c.beginPath(); c.ellipse(76, 724, 12, 9, 0.3, 0, 6.283); c.fill(); c.fillStyle = '#2f3a42'; c.beginPath(); c.ellipse(70, 724, 5, 7, 0.3, 0, 6.283); c.fill();   // tipped bin
+    if (!P3) { c.fillStyle = '#4a5a64'; c.beginPath(); c.ellipse(76, 724, 12, 9, 0.3, 0, 6.283); c.fill(); c.fillStyle = '#2f3a42'; c.beginPath(); c.ellipse(70, 724, 5, 7, 0.3, 0, 6.283); c.fill();   // tipped bin
     c.fillStyle = '#3a444c'; c.beginPath(); c.arc(100, 740, 8, 0, 6.283); c.fill();                                                                                                          // its lid
-    for (i = 0; i < 14; i++) { c.fillStyle = ['#e8e0d0', '#9a8a5a', '#506a3a', '#c8c0b0'][i % 4]; c.fillRect(ra(84, 130), ra(716, 748), ra(2, 5), ra(2, 4)); }
+    for (i = 0; i < 14; i++) { c.fillStyle = ['#e8e0d0', '#9a8a5a', '#506a3a', '#c8c0b0'][i % 4]; c.fillRect(ra(84, 130), ra(716, 748), ra(2, 5), ra(2, 4)); } }
     c.fillStyle = '#2f6fcf'; c.beginPath(); c.ellipse(152, 612, 9, 5, 0.5, 0, 6.283); c.fill(); c.fillStyle = '#d63a30'; c.beginPath(); c.moveTo(160, 606); c.lineTo(171, 612); c.lineTo(158, 616); c.fill();
     c.fillStyle = '#f0d8b8'; c.beginPath(); c.arc(147, 615, 3.2, 0, 6.283); c.fill();
     c.strokeStyle = '#9a9a9a'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(66, 560); c.quadraticCurveTo(170, 574, 270, 560); c.stroke();
@@ -1964,23 +1965,23 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     [['#e05a4a', 90], ['#f2e8c8', 130], ['#4a8ad0', 176]].forEach(function (s) { c.fillStyle = s[0]; c.fillRect(s[1], 562, 14, 18); });
     c.fillStyle = '#f2e8c8'; c.save(); c.translate(220, 640); c.rotate(0.6); c.fillRect(0, 0, 16, 11); c.restore(); c.fillStyle = '#e05a4a'; c.fillRect(246, 700, 13, 10);
     // green garden: cracked paddling pool, tipped wheelbarrow, trampled bed, a deflated ball
-    c.fillStyle = '#4a9ad8'; c.beginPath(); c.arc(1628, 420, 30, 0, 6.283); c.fill(); c.strokeStyle = '#e8c04a'; c.lineWidth = 6; c.stroke();
+    if (!P3) { c.fillStyle = '#4a9ad8'; c.beginPath(); c.arc(1628, 420, 30, 0, 6.283); c.fill(); c.strokeStyle = '#e8c04a'; c.lineWidth = 6; c.stroke();
     c.fillStyle = '#86c2e8'; c.beginPath(); c.arc(1620, 414, 14, 0, 6.283); c.fill(); crack(1618, 410, 36, 'rgba(255,255,255,0.7)', 1.2);
-    c.fillStyle = '#6a4a2a'; c.save(); c.translate(1700, 362); c.rotate(0.5); c.fillRect(-14, -9, 30, 18); c.fillStyle = '#3a3a3a'; c.fillRect(-20, -3, 8, 6); c.fillStyle = '#c8c0b0'; c.fillRect(16, -6, 14, 3); c.fillRect(16, 3, 14, 3); c.restore();
+    c.fillStyle = '#6a4a2a'; c.save(); c.translate(1700, 362); c.rotate(0.5); c.fillRect(-14, -9, 30, 18); c.fillStyle = '#3a3a3a'; c.fillRect(-20, -3, 8, 6); c.fillStyle = '#c8c0b0'; c.fillRect(16, -6, 14, 3); c.fillRect(16, 3, 14, 3); c.restore(); }
     F('#5b3f2a', 1640, 722, 100, 30); for (i = 0; i < 24; i++) { c.fillStyle = ['#e8708a', '#f2c14e', '#f4f0e0', '#c05ad0'][i % 4]; c.beginPath(); c.arc(ra(1644, 1736), ra(726, 748), ra(1.6, 3), 0, 6.283); c.fill(); }
     for (i = 0; i < 9; i++) { c.fillStyle = 'rgba(70,40,25,0.7)'; c.beginPath(); c.ellipse(ra(1644, 1736), ra(726, 748), 7, 4, ra(0, 3), 0, 6.283); c.fill(); }
-    c.fillStyle = '#e8708a'; c.beginPath(); c.arc(1580, 640, 7, 0, 6.283); c.fill(); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(1573, 639, 14, 2);
+    if (!P3) { c.fillStyle = '#e8708a'; c.beginPath(); c.arc(1580, 640, 7, 0, 6.283); c.fill(); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(1573, 639, 14, 2); }
     // ---- front yard bits: trampled beds under the front windows, a lost shoe, dropped phone
     [[572, 332], [572, 624], [1190, 332], [1190, 624]].forEach(function (b) { F('#5b3f2a', b[0], b[1], 40, 22); for (i = 0; i < 8; i++) { c.fillStyle = ['#e8708a', '#f2c14e', '#f4f0e0'][i % 3]; c.beginPath(); c.arc(ra(b[0] + 4, b[0] + 36), ra(b[1] + 4, b[1] + 18), 2, 0, 6.283); c.fill(); } });
-    c.fillStyle = '#d8d0c0'; c.save(); c.translate(733, 432); c.rotate(0.7); c.fillRect(-8, -3, 14, 6); c.fillStyle = '#c0392b'; c.fillRect(-8, -3, 5, 6); c.restore();
-    c.fillStyle = '#1a1a1a'; c.fillRect(1132, 560, 6, 11); c.fillStyle = '#6ab0e8'; c.fillRect(1133, 561, 4, 8); crack(1135, 565, 8, '#fff', 0.8);
+    if (!P3) { c.fillStyle = '#d8d0c0'; c.save(); c.translate(733, 432); c.rotate(0.7); c.fillRect(-8, -3, 14, 6); c.fillStyle = '#c0392b'; c.fillRect(-8, -3, 5, 6); c.restore();
+    c.fillStyle = '#1a1a1a'; c.fillRect(1132, 560, 6, 11); c.fillStyle = '#6ab0e8'; c.fillRect(1133, 561, 4, 8); crack(1135, 565, 8, '#fff', 0.8); }
     // ---- scatter: leaves, paper, shell casings, bullet scars
-    for (i = 0; i < 260; i++) { c.fillStyle = ['#b8742a', '#9a5a22', '#c89a3a', '#7a8a2a'][i % 4]; c.save(); c.translate(ra(20, 1780), ra(20, 1000)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, ra(2.5, 5), ra(1.5, 3)); c.restore(); }
-    for (i = 0; i < 46; i++) { c.fillStyle = 'rgba(240,236,224,0.85)'; c.save(); c.translate(ra(30, 1770), ra(30, 990)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, ra(6, 12), ra(4, 8)); c.restore(); }
-    [[580, 360, 22], [580, 640, 22], [1200, 360, 22], [1200, 640, 22], [666, 450, 24], [1126, 560, 24], [900, 330, 24], [900, 660, 24], [720, 500, 36]].forEach(function (g) {
+    if (!P3) { for (i = 0; i < 260; i++) { c.fillStyle = ['#b8742a', '#9a5a22', '#c89a3a', '#7a8a2a'][i % 4]; c.save(); c.translate(ra(20, 1780), ra(20, 1000)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, ra(2.5, 5), ra(1.5, 3)); c.restore(); }
+    for (i = 0; i < 46; i++) { c.fillStyle = 'rgba(240,236,224,0.85)'; c.save(); c.translate(ra(30, 1770), ra(30, 990)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, ra(6, 12), ra(4, 8)); c.restore(); } }
+    if (!P3) { [[580, 360, 22], [580, 640, 22], [1200, 360, 22], [1200, 640, 22], [666, 450, 24], [1126, 560, 24], [900, 330, 24], [900, 660, 24], [720, 500, 36]].forEach(function (g) {
       for (i = 0; i < g[2]; i++) { c.fillStyle = rr() < 0.3 ? '#fff1a8' : '#c9962f'; c.save(); c.translate(g[0] + ra(-26, 26), g[1] + ra(-20, 20)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, 3, 1.5); c.restore(); }
-    });
-    for (i = 0; i < 12; i++) { c.fillStyle = '#d0392b'; c.fillRect(ra(600, 1200), ra(560, 585), 3, 5); c.fillStyle = '#d9d9d9'; c.fillRect(ra(600, 1200), ra(415, 440), 2.5, 4.5); }  // cans
+    }); }
+    if (!P3) { for (i = 0; i < 12; i++) { c.fillStyle = '#d0392b'; c.fillRect(ra(600, 1200), ra(560, 585), 3, 5); c.fillStyle = '#d9d9d9'; c.fillRect(ra(600, 1200), ra(415, 440), 2.5, 4.5); } }  // cans
     // ---- baked shadows: sun top right, so everything throws a long warm-dark shadow down and to the left
     var sc = document.createElement('canvas'); sc.width = groundL.c.width; sc.height = groundL.c.height;
     var s = sc.getContext('2d'); s.setTransform(GS, 0, 0, GS, 0, O * GS); s.fillStyle = '#000';
@@ -2035,6 +2036,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       function table(x, y, w, h, a) { c.save(); c.translate(x, y); c.rotate(a); F('rgba(0,0,0,0.25)', -w / 2 + 3, -h / 2 + 4, w, h); F('#8a5a30', -w / 2, -h / 2, w, h); F('rgba(255,220,150,0.25)', -w / 2 + 2, -h / 2 + 2, w - 4, 3); c.restore(); }
       function chair(x, y, a) { c.save(); c.translate(x, y); c.rotate(a); F('#6a4220', -6, -6, 12, 12); F('#4a2c14', -6, -6, 12, 3); c.restore(); }
       function sofa(x, y, a) { c.save(); c.translate(x, y); c.rotate(a); F('rgba(0,0,0,0.25)', -30, -13, 64, 30); F(hi === 0 ? '#9a4a3a' : '#4a6a9a', -32, -14, 64, 28); F('rgba(0,0,0,0.2)', -32, -14, 64, 7); F('rgba(255,255,255,0.1)', -28, -4, 56, 3); c.restore(); }
+      if (P3) {
+        bed = function (x, y, a) { DT3.push({ k: 'bed', x: x, y: y, a: a, hi: hi }); }; table = function (x, y, w, h, a) { DT3.push({ k: 'table', x: x, y: y, w: w, h: h, a: a, hi: hi }); };
+        chair = function (x, y, a) { DT3.push({ k: 'chair', x: x, y: y, a: a, hi: hi }); }; sofa = function (x, y, a) { DT3.push({ k: 'sofa', x: x, y: y, a: a, hi: hi }); };
+        frec = hi + 1;
+      }
       if (hi === 0) {
         bed(x0 + 60, 380, 0.1); table(x0 + 112, 398, 18, 18, 0.5); F('#5a3a22', x0 + 200, 334, 52, 14); F('#4a2e1a', x0 + 205, 340, 40, 10);                        // bedroom: bed, nightstand, wardrobe toppled on its side
         sofa(x0 + 200, 500, 2.9); table(x0 + 160, 468, 40, 22, 0.3); F('#222', x0 + 70, 496, 36, 5); F('#1a2a3a', x0 + 74, 497, 28, 2); crack(x0 + 90, 497, 14, '#fff', 0.8);   // lounge: sofa flipped, coffee table, smashed TV
@@ -2045,9 +2051,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         table(x0 + 130, 500, 74, 34, 0.04); chair(x0 + 96, 520, 0.4); chair(x0 + 170, 472, 4.1); chair(x0 + 206, 540, 2.2); chair(x0 + 90, 480, 5.1);   // dining: table, chairs scattered
         bed(x0 + 200, 618, -0.2); F('#5a3a22', x0 + 20, 640, 40, 22); F('#4a2e1a', x0 + 24, 644, 32, 14);
       }
+      frec = 0;
       // mess: paper, plates, glass
-      for (i = 0; i < 26; i++) { c.fillStyle = 'rgba(240,236,224,0.9)'; c.save(); c.translate(x0 + ra(10, 250), ra(336, 664)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, ra(5, 10), ra(4, 8)); c.restore(); }
-      for (i = 0; i < 14; i++) { var gx = (hi === 0 ? x0 + 230 : x0 + 20) + ra(-22, 22), gy = [380, 620][i % 2] + ra(-26, 26); c.fillStyle = 'rgba(200,236,255,0.8)'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + ra(3, 6), gy + ra(0, 3)); c.lineTo(gx + ra(0, 3), gy + ra(3, 6)); c.fill(); }
+    if (!P3) { for (i = 0; i < 26; i++) { c.fillStyle = 'rgba(240,236,224,0.9)'; c.save(); c.translate(x0 + ra(10, 250), ra(336, 664)); c.rotate(ra(0, 6.28)); c.fillRect(0, 0, ra(5, 10), ra(4, 8)); c.restore(); }
+      for (i = 0; i < 14; i++) { var gx = (hi === 0 ? x0 + 230 : x0 + 20) + ra(-22, 22), gy = [380, 620][i % 2] + ra(-26, 26); c.fillStyle = 'rgba(200,236,255,0.8)'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + ra(3, 6), gy + ra(0, 3)); c.lineTo(gx + ra(0, 3), gy + ra(3, 6)); c.fill(); } }
       // blood, scorch marks and claw marks on the floor
       dried(x0 + (hi === 0 ? 200 : 60), 520, 14); dried(x0 + (hi === 0 ? 70 : 190), 600, 10); dried(x0 + 130, 440, 7);
       c.strokeStyle = 'rgba(84,14,10,0.55)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(x0 + (hi === 0 ? 200 : 60), 520); c.quadraticCurveTo(x0 + 150, 500, x0 + (hi === 0 ? 110 : 240), 470); c.stroke(); c.lineCap = 'butt';
@@ -2123,7 +2130,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (i = 0; i < 3; i++) hole(x + ra(10, 100), y + ra(10, 80));
     });
     // ---------- bus: cream with a red band, smashed side windows, open door, dents and dust
-    (function () {
+    if (!P3) { (function () {
       var x = 770, y = 465, w = 260, h = 70;
       F('rgba(0,0,0,0.3)', x + 4, y + 6, w, h); rrect(x, y, w, h, 12); c.fillStyle = '#2a2118'; c.fill(); rrect(x + 4, y + 4, w - 8, h - 8, 9); c.fillStyle = '#ddd5bc'; c.fill();
       F('#b83a3a', x + 8, y + 30, w - 16, 12); F('rgba(255,255,255,0.18)', x + 8, y + 30, w - 16, 2);
@@ -2137,7 +2144,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       blob(x + 70, y + 54, 14, 'rgba(120,64,28,0.28)'); blob(x + 210, y + 22, 12, 'rgba(120,64,28,0.28)'); scorch(x + 236, y + 40, 18);
       for (i = 0; i < 9; i++) hole(x + ra(10, w - 10), y + ra(8, h - 8)); claw(x + 100, y + 55, 0.2, 24); claw(x + 220, y + 30, 0.6, 20);
       F('rgba(220,190,120,0.12)', x + 4, y + 4, w - 8, 14);
-    })();
+    })(); }
     // ---------- cars: dusty, crumpled
     function car(x, y, w, h, col, o) {
       var vert = h > w, L = vert ? h : w, Wd = vert ? w : h; o = o || {};
@@ -2158,16 +2165,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (o.scratch) { c.strokeStyle = 'rgba(30,20,10,0.5)'; c.lineWidth = 1.1; for (k = 0; k < 3; k++) { c.beginPath(); c.moveTo(-L * 0.1 + k * 3, -Wd / 2 + 6); c.lineTo(L * 0.05 + k * 3, Wd / 2 - 6); c.stroke(); } }
       c.restore();
     }
-    car(640, 540, 90, 42, '#c0453f', { open: true, smash: true, dust: true, holes: 3, scratch: true });
+    if (!P3) { car(640, 540, 90, 42, '#c0453f', { open: true, smash: true, dust: true, holes: 3, scratch: true });
     car(1070, 418, 90, 42, '#3f72c0', { flat: true, dust: true, holes: 2 });
     car(380, 760, 42, 90, '#dcb534', { dust: true, scratch: true });
     car(450, 760, 42, 90, '#c0453f', { dust: true, smash: true, dim: true });
     car(520, 790, 42, 90, '#76747c', { dust: true, holes: 4 });
     car(620, 820, 90, 42, '#3f72c0', { dust: true, open: true });
-    car(620, 890, 90, 42, '#e8e6de', { dust: true, scratch: true, smash: true });
+    car(620, 890, 90, 42, '#e8e6de', { dust: true, scratch: true, smash: true }); }
     LIGHTS.push({ x: 467, y: 790 + O, r: 46, a: 1, col: '255,70,40', s: 1.3, st: 0 }, { x: 665, y: 840 + O, r: 38, a: 0.9, col: '255,70,40', s: 4.2, st: 0 });
     // ---------- sandbags, untidy
-    RECTS.forEach(function (q) {
+    if (!P3) { RECTS.forEach(function (q) {
       if (q.wl || q.side || q.bar || q.furn) return;
       var yq = q.y - O, isSB = (q.w === 14 || q.h === 14) && q.w * q.h < 1400;
       if (!isSB) return;
@@ -2178,9 +2185,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
       for (k = 0; k < 3; k++) { c.save(); c.translate(q.x + ra(-14, q.w + 14), yq + ra(-14, q.h + 14)); c.rotate(ra(0, 6.28)); c.fillStyle = '#b4996a'; rrect(-6, -4, 12, 8, 3); c.fill(); c.restore(); }
       for (k = 0; k < 18; k++) { c.fillStyle = '#c9b88a'; c.fillRect(q.x + ra(-12, q.w + 12), yq + ra(-12, q.h + 12), 1.6, 1.6); }
-    });
+    }); }
     // ---------- garden furniture and loose props (these are solid, so they must be drawn)
-    [[60, 480], [1670, 480]].forEach(function (b) {   // garden bench, one slat kicked out
+    if (!P3) { [[60, 480], [1670, 480]].forEach(function (b) {   // garden bench, one slat kicked out
       var x = b[0], y = b[1]; F('rgba(0,0,0,0.25)', x + 3, y + 4, 70, 40); F('#3a2a18', x, y, 70, 40);
       for (k = 0; k < 5; k++) { if (k === 3 && x < 900) continue; F(k % 2 ? '#a07040' : '#8f6236', x + 3, y + 3 + k * 7.4, 64, 6); F('rgba(255,235,190,0.2)', x + 3, y + 3 + k * 7.4, 64, 1.5); }
       if (x < 900) { c.save(); c.translate(x + 46, y + 52); c.rotate(0.4); F('#8f6236', -20, -3, 40, 6); c.restore(); }
@@ -2195,7 +2202,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // dustbin at the front yard, crate of bottles by the shop
     c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(625, 714, 10, 0, 6.283); c.fill(); c.fillStyle = '#3f6a4a'; c.beginPath(); c.arc(622, 710, 10, 0, 6.283); c.fill(); c.fillStyle = '#2f5238'; c.beginPath(); c.arc(622, 710, 6.5, 0, 6.283); c.fill(); c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(616, 703, 6, 2);
     F('rgba(0,0,0,0.25)', 1319, 934, 30, 20); F('#5a3a1e', 1316, 930, 30, 20); F('#7a5230', 1318, 932, 26, 16);
-    for (k = 0; k < 6; k++) { c.fillStyle = k % 2 ? '#3a7a3a' : '#7a4a1a'; c.beginPath(); c.arc(1322 + (k % 3) * 9, 937 + Math.floor(k / 3) * 9, 3.4, 0, 6.283); c.fill(); }
+    for (k = 0; k < 6; k++) { c.fillStyle = k % 2 ? '#3a7a3a' : '#7a4a1a'; c.beginPath(); c.arc(1322 + (k % 3) * 9, 937 + Math.floor(k / 3) * 9, 3.4, 0, 6.283); c.fill(); } }
     // ---------- hedges, trees, playground equipment (all tall, so drawn on top)
     function hedge(x, y, w, h, burnt) {
       F('rgba(0,0,0,0.25)', x + 3, y + 4, w, h); rrect(x, y, w, h, 9); c.fillStyle = '#1f4a1a'; c.fill();
@@ -2204,22 +2211,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       for (i = 0; i < 4; i++) blob(x + ra(10, w - 10), y + ra(6, h - 6), ra(4, 8), 'rgba(150,110,40,0.4)');         // dried-out patches
       if (burnt) { scorch(x + w * 0.7, y + h / 2, 22); F('#3a2a14', x + w * 0.7 - 6, y + 4, 12, h - 8); }
     }
-    [[1030, 80, 170, 26, 0], [1130, 150, 170, 26, 1], [1030, 220, 170, 26, 0], [1260, 220, 120, 26, 0], [1560, 70, 170, 26, 0], [1560, 140, 120, 26, 1], [1220, 860, 110, 26, 0]].forEach(function (h) { hedge(h[0], h[1], h[2], h[3], h[4]); });
+    if (!P3) { [[1030, 80, 170, 26, 0], [1130, 150, 170, 26, 1], [1030, 220, 170, 26, 0], [1260, 220, 120, 26, 0], [1560, 70, 170, 26, 0], [1560, 140, 120, 26, 1], [1220, 860, 110, 26, 0]].forEach(function (h) { hedge(h[0], h[1], h[2], h[3], h[4]); }); }
     function tree(x, y, r) {
       F('rgba(0,0,0,0)', 0, 0, 0, 0); c.fillStyle = '#4a3320'; c.beginPath(); c.arc(x, y, 6, 0, 6.283); c.fill();
       for (i = 0; i < 5; i++) { c.fillStyle = ['#2a6a2a', '#357a30', '#2e7030', '#3f8a38', '#276226'][i]; c.beginPath(); c.arc(x + ra(-r * 0.3, r * 0.3), y + ra(-r * 0.3, r * 0.3), r * ra(0.6, 0.95), 0, 6.283); c.fill(); }
       c.fillStyle = 'rgba(255,230,140,0.2)'; c.beginPath(); c.arc(x + r * 0.25, y - r * 0.25, r * 0.55, 0, 6.283); c.fill();
       for (i = 0; i < 12; i++) { c.fillStyle = ['#b8742a', '#c89a3a'][i % 2]; c.fillRect(x + ra(-r, r), y + ra(-r, r), 3, 2); }
     }
-    [[90, 320], [230, 690], [1570, 320], [1710, 690]].forEach(function (t) { tree(t[0], t[1], 26); }); tree(500, 220, 22);
-    // swings: frame, one seat dangling on a single chain, the other on the ground
+    if (!P3) { [[90, 320], [230, 690], [1570, 320], [1710, 690]].forEach(function (t) { tree(t[0], t[1], 26); }); tree(500, 220, 22); }
+    if (!P3) { // swings: frame, one seat dangling on a single chain, the other on the ground
     F('rgba(0,0,0,0.25)', 373, 94, 110, 14); F('#c24a3a', 370, 90, 110, 14); F('rgba(255,255,255,0.2)', 370, 90, 110, 3); F('#c24a3a', 370, 90, 14, 60); F('#c24a3a', 466, 90, 14, 60); F('rgba(0,0,0,0.25)', 370, 146, 14, 4); F('rgba(0,0,0,0.25)', 466, 146, 14, 4);
     c.strokeStyle = '#8a8a8a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(398, 104); c.lineTo(398, 134); c.moveTo(418, 104); c.lineTo(418, 134); c.stroke(); F('#4a3a2a', 394, 134, 28, 5);
     c.beginPath(); c.moveTo(446, 104); c.lineTo(452, 126); c.stroke(); c.save(); c.translate(458, 142); c.rotate(0.6); F('#4a3a2a', -14, -2.5, 28, 5); c.strokeStyle = '#8a8a8a'; c.beginPath(); c.moveTo(-12, 0); c.lineTo(-30, 8); c.stroke(); c.restore();
     // slide
     F('rgba(0,0,0,0.25)', 563, 104, 40, 110); rrect(560, 100, 40, 110, 6); c.fillStyle = '#3a8ad0'; c.fill(); F('rgba(255,255,255,0.25)', 566, 106, 6, 98); F('rgba(255,255,255,0.25)', 588, 106, 6, 98); F('#d8dce0', 560, 100, 40, 12);
     for (k = 0; k < 4; k++) F('#e8e0c8', 566, 104 + k * 5, 28, 2);
-    c.strokeStyle = 'rgba(20,10,6,0.6)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(572, 150); c.lineTo(588, 176); c.stroke(); claw(580, 184, 1.57, 14); dried(582, 215, 6);
+    c.strokeStyle = 'rgba(20,10,6,0.6)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(572, 150); c.lineTo(588, 176); c.stroke(); claw(580, 184, 1.57, 14); dried(582, 215, 6); }
     c.restore();
   }
 
@@ -2230,12 +2237,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { id: 'dummytown', name: 'Bomb Town', blurb: 'Sunset. Two houses face each other across a long street. Built for PvP, great for zombies too.', world: 1800, gs: 1.1, v3d: true, build: buildDummy, ground: paintDummyGround, bld: paintDummyBld, cfg: { sx: 700, sy: 880, nav: true, day: true, pvg: true, b: { x0: 10, y0: 400, x1: 1790, y1: 1400 } }, need: { map: 'beginners', wave: 10 } }
   ];
   function mapDef(id) { for (var i = 0; i < MAPS.length; i++) if (MAPS[i].id === id) return MAPS[i]; return MAPS[0]; }
-  var mapId = '';
+  var mapId = '', P3 = false, DT3 = [];   /* P3: first-person 3D map, so tall props are not painted flat on the floor */
   function setMap(id) {
     var d = mapDef(id);
     if (mapId === d.id) return;
     bonusRoom = -1;
-    mapId = d.id; WORLD = d.world; GS = d.gs;
+    mapId = d.id; WORLD = d.world; GS = d.gs; P3 = !!d.v3d; DT3.length = 0;
     sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
     RECTS.length = 0; BLD.length = 0; ROOFS.length = 0; DOORS.length = 0; LIGHTS.length = 0; bats = [];
     MAPCFG = d.cfg;
@@ -5013,7 +5020,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 191';
+  var updMsg = '', VERSION = 'Version 192';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6953,6 +6960,173 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     v3box(GS.roof, xc - 3, z0 - ov, 6, z1 - z0 + ov * 2, yr - 1, 4, [0.55, 0.28, 0.24]);
     v3box(GS.brick, x0 + 46, z0 + 70, 18, 18, 52, 66, [0.68, 0.4, 0.34]); v3box(GS.brick, x0 + 43, z0 + 67, 24, 24, 116, 5, [0.5, 0.46, 0.42]);
   }
+  /* ---- 3D scenery: every prop that used to be painted flat on the floor is now built as real geometry ---- */
+  function v3rbox(G, cx, cz, w, d, y0, hh, yaw, c) {
+    var ca = Math.cos(yaw), sa = Math.sin(yaw), hw = w / 2, hd = d / 2, y1 = y0 + hh, S = G.S, k, v, q, f, lx, lz, wx, wz, nx, nz, F = [
+      [-hw, y1, hd, hw, y1, hd, hw, y1, -hd, -hw, y1, -hd, 0, 1, 0, 1.12],
+      [-hw, y0, hd, hw, y0, hd, hw, y1, hd, -hw, y1, hd, 0, 0, 1, 0.95],
+      [hw, y0, -hd, -hw, y0, -hd, -hw, y1, -hd, hw, y1, -hd, 0, 0, -1, 0.8],
+      [hw, y0, hd, hw, y0, -hd, hw, y1, -hd, hw, y1, hd, 1, 0, 0, 0.88],
+      [-hw, y0, -hd, -hw, y0, hd, -hw, y1, hd, -hw, y1, -hd, -1, 0, 0, 0.84]];
+    for (k = 0; k < 5; k++) {
+      f = F[k]; q = G.p.length / 3; nx = f[12] * ca - f[14] * sa; nz = f[12] * sa + f[14] * ca;
+      for (v = 0; v < 4; v++) { lx = f[v * 3]; lz = f[v * 3 + 2]; wx = cx + lx * ca - lz * sa; wz = cz + lx * sa + lz * ca; v3vert(G, wx, f[v * 3 + 1], wz, nx, f[13], nz, c, (f[13] || v > 1) ? f[15] : f[15] * 0.8, wx / S, wz / S); }
+      G.i.push(q, q + 1, q + 2, q, q + 2, q + 3);
+    }
+  }
+  // a box placed relative to a parent at (cx,cz) turned by yaw: ox/oz are offsets in the parent's own frame
+  function v3lb(G, cx, cz, yaw, ox, oz, w, d, y0, hh, c) {
+    var ca = Math.cos(yaw), sa = Math.sin(yaw);
+    v3rbox(G, cx + ox * ca - oz * sa, cz + ox * sa + oz * ca, w, d, y0, hh, yaw, c);
+  }
+  function v3hex(s) { var n = parseInt(s.length === 4 ? s.replace(/#(.)(.)(.)/, '#$1$1$2$2$3$3').slice(1) : s.slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
+  var CARC = { '640,540': '#c0453f', '1070,418': '#3f72c0', '380,760': '#dcb534', '450,760': '#c0453f', '520,790': '#76747c', '620,820': '#3f72c0', '620,890': '#e8e6de' };
+  // returns true when it built the rect itself
+  function v3prop(GS, r, O) {
+    var D = GS.dark, W = GS.wood, M = GS.metal, k, n, x = r.x, z = r.y, w = r.w, d = r.h, hz, cx, cz, dx = x, dy = z - O, key = dx + ',' + dy;
+    if (!r.furn && (w === 14 || d === 14) && w * d < 1400) {   // sandbags: two layers of slumped bags
+      hz = w > d; n = Math.round((hz ? w : d) / 12);
+      for (k = 0; k < 2 * n; k++) {
+        var L = k % 2, i2 = (k / 2) | 0, t = (i2 + 0.5 * L) * ((hz ? w : d) / n) + 6, j = Math.sin(x * 0.7 + z * 1.3 + k * 2.1), sh = 0.86 + 0.14 * Math.sin(k * 1.7 + x);
+        v3rbox(D, hz ? x + t : x + 7, hz ? z + 7 : z + t, hz ? 13 : 11, hz ? 11 : 13, L * 8, 8.5 - L * 0.6, j * 0.14, [0.76 * sh, 0.66 * sh, 0.43 * sh]);
+      }
+      return true;
+    }
+    if (!r.furn) return false;
+    cx = x + w / 2; cz = z + d / 2;
+    if (w === 70 && d === 40) {   // garden bench
+      var wc = [0.56, 0.39, 0.23];
+      v3rbox(W, cx, cz, 64, 20, 12, 3, 0, wc); v3rbox(W, cx, z + d - 5, 64, 3, 15, 13, 0, wc);
+      for (k = 0; k < 4; k++) v3rbox(W, x + (k % 2 ? w - 8 : 8), z + (k < 2 ? 14 : 26), 3, 3, 0, 12, 0, [0.3, 0.2, 0.12]);
+      if (x < 900) v3rbox(W, x + 46, z + 52, 40, 6, 0, 1.6, 0.4, wc);   // the kicked-out slat
+      return true;
+    }
+    if (w === 50 && d === 50) {   // rusty barbecue
+      v3rbox(D, cx, cz, 44, 44, 12, 9, 0, [0.24, 0.17, 0.12]); v3rbox(D, cx, cz, 36, 36, 20.4, 0.4, 0, [0.55, 0.18, 0.08]);
+      for (k = 0; k < 4; k++) v3rbox(D, x + (k % 2 ? w - 8 : 8), z + (k < 2 ? 8 : d - 8), 3, 3, 0, 12, 0, [0.14, 0.13, 0.12]);
+      v3rbox(D, cx, cz, 38, 38, 21, 0.5, 0, [0.2, 0.19, 0.19]);
+      v3rbox(D, x + 62, z + 8, 24, 24, 0.1, 2.6, 0.5, [0.3, 0.3, 0.32]);   // the lid on the grass
+      return true;
+    }
+    if (w === 20 && d === 20) {   // dustbin
+      v3rbox(D, cx, cz, 17, 17, 0, 24, 0.3, [0.25, 0.43, 0.29]); v3rbox(D, cx, cz, 19, 19, 24, 3, 0.3, [0.16, 0.26, 0.19]);
+      return true;
+    }
+    if (w === 30 && d === 20) {   // crate of bottles
+      v3rbox(W, cx, cz, 28, 18, 0, 11, 0, [0.5, 0.33, 0.18]);
+      for (k = 0; k < 6; k++) v3rbox(D, x + 6 + (k % 3) * 9, z + 6 + ((k / 3) | 0) * 9, 3.4, 3.4, 11, 8, 0, k % 2 ? [0.2, 0.5, 0.22] : [0.5, 0.3, 0.1]);
+      return true;
+    }
+    if (w === 110 && d === 14) {   // swing frame: top bar, two seats, one swung up on a single chain
+      v3rbox(M, cx, cz, w, 6, 46, 5, 0, [0.76, 0.29, 0.23]);
+      for (k = 0; k < 2; k++) {
+        var sx = x + 28 + k * 20; v3rbox(D, sx, cz, 0.7, 0.7, 12, 34, 0, [0.6, 0.6, 0.6]); v3rbox(D, sx + 6, cz, 0.7, 0.7, 12, 34, 0, [0.6, 0.6, 0.6]);
+        v3rbox(W, sx + 3, cz, 14, 5, 11, 2, 0, [0.3, 0.22, 0.15]);
+      }
+      v3rbox(D, x + 78, cz, 0.7, 0.7, 28, 18, 0, [0.6, 0.6, 0.6]); v3rbox(W, x + 88, z + 32, 26, 5, 0.2, 2.4, 0.6, [0.3, 0.22, 0.15]);
+      return true;
+    }
+    if (w === 14 && d === 60) { v3rbox(M, cx, cz, 6, d, 0, 50, 0, [0.76, 0.29, 0.23]); return true; }   // swing legs
+    if (w === 40 && d === 110) {   // slide: ladder platform, sloping blue chute, rails
+      var X0 = x + 6, X1 = x + w - 6, Z0 = z + 6, Z1 = z + d - 4, bl = [0.23, 0.54, 0.82];
+      v3box(M, x + 4, z + 2, w - 8, 18, 36, 3, [0.76, 0.29, 0.23]);
+      for (k = 0; k < 4; k++) v3box(M, x + 6 + (k % 2) * (w - 14), z + 4 + ((k / 2) | 0) * 12, 3, 3, 0, 36, [0.6, 0.6, 0.62]);
+      v3poly(M, [[X0, 38, Z0 + 14], [X1, 38, Z0 + 14], [X1, 3, Z1], [X0, 3, Z1]], bl, 1.0, [[0, 0], [1, 0], [1, 2], [0, 2]]);
+      v3poly(M, [[X0, 38, Z0 + 14], [X0, 44, Z0 + 14], [X0, 9, Z1], [X0, 3, Z1]], [0.7, 0.2, 0.18], 0.9, [[0, 0], [1, 0], [1, 2], [0, 2]]);
+      v3poly(M, [[X1, 38, Z0 + 14], [X1, 44, Z0 + 14], [X1, 9, Z1], [X1, 3, Z1]], [0.7, 0.2, 0.18], 0.9, [[0, 0], [1, 0], [1, 2], [0, 2]]);
+      for (k = 0; k < 5; k++) v3box(M, x + 8, z + 4 + k * 3, w - 16, 1, 6 + k * 7, 1, [0.9, 0.88, 0.78]);
+      return true;
+    }
+    return false;
+  }
+  function v3deco(GS, houses) {
+    var D = GS.dark, W = GS.wood, O = typeof DT_OY === 'number' ? DT_OY : 0, rg = dtRng(7331), b = MAPCFG.b || { x0: 40, y0: 40, x1: WORLD - 40, y1: WORLD - 40 }, i, k, p, q, n;
+    function R(a, c2) { return a + rg() * (c2 - a); }
+    function pick(a) { return a[(rg() * a.length) | 0]; }
+    function clear(x, z, m) { for (var j = 0; j < RECTS.length; j++) { var r = RECTS[j]; if (r.w >= 1000 || r.h >= 1000) continue; if (x > r.x - m && x < r.x + r.w + m && z > r.y - m && z < r.y + r.h + m) return false; } return true; }
+    function inH(x, z) { for (var j = 0; j < houses.length; j++) { var h = houses[j]; if (x > h.x && x < h.x + h.w && z > h.y && z < h.y + h.h) return true; } return false; }
+    // scatter n things inside a box; mode 0 = outdoors only, 1 = anywhere, 2 = indoors only
+    function sc(n2, x0, z0, x1, z1, mode, fn) {
+      var t, tr = 0, x, z, ins;
+      for (t = 0; t < n2 && tr < n2 * 12; tr++) { x = R(x0, x1); z = R(z0, z1); ins = inH(x, z); if ((mode === 0 && ins) || (mode === 2 && !ins) || !clear(x, z, 3)) continue; fn(x, z); t++; }
+    }
+    var AU = [[0.72, 0.45, 0.17], [0.6, 0.35, 0.13], [0.78, 0.6, 0.23], [0.48, 0.55, 0.17], [0.45, 0.25, 0.1]], PA = [[0.92, 0.9, 0.82], [0.85, 0.83, 0.74], [0.95, 0.94, 0.9]];
+    function paper(x, z) { v3rbox(D, x, z, R(5, 9), R(6, 11), 0.08, 0.3, R(0, 6.28), pick(PA)); }
+    function leaf(x, z) { v3rbox(D, x, z, R(2.4, 4), R(1.6, 2.8), 0.05, 0.22, R(0, 6.28), pick(AU)); }
+    function can(x, z) { var cc = pick([[0.75, 0.2, 0.17], [0.7, 0.72, 0.74], [0.2, 0.4, 0.7], [0.8, 0.62, 0.15]]); v3rbox(D, x, z, 5.2, 2.8, 0, 2.8, R(0, 6.28), cc); }
+    function bottle(x, z) { var a = R(0, 6.28), cc = pick([[0.2, 0.5, 0.24], [0.5, 0.3, 0.1], [0.75, 0.82, 0.8]]); v3rbox(D, x, z, 7, 2.5, 0, 2.5, a, cc); v3lb(D, x, z, a, 4.5, 0, 2.6, 1.2, 0.6, 1.2, cc); }
+    function casing(x, z) { v3rbox(D, x, z, 2.4, 0.9, 0, 0.9, R(0, 6.28), [0.82, 0.62, 0.2]); }
+    function glass(x, z) { v3rbox(D, x, z, R(1.5, 3.6), R(0.8, 1.8), 0.05, 0.22, R(0, 6.28), [0.62, 0.8, 0.9]); }
+    function carton(x, z) { var a = R(0, 6.28), s2 = R(7, 12); v3rbox(D, x, z, s2, s2 * R(0.7, 1), 0, R(5, 9), a, [0.62, 0.45, 0.26]); if (rg() < 0.5) v3lb(D, x, z, a, 0, 0, s2 * 0.5, 0.5, 9.2, 0.3, [0.5, 0.36, 0.2]); }
+    function bag(x, z) { var a = R(0, 6.28), cc = pick([[0.1, 0.1, 0.12], [0.14, 0.18, 0.26], [0.2, 0.2, 0.22]]); v3rbox(D, x, z, 9, 8, 0, 6, a, cc); v3lb(D, x, z, a, 0.5, 0, 6, 5, 6, 3.2, cc); v3lb(D, x, z, a, 1, 0, 2.4, 2.4, 9.2, 2, cc); }
+    function pile(x, z) { var j; bag(x, z); for (j = 0; j < 3; j++) bag(x + R(-9, 9), z + R(-8, 8)); for (j = 0; j < 4; j++) paper(x + R(-12, 12), z + R(-12, 12)); can(x + R(-10, 10), z + R(-10, 10)); }
+    function brick(x, z) { v3rbox(D, x, z, 5, 2.4, 0, 2.4, R(0, 6.28), pick([[0.55, 0.28, 0.22], [0.5, 0.3, 0.26], [0.45, 0.43, 0.4]])); }
+    function rubble(x, z) { var j; for (j = 0; j < 5; j++) brick(x + R(-6, 6), z + R(-6, 6)); v3rbox(D, x, z, 5, 2.4, 2.4, 2.4, R(0, 6.28), [0.5, 0.3, 0.26]); }
+    function plank(x, z) { v3rbox(W, x, z, R(14, 22), 2.6, 0, 1.3, R(0, 6.28), [0.55, 0.4, 0.25]); }
+    // everywhere
+    sc(420, b.x0, b.y0, b.x1, b.y1, 0, leaf); sc(140, b.x0, b.y0, b.x1, b.y1, 1, paper); sc(30, b.x0, b.y0, b.x1, b.y1, 1, can); sc(20, b.x0, b.y0, b.x1, b.y1, 1, bottle);
+    sc(90, b.x0, b.y0, b.x1, b.y1, 1, glass); sc(16, b.x0, b.y0, b.x1, b.y1, 0, carton); sc(12, b.x0, b.y0, b.x1, b.y1, 0, pile); sc(14, b.x0, b.y0, b.x1, b.y1, 0, rubble); sc(10, b.x0, b.y0, b.x1, b.y1, 0, plank);
+    // the street: casings, glass, cans along the kerbs, rubble in the road
+    sc(70, 560, 410 + O, 1240, 590 + O, 0, casing); sc(26, 560, 410 + O, 1240, 590 + O, 0, glass); sc(16, 560, 395 + O, 1240, 420 + O, 0, can); sc(16, 560, 580 + O, 1240, 605 + O, 0, can); sc(6, 560, 410 + O, 1240, 590 + O, 0, rubble);
+    sc(40, 560, 395 + O, 1240, 425 + O, 0, paper); sc(40, 560, 575 + O, 1240, 605 + O, 0, paper);
+    // houses: paper, plates of glass and casings around the doors and windows
+    sc(70, 300, 330 + O, 560, 670 + O, 2, paper); sc(70, 1240, 330 + O, 1500, 670 + O, 2, paper); sc(30, 300, 330 + O, 560, 670 + O, 2, casing); sc(30, 1240, 330 + O, 1500, 670 + O, 2, casing);
+    sc(30, 300, 330 + O, 560, 670 + O, 2, glass); sc(30, 1240, 330 + O, 1500, 670 + O, 2, glass); sc(6, 300, 330 + O, 560, 670 + O, 2, can); sc(6, 1240, 330 + O, 1500, 670 + O, 2, can);
+    sc(8, 1380, 780 + O, 1520, 910 + O, 1, can); sc(10, 1370, 740 + O, 1530, 790 + O, 0, glass);
+    // spilled rubbish round the tipped bin
+    sc(14, 80, 716 + O, 138, 750 + O, 0, function (x, z) { rg() < 0.5 ? paper(x, z) : (rg() < 0.5 ? can(x, z) : bag(x, z)); });
+    // ---- toys
+    var z0;
+    z0 = 222 + O; v3rbox(D, 662, z0, 9, 9, 0, 8, 0.4, [0.84, 0.23, 0.19]); v3rbox(D, 662, z0, 6.5, 6.5, 8, 0.3, 0.4, [0.28, 0.05, 0.04]);   // bucket
+    v3rbox(D, 687.5, 221 + O, 2.6, 14, 0, 1.3, 0.3, [0.18, 0.48, 0.82]); v3rbox(D, 689, 213 + O, 9, 5, 0, 1.3, 0.3, [0.18, 0.48, 0.82]);   // spade
+    z0 = 202 + O; v3rbox(D, 430, z0, 10, 8, 0.5, 7, 0.4, [0.61, 0.42, 0.23]); v3lb(D, 430, z0, 0.4, 7, 0, 7, 7, 1, 6.5, [0.66, 0.46, 0.26]); v3lb(D, 430, z0, 0.4, 8, -3.5, 2.4, 2.4, 6.5, 2.4, [0.55, 0.37, 0.2]); v3lb(D, 430, z0, 0.4, 8, 3.5, 2.4, 2.4, 6.5, 2.4, [0.55, 0.37, 0.2]);
+    v3lb(D, 430, z0, 0.4, -3, -5.5, 6, 3, 0, 3, [0.55, 0.37, 0.2]); v3lb(D, 430, z0, 0.4, -3, 5.5, 6, 3, 0, 3, [0.55, 0.37, 0.2]);   // teddy
+    z0 = 246 + O; v3rbox(D, 612, z0, 8, 8, 0, 8, 0, [0.84, 0.23, 0.19]); v3rbox(D, 612, z0, 8, 8, 0, 8, 0.785, [0.84, 0.23, 0.19]); v3rbox(D, 612, z0, 8.4, 8.4, 3, 1.8, 0.4, [0.95, 0.95, 0.95]);   // ball
+    z0 = 120 + O; v3rbox(D, 705, z0, 14, 8, 1.4, 4, 0.2, [0.95, 0.76, 0.3]); v3lb(D, 705, z0, 0.2, -1, 0, 7, 6, 5.4, 3, [0.9, 0.7, 0.26]);
+    for (k = 0; k < 4; k++) v3lb(D, 705, z0, 0.2, k < 2 ? -4.5 : 4.5, k % 2 ? 4 : -4, 3.4, 1.4, 0, 3, [0.1, 0.1, 0.1]);   // toy car
+    v3rbox(D, 520, 160 + O, 12, 5, 0, 1.5, 0.5, [0.91, 0.44, 0.54]); v3lb(D, 520, 160 + O, 0.5, 0, 0, 3, 5.4, 1.5, 0.7, [0.8, 0.35, 0.45]);   // sandal
+    // tipped bin and its lid
+    v3rbox(D, 76, 724 + O, 24, 17, 0, 17, 0.3, [0.29, 0.35, 0.39]); v3lb(D, 76, 724 + O, 0.3, -13, 0, 2, 15, 0.8, 15, [0.2, 0.24, 0.27]); v3rbox(D, 100, 740 + O, 15, 15, 0, 2.2, 0.4, [0.23, 0.27, 0.3]);
+    // paddling pool: yellow ring, blue water
+    var pxc = 1628, pzc = 420 + O, pa, pw = [];
+    for (k = 0; k < 14; k++) { pa = k / 14 * 6.2832; v3rbox(D, pxc + Math.cos(pa) * 29, pzc + Math.sin(pa) * 29, 14, 7, 0, 9, pa + 1.5708, [0.92, 0.77, 0.3]); pw.push([pxc + Math.cos(pa) * 26, 5.6, pzc + Math.sin(pa) * 26]); }
+    for (k = 1; k < 13; k++) v3poly(D, [pw[0], pw[k], pw[k + 1]], [0.3, 0.6, 0.85], 1.05, [[0, 0], [0, 0], [0, 0]]);
+    // wheelbarrow tipped over
+    var wzb = 362 + O;
+    v3lb(D, 1700, wzb, 0.5, 0, 0, 28, 17, 7, 8, [0.42, 0.29, 0.17]); v3lb(D, 1700, wzb, 0.5, 18, 0, 3.4, 4, 0, 10, [0.1, 0.1, 0.1]); v3lb(D, 1700, wzb, 0.5, -22, -5, 16, 2, 8, 1.6, [0.78, 0.75, 0.69]); v3lb(D, 1700, wzb, 0.5, -22, 5, 16, 2, 8, 1.6, [0.78, 0.75, 0.69]);
+    v3rbox(D, 1580, 640 + O, 13, 13, 0, 2.4, 0.3, [0.91, 0.44, 0.54]);   // flat ball
+    // a lost shoe and a dropped phone
+    v3rbox(D, 733, 432 + O, 14, 5.5, 0, 2.2, 0.7, [0.85, 0.82, 0.75]); v3lb(D, 733, 432 + O, 0.7, -4, 0, 6, 5.6, 2.2, 2.4, [0.78, 0.22, 0.2]);
+    v3rbox(D, 1135, 565 + O, 6, 11, 0, 0.9, 0.2, [0.07, 0.07, 0.07]); v3lb(D, 1135, 565 + O, 0.2, 0, 0, 5, 9.5, 0.9, 0.12, [0.42, 0.69, 0.91]);
+  }
+  // furniture inside the houses (recorded while the old flat picture was being painted)
+  function v3furn(GS, O) {
+    var D = GS.dark, W = GS.wood, i, j, e, c, h, lst = [], H = {};
+    for (i = 0; i < DT3.length; i++) {
+      e = DT3[i];
+      if (e.k === 'bed') {
+        var bw = e.hi === 0 ? [0.48, 0.6, 0.82] : [0.82, 0.48, 0.54], zz = e.y + O;
+        v3rbox(W, e.x, zz, 68, 48, 0, 8, e.a, [0.35, 0.23, 0.14]); v3rbox(D, e.x, zz, 60, 40, 8, 5, e.a, [0.9, 0.87, 0.8]);
+        v3lb(D, e.x, zz, e.a, 6, 0, 46, 38, 13, 1.6, bw); v3lb(D, e.x, zz, e.a, -23, 0, 10, 28, 13, 3.2, [0.95, 0.94, 0.9]);
+      } else if (e.k === 'table') {
+        var tz = e.y + O, tc = [0.54, 0.35, 0.19];
+        v3rbox(W, e.x, tz, e.w, e.h, 11, 3, e.a, tc);
+        for (j = 0; j < 4; j++) v3lb(W, e.x, tz, e.a, (j % 2 ? 1 : -1) * (e.w / 2 - 2.5), (j < 2 ? 1 : -1) * (e.h / 2 - 2.5), 2.6, 2.6, 0, 11, [0.3, 0.2, 0.12]);
+      } else if (e.k === 'chair') {
+        var cz = e.y + O, cc = [0.42, 0.26, 0.13];
+        v3rbox(W, e.x, cz, 12, 12, 7, 2, e.a, cc); v3lb(W, e.x, cz, e.a, 0, -5, 12, 2.4, 9, 9, [0.3, 0.18, 0.09]);
+        for (j = 0; j < 4; j++) v3lb(W, e.x, cz, e.a, (j % 2 ? 1 : -1) * 4.8, (j < 2 ? 1 : -1) * 4.8, 1.8, 1.8, 0, 7, [0.26, 0.16, 0.08]);
+      } else if (e.k === 'sofa') {
+        var sz = e.y + O, sc2 = e.hi === 0 ? [0.6, 0.29, 0.23] : [0.29, 0.42, 0.6];
+        v3rbox(D, e.x, sz, 64, 28, 0, 9, e.a, sc2); v3lb(D, e.x, sz, e.a, 0, -11, 64, 8, 9, 13, [sc2[0] * 0.85, sc2[1] * 0.85, sc2[2] * 0.85]);
+        v3lb(D, e.x, sz, e.a, -29, 0, 7, 28, 9, 6, [sc2[0] * 0.8, sc2[1] * 0.8, sc2[2] * 0.8]); v3lb(D, e.x, sz, e.a, 29, 0, 7, 28, 9, 6, [sc2[0] * 0.8, sc2[1] * 0.8, sc2[2] * 0.8]);
+      } else if (e.k === 'f' && e.w >= 2 && e.h >= 2) {
+        h = 7; for (j = 0; j < lst.length; j++) { var o = lst[j]; if (o.hi === e.hi && e.x < o.x + o.w && e.x + e.w > o.x && e.y < o.y + o.h && e.y + e.h > o.y) h = Math.max(h, o.hh + 1.5); }
+        if (Math.min(e.w, e.h) < 4 && e.w * e.h < 400) h = Math.max(h, 3);
+        e.hh = h; lst.push(e); v3box(D, e.x, e.y + O, e.w, e.h, 0, h, v3hex(e.col));
+      }
+    }
+  }
   function v3walls() {
     var T = THREE, O = typeof DT_OY === 'number' ? DT_OY : 0, hgt = {}, trees = [], houses = [], seen = {}, i, k, r, key, hg, col, h, s;
     var GS = { brick: v3grp(64), plaster: v3grp(96), wood: v3grp(48), leaf: v3grp(48), metal: v3grp(80), roof: v3grp(64), dark: v3grp(64) };
@@ -6968,12 +7142,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       key = r.x + ',' + r.y + ',' + r.w + ',' + r.h; hg = hgt[key];
       var thin = Math.min(r.w, r.h) <= 8, mn = Math.min(r.w, r.h), mxd = Math.max(r.w, r.h);
       var pc = pal[(Math.floor(r.x / 10) + Math.floor(r.y / 10)) % pal.length];
+      if (!r.wl && !r.side && v3prop(GS, r, O)) continue;
       if (r.wl) v3box(GS.brick, r.x, r.y, r.w, r.h, 0, 40, [0.88, 0.66, 0.54]);
       else if (r.side) v3box(GS.wood, r.x, r.y, r.w, r.h, 0, 34, [0.74, 0.6, 0.44]);
       else if (r.furn && thin) v3box(GS.wood, r.x, r.y, r.w, r.h, 0, 11, [0.95, 0.92, 0.84]);
       else if (r.furn && mn === 42 && mxd >= 88 && mxd <= 92) {
         // a parked car: body, glass cabin with a roof, four wheels
-        var hz = r.w > r.h, bx = r.x, bz = r.y, bw = r.w, bd = r.h;
+        var hz = r.w > r.h, bx = r.x, bz = r.y, bw = r.w, bd = r.h, cch = CARC[r.x + ',' + (r.y - O)]; if (cch) pc = v3hex(cch);
         v3box(GS.metal, bx, bz, bw, bd, 4, 12, pc);
         if (hz) { v3box(GS.dark, bx + bw * 0.26, bz + 4, bw * 0.44, bd - 8, 16, 9, glass); v3box(GS.metal, bx + bw * 0.24, bz + 3, bw * 0.48, bd - 6, 25, 3, pc); }
         else { v3box(GS.dark, bx + 4, bz + bd * 0.26, bw - 8, bd * 0.44, 16, 9, glass); v3box(GS.metal, bx + 3, bz + bd * 0.24, bw - 6, bd * 0.48, 25, 3, pc); }
@@ -6981,6 +7156,8 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
           var wx = hz ? bx + (k < 2 ? 6 : bw - 20) : bx + (k % 2 ? bw - 2 : -1), wz = hz ? bz + (k % 2 ? bd - 2 : -1) : bz + (k < 2 ? 6 : bd - 20);
           v3box(GS.dark, wx, wz, hz ? 14 : 3, hz ? 3 : 14, 0, 8, tyre);
         }
+        if (hz) { v3box(GS.dark, bx - 1.5, bz + 3, 2, bd - 6, 3, 5, [0.12, 0.12, 0.13]); v3box(GS.dark, bx + bw - 0.5, bz + 3, 2, bd - 6, 3, 5, [0.12, 0.12, 0.13]); v3box(GS.metal, bx - 0.4, bz + 5, 0.8, 6, 8, 3, [1, 0.95, 0.7]); v3box(GS.metal, bx - 0.4, bz + bd - 11, 0.8, 6, 8, 3, [1, 0.95, 0.7]); }
+        else { v3box(GS.dark, bx + 3, bz - 1.5, bw - 6, 2, 3, 5, [0.12, 0.12, 0.13]); v3box(GS.dark, bx + 3, bz + bd - 0.5, bw - 6, 2, 3, 5, [0.12, 0.12, 0.13]); v3box(GS.metal, bx + 5, bz - 0.4, 6, 0.8, 8, 3, [1, 0.95, 0.7]); v3box(GS.metal, bx + bw - 11, bz - 0.4, 6, 0.8, 8, 3, [1, 0.95, 0.7]); }
       }
       else if (r.furn) v3box(GS.metal, r.x, r.y, r.w, r.h, 0, hg ? Math.min(hg, 24) : 16, pc);
       else if (mn === 26) v3box(GS.leaf, r.x, r.y, r.w, r.h, 0, 22, [0.28, 0.5, 0.22]);
@@ -7013,6 +7190,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       v3box(GS.plaster, pb.x0 - 24, pb.y0 - 24, pb.x1 - pb.x0 + 48, 24, 0, 95, pw); v3box(GS.plaster, pb.x0 - 24, pb.y1, pb.x1 - pb.x0 + 48, 24, 0, 95, pw);
       v3box(GS.plaster, pb.x0 - 24, pb.y0, 24, pb.y1 - pb.y0, 0, 95, pw); v3box(GS.plaster, pb.x1, pb.y0, 24, pb.y1 - pb.y0, 0, 95, pw);
     }
+    v3deco(GS, houses); v3furn(GS, O);
     V.houses = houses;
     var kinds = { brick: 'brick', plaster: 'plaster', wood: 'wood', leaf: 'leaf', metal: 'metal', roof: 'roof', dark: null }, grp = new T.Group(), kn, G, g;
     for (kn in GS) {
