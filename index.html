@@ -4501,13 +4501,14 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     }
 
-    if (fpAim && !isGhost(P) && !isSpecialActive(P) && st.d.cls === 'sniper' && SC.amt < 0.85) canFire = false;   // snipers only fire while looking down the scope
+    if (fpAim && !isGhost(P) && !isSpecialActive(P) && st.d.cls === 'sniper' && (SC.amt < 0.85 || FIRE.shot)) canFire = false;   // snipers only fire while looking down the scope, one shot per press
     if (goFire || pvFire) {
       P.ang = pvFire ? P.aimAng : (fpAim ? fpYaw : Math.atan2(tgt.y - P.y, tgt.x - P.x));
       P.fireCd -= dt;
       if (canFire) {
         if (P.fireCd <= 0) {
           shoot(P);
+          if (fpAim && st.d.cls === 'sniper') FIRE.shot = true;
           P.fireCd += 1 / st.rate;
           if (P.fireCd < -0.05) P.fireCd = 0;
         }
@@ -5128,7 +5129,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 209';
+  var updMsg = '', VERSION = 'Version 210';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -6171,10 +6172,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   scopeGo.addEventListener('pointerdown', function (e) { if (e.pointerType === 'touch') return; e.preventDefault(); scopeTap(); });
   scopeGo.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   /* ---- shoot button (first person): hold to fire, slide the same thumb to keep looking around ---- */
-  var FIRE = { on: false, tid: null, pid: null, lx: 0, ly: 0 }, fireGo = $('fireGo');
+  var FIRE = { shot: false, on: false, tid: null, pid: null, lx: 0, ly: 0 }, fireGo = $('fireGo');
   function fireStart() {
     if (FIRE.on || state !== 'play' || blocked() || !me || me.down) return false;
-    FIRE.on = true; fireGo.classList.add('on'); FIRE.sc = SC.on;
+    FIRE.on = true; FIRE.shot = false; fireGo.classList.add('on'); FIRE.sc = SC.on;
     if (fpMode === 'hold' && !SC.on && scopeStart()) FIRE.sc = true;   // hold-to-scope: pressing shoot also looks down the sights
     return true;
   }
@@ -7544,7 +7545,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.6; sc.add(sun.target);
     for (n = 0; n < 6; n++) V.fm[n].castShadow = true;
     V.ex.castShadow = true; V.dr.castShadow = true; V.dr.receiveShadow = true;
-    V.gun = new T.InstancedMesh(box, v3mat('metal', 1), 192); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); V.gun.renderOrder = 999; V.gun.onBeforeRender = function (r) { r.clearDepth(); }; sc.add(V.gun);   /* your own gun is drawn last on a cleared depth buffer, so it is always in front of walls (looks only, nothing physical) */
+    V.gun = new T.InstancedMesh(box, v3mat('metal', 1), 192); V.gun.frustumCulled = false; V.gun.count = 0; V.gun.setColorAt(0, v3col('#222')); V.gun.material.transparent = true; V.gun.renderOrder = 999; V.gun.onBeforeRender = function (r) { r.clearDepth(); }; sc.add(V.gun);   /* your own gun is drawn last on a cleared depth buffer, so it is always in front of walls (looks only, nothing physical). It is marked transparent only so it draws AFTER every other see-through thing (blood, shadows, sparks), which still need the world's depth */
     V.sh = new T.InstancedMesh(disc, new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }), NF); V.sh.frustumCulled = false; V.sh.count = 0; sc.add(V.sh);
     var bm = new T.MeshBasicMaterial({ color: 0xffffff });
     V.cu = new T.InstancedMesh(box, bm, 400); V.cu.frustumCulled = false; V.cu.count = 0; V.cu.setColorAt(0, v3col('#fff')); sc.add(V.cu);
