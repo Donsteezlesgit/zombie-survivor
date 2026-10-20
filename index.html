@@ -2773,6 +2773,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (o.z === undefined) o.z = lvH(L);
     if (o.air) {
       z0 = o.z; o.vz -= 1100 * dt; o.z += o.vz * dt;
+      if (o.vz > 0) {   // you cannot jump up through a floor above you: your head stops against it
+        for (l = -1; l <= 2; l++) { h = surf(o.x, o.y, l); if (h === h && h > z0 + 12 && o.z + 38 > h) { o.z = Math.max(z0, h - 38); o.vz = 0; } }
+      }
       if (o.vz <= 0) {
         var bh = NaN, bl = 0, tl = false, tr;
         for (i = 0; i < LV.tops.length; i++) { tr = LV.tops[i]; if (z0 >= tr.top - 0.5 && o.z <= tr.top && (bh !== bh || tr.top > bh) && o.x >= tr.x && o.x <= tr.x + tr.w && o.y >= tr.y && o.y <= tr.y + tr.h) { bh = tr.top; bl = lvBand(tr.top - 1); tl = true; } }
@@ -5702,7 +5705,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 218';
+  var updMsg = '', VERSION = 'Version 219';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
