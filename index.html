@@ -2456,7 +2456,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         var elo = convex(pa) ? 1 : 0, ehi = convex(pb) ? 1 : 0;
         function seg(t, a0, a1, l0) {
           var o2 = { rail: 1, rl: 0 };
-          if (l0 === -1) o2 = { pw: 1 };
+          if (l0 === -1) o2 = { pw: 1, clr: 24 };   // a wall you can only clear from a wagon, not from the pit floor
           if (hz) LR(a0, out > 0 ? c : c - t, a1 - a0, t, l0, l0, o2); else LR(out > 0 ? c : c - t, a0, t, a1 - a0, l0, l0, o2);
         }
         seg(20, lo - 20 * elo, hi + 20 * ehi, -1);
@@ -2717,11 +2717,17 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   }
   // low things can be jumped onto: a jump peaks at about 49, so anything up to 46 high is a step. r.top is the absolute height of the top.
   function markTops(id) {
-    var i, r, lo;
+    var KT = { crate: 38, barrel: 28, pallet: 8, jersey: 31, desk: 24, bench: 30, drums: 30, cart: 24 }, i, r, lo, ph;
     for (i = 0; i < RECTS.length; i++) {
       r = RECTS[i]; lo = lvH(r.l0 === undefined ? 0 : r.l0);
-      if (r.prop && r.prop !== 'pillar' && r.ph !== undefined && r.ph <= 46) r.top = lo + r.ph;
-      else if (id === 'dummytown' && r.furn && !r.wl && r.w >= 18 && r.h >= 18 && r.w <= 130 && r.h <= 130) r.top = lo + 30;   // Bomb Town furniture and crates
+      if (r.prop && r.prop !== 'pillar') {
+        ph = KT[r.prop]; if (ph === undefined) ph = r.ph;
+        if (r.prop === 'crate' && r.ph === undefined) ph = undefined;   // the big yard crates are a two-high stack
+        if (ph !== undefined && ph <= 46) r.top = lo + ph;
+      } else if (id === 'dummytown' && r.furn && !r.wl && !r.side) {   // Bomb Town: fences are jumped over, furniture and crates are stepped onto
+        if (Math.min(r.w, r.h) < 18) r.rail = 1;
+        else if (r.w <= 130 && r.h <= 130) r.top = lo + 30;
+      }
       if (r.top !== undefined) LV.tops.push(r);
     }
   }
@@ -2745,7 +2751,13 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function lvGround(b) { var h = b.h0 + b.vh * b.dist, l, v; for (l = lvBand(h); l >= -1; l--) { v = surf(b.x, b.y, l); if (v === v) return v; } return -999; }
   function lvCeil(b, sd) { var h = b.h0 + b.vh * b.dist, p = h - b.vh * sd, l = lvBand(h), v; if (l <= lvBand(p)) return false; v = surf(b.x, b.y, l); return v === lvH(l); }
   // the floor under a point at height h (used so sparks, casings and blood land on the floor they were made on, not on the ground below)
-  function lvFloorAt(x, y, h) { if (!LV.on) return 0; for (var l = lvBand(h + 3); l >= -1; l--) { var v = surf(x, y, l); if (v === v && v <= h + 3) return v; } return 0; }
+  function lvFloorAt(x, y, h) {
+    if (!LV.on) return 0;
+    var base = 0, l, v, i, r;
+    for (l = lvBand(h + 3); l >= -1; l--) { v = surf(x, y, l); if (v === v && v <= h + 3) { base = v; break; } }
+    for (i = 0; i < LV.tops.length; i++) { r = LV.tops[i]; if (r.top <= h + 3 && r.top > base && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) base = r.top; }   // a crate top counts as a floor too
+    return base;
+  }
   // the height an effect with no owner should sit at: the level of the nearest player or zombie
   function fxZ(x, y) {
     if (!LV.on) return 0;
@@ -2762,9 +2774,10 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (o.air) {
       z0 = o.z; o.vz -= 1100 * dt; o.z += o.vz * dt;
       if (o.vz <= 0) {
-        h = topAt(o.x, o.y, L, z0 + 0.5);
-        if (h === h && z0 >= h - 0.5 && o.z <= h) { o.z = h; o.air = false; o.vz = 0; if (o.vx) { o.vx *= 0.05; o.vy *= 0.05; } return; }
-        for (l = 2; l >= -1; l--) { h = surf(o.x, o.y, l); if (h === h && z0 >= h - 0.5 && o.z <= h) { o.lv = l; o.z = h; o.air = false; o.vz = 0; return; } }
+        var bh = NaN, bl = 0, tl = false, tr;
+        for (i = 0; i < LV.tops.length; i++) { tr = LV.tops[i]; if (z0 >= tr.top - 0.5 && o.z <= tr.top && (bh !== bh || tr.top > bh) && o.x >= tr.x && o.x <= tr.x + tr.w && o.y >= tr.y && o.y <= tr.y + tr.h) { bh = tr.top; bl = lvBand(tr.top - 1); tl = true; } }
+        for (l = 2; l >= -1; l--) { h = surf(o.x, o.y, l); if (h === h && z0 >= h - 0.5 && o.z <= h && (bh !== bh || h > bh)) { bh = h; bl = l; tl = false; } }
+        if (bh === bh) { o.lv = bl; o.z = bh; o.air = false; o.vz = 0; if (tl && o.vx) { o.vx *= 0.05; o.vy *= 0.05; } return; }
       }
       if (o.z < -64) { o.air = false; o.vz = 0; o.lv = 0; o.z = 0; if (LV.pit && inPoly(o.x, o.y, LV.pit)) { o.lv = -1; o.z = lvH(-1); } }
       return;
@@ -2782,7 +2795,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < RECTS.length; i++) {
       r = RECTS[i];
       if ((r.bar && r.planks <= 0) || (r.door && r.open)) continue;
-      if (LV.on && ((r.l0 !== undefined && (L < r.l0 || L > r.l1)) || (jmp && r.rail) || (r.top !== undefined && oz >= r.top - 6))) continue;
+      if (LV.on && ((r.l0 !== undefined && (L < r.l0 || L > r.l1)) || (jmp && r.rail) || (r.top !== undefined && oz >= r.top - 6) || (r.clr !== undefined && oz >= r.clr - 6))) continue;
       n = pushOut(o, r);
       if (n) { hit = n; hit.door = !!r.door; }
     }
@@ -3660,6 +3673,15 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     return q;
   }
 
+  function nearestAliveAt(x, y, z) {
+    var best = null, bd = 1e12, i, P, d;
+    for (i = 0; i < players.length; i++) {
+      P = players[i]; if (P.down || Math.abs((P.z || 0) - z) >= 30) continue;
+      d = (P.x - x) * (P.x - x) + (P.y - y) * (P.y - y);
+      if (d < bd) { bd = d; best = P; }
+    }
+    return best;
+  }
   function nearestAlive(x, y) {
     var best = null, bd = 1e12, i, P, d;
     for (i = 0; i < players.length; i++) {
@@ -5336,11 +5358,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     // coins: scatter, then get pulled toward the nearest player
     for (i = coins.length - 1; i >= 0; i--) {
       var c = coins[i];
-      T = nearestAlive(c.x, c.y);
-      var cown = c.to >= 0 ? pById(c.to) : null; if (cown && !cown.down) T = cown; else c.to = -1;
+      T = LV.on ? nearestAliveAt(c.x, c.y, c.z || 0) : nearestAlive(c.x, c.y);   // a coin only chases someone on its own level
+      var cown = c.to >= 0 ? pById(c.to) : null; if (cown && !cown.down && (!LV.on || Math.abs((cown.z || 0) - (c.z || 0)) < 30)) T = cown; else c.to = -1;
       var cdmp = Math.pow(0.03, dt); c.vx *= cdmp; c.vy *= cdmp;
+      var cox = c.x, coy = c.y;
       c.x += c.vx * dt; c.y += c.vy * dt;
-      if (LV.on && T) c.z = (c.z || 0) + ((T.z || 0) - (c.z || 0)) * Math.min(1, dt * 5);
       var cd = 1e9;
       if (T) {
         var cdx = T.x - c.x, cdy = T.y - c.y, magR = TUNE.magBase * (1 + 0.25 * T.upg.mag);
@@ -5355,6 +5377,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
         }
       }
       evictFromPockets(c, true);
+      if (LV.on) {   // a coin stays on the floor it dropped on: in the pit it cannot slide out through the wall, and it drops if the floor ends under it
+        var cz0 = c.z || 0;
+        if (cz0 < -20 && LV.pit && !inPoly(c.x, c.y, LV.pit)) { c.x = cox; c.y = coy; c.vx = c.vy = 0; }
+        c.z = lvFloorAt(c.x, c.y, cz0 + 3);
+      }
       c.x = Math.max(WALL + 4, Math.min(WORLD - WALL - 4, c.x));
       c.y = Math.max(WALL + 4, Math.min(WORLD - WALL - 4, c.y));
       if (T && cd < 15) {
@@ -5675,7 +5702,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 217';
+  var updMsg = '', VERSION = 'Version 218';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
