@@ -849,6 +849,7 @@ html.fullbleed .game { top: 0 !important; bottom: auto !important; height: 100lv
     try { localStorage.setItem('zs-maprec', JSON.stringify(mapRec)); localStorage.setItem('zs-off-wave', String(offWave)); localStorage.setItem('zs-off-kills', String(offKills)); } catch (e) {}
   }
   function mapOpen(i) {
+    return true;   // every map is open from the start
     var m = MAPS[i];
     if (m.need) return recOf(m.need.map).w >= m.need.wave;
     // a map also counts as open if the map before it already has wave 20 on record (covers a clear that never set the saved flag)
@@ -1023,7 +1024,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // ---------- buildings ----------
   // RECTS: solid for movement. BLD: the four spawn buildings, each with a pocket and a barrier zombies must smash.
   var RECTS = [], BLD = [], ROOFS = [], DOORS = [], LIGHTS = [], MAPCFG = { sx: 750, sy: 750, nav: false };
-  var LV = { on: false, H: [-40, 0, 54, 108], floors: [], stairs: [], pit: null, pitR: null };   /* floors: only The Factory switches this on */
+  var LV = { on: false, H: [-40, 0, 54, 108], floors: [], stairs: [], pit: null, pitR: null, tops: [] };   /* floors: only The Factory switches this on */
   var POCKET_D = 54, POCKET_HW = 52, WALL_T = 12;
   function mkRect(cx, cy, alongN, alongT, horizN) {
     var w = horizN ? alongN : alongT, h = horizN ? alongT : alongN;
@@ -2643,7 +2644,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     { id: 'beginners', name: 'Beginners Ground', blurb: 'Open ground, four spawn buildings. Learn the ropes.', world: 1500, gs: 1.5, build: buildBeginners, ground: paintGround, bld: paintBuildings, cfg: { sx: 750, sy: 750, nav: false } },
     { id: 'haunted', name: 'Haunted House', blurb: 'Rooms, corridors and doors. Something is stirring in the cauldron.', world: 2000, gs: 1, build: buildHaunted, ground: paintHauntedGround, bld: paintHauntedBld, cfg: { sx: 1000, sy: 960, nav: true } },
     { id: 'hangar', name: 'The Hangar', blurb: 'Pitch dark. You only see by your torch. Built for PvP, great for zombies too.', world: 1400, gs: 1.5, build: buildHangar, ground: paintHangarGround, bld: paintHangarBld, cfg: { sx: 700, sy: 700, nav: true }, need: { map: 'beginners', wave: 10 } },
-    { id: 'dummytown', name: 'Bomb Town', blurb: 'Sunset. Two houses face each other across a long street. Built for PvP, great for zombies too.', world: 1800, gs: 1.1, v3d: true, build: buildDummy, ground: paintDummyGround, bld: paintDummyBld, cfg: { sx: 700, sy: 880, nav: true, day: true, pvg: true, b: { x0: 10, y0: 400, x1: 1790, y1: 1400 } }, need: { map: 'beginners', wave: 10 } },
+    { id: 'dummytown', name: 'Bomb Town', blurb: 'Sunset. Two houses face each other across a long street. Built for PvP, great for zombies too.', world: 1800, gs: 1.1, v3d: true, build: buildDummy, ground: paintDummyGround, bld: paintDummyBld, cfg: { sx: 700, sy: 880, nav: true, day: true, pvg: true, lv: true, b: { x0: 10, y0: 400, x1: 1790, y1: 1400 } }, need: { map: 'beginners', wave: 10 } },
     { id: 'factory', name: 'The Factory', blurb: 'Night. A huge abandoned factory with a bent rail pit through the middle. Built for PvP, great for zombies too.', world: 2400, gs: 0.9, v3d: true, build: buildFactory, ground: paintFactoryGround, bld: paintFactoryBld, cfg: { sx: 1400, sy: 1020, nav: true, near: true, lv: true, b: { x0: 112, y0: 112, x1: 2016, y1: 2240 } }, need: { map: 'beginners', wave: 10 } }
   ];
   function mapDef(id) { for (var i = 0; i < MAPS.length; i++) if (MAPS[i].id === id) return MAPS[i]; return MAPS[0]; }
@@ -2655,8 +2656,9 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     mapId = d.id; WORLD = d.world; GS = d.gs; P3 = want3d(d); DT3.length = 0;
     sizeLayer(groundL); sizeLayer(bloodL); sizeLayer(bldL);
     RECTS.length = 0; BLD.length = 0; ROOFS.length = 0; DOORS.length = 0; LIGHTS.length = 0; bats = [];
-    MAPCFG = d.cfg; LV.on = !!d.cfg.lv; LV.floors.length = 0; LV.stairs.length = 0; LV.pit = null; LV.pitR = null;
+    MAPCFG = d.cfg; LV.on = !!d.cfg.lv; LV.floors.length = 0; LV.stairs.length = 0; LV.pit = null; LV.pitR = null; LV.tops.length = 0;
     d.build(); d.ground(); d.bld();
+    if (LV.on) markTops(d.id);
     bakeArt();
     bloodOn = false;
     navInit();
@@ -2713,6 +2715,22 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0, j = p.length - 1; i < p.length; j = i++) if (((p[i][1] > py) !== (p[j][1] > py)) && (px < (p[j][0] - p[i][0]) * (py - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0])) c = !c;
     return c;
   }
+  // low things can be jumped onto: a jump peaks at about 49, so anything up to 46 high is a step. r.top is the absolute height of the top.
+  function markTops(id) {
+    var i, r, lo;
+    for (i = 0; i < RECTS.length; i++) {
+      r = RECTS[i]; lo = lvH(r.l0 === undefined ? 0 : r.l0);
+      if (r.prop && r.prop !== 'pillar' && r.ph !== undefined && r.ph <= 46) r.top = lo + r.ph;
+      else if (id === 'dummytown' && r.furn && !r.wl && r.w >= 18 && r.h >= 18 && r.w <= 130 && r.h <= 130) r.top = lo + 30;   // Bomb Town furniture and crates
+      if (r.top !== undefined) LV.tops.push(r);
+    }
+  }
+  // the highest standable top under (x,y) on level L that is no higher than zmax, or NaN
+  function topAt(x, y, L, zmax) {
+    var best = NaN, i, r;
+    for (i = 0; i < LV.tops.length; i++) { r = LV.tops[i]; if (r.top <= zmax && (best !== best || r.top > best) && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h && rOn(r, L)) best = r.top; }
+    return best;
+  }
   // the height of the walkable surface at (x,y) on level l, or NaN when there is nothing to stand on there
   function surf(x, y, l) {
     var i, s, f;
@@ -2726,6 +2744,16 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   // the floor a bullet would hit going down, and whether it just went up through a floor
   function lvGround(b) { var h = b.h0 + b.vh * b.dist, l, v; for (l = lvBand(h); l >= -1; l--) { v = surf(b.x, b.y, l); if (v === v) return v; } return -999; }
   function lvCeil(b, sd) { var h = b.h0 + b.vh * b.dist, p = h - b.vh * sd, l = lvBand(h), v; if (l <= lvBand(p)) return false; v = surf(b.x, b.y, l); return v === lvH(l); }
+  // the floor under a point at height h (used so sparks, casings and blood land on the floor they were made on, not on the ground below)
+  function lvFloorAt(x, y, h) { if (!LV.on) return 0; for (var l = lvBand(h + 3); l >= -1; l--) { var v = surf(x, y, l); if (v === v && v <= h + 3) return v; } return 0; }
+  // the height an effect with no owner should sit at: the level of the nearest player or zombie
+  function fxZ(x, y) {
+    if (!LV.on) return 0;
+    var best = 0, bd = 3600, i, e, d;
+    for (i = 0; i < zombies.length; i++) { e = zombies[i]; d = (e.x - x) * (e.x - x) + (e.y - y) * (e.y - y); if (d < bd) { bd = d; best = e.z || 0; } }
+    for (i = 0; i < players.length; i++) { e = players[i]; d = (e.x - x) * (e.x - x) + (e.y - y) * (e.y - y); if (d < bd) { bd = d; best = e.z || 0; } }
+    return best;
+  }
   function lvSame(a, b) { return !LV.on || Math.abs((a.z || 0) - (b.z || 0)) < 30; }
   // one step of standing, climbing, jumping and falling. Falling does no damage.
   function lvStep(o, dt) {
@@ -2733,29 +2761,36 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (o.z === undefined) o.z = lvH(L);
     if (o.air) {
       z0 = o.z; o.vz -= 1100 * dt; o.z += o.vz * dt;
-      if (o.vz <= 0) for (l = 2; l >= -1; l--) { h = surf(o.x, o.y, l); if (h === h && z0 >= h - 0.5 && o.z <= h) { o.lv = l; o.z = h; o.air = false; o.vz = 0; return; } }
+      if (o.vz <= 0) {
+        h = topAt(o.x, o.y, L, z0 + 0.5);
+        if (h === h && z0 >= h - 0.5 && o.z <= h) { o.z = h; o.air = false; o.vz = 0; if (o.vx) { o.vx *= 0.05; o.vy *= 0.05; } return; }
+        for (l = 2; l >= -1; l--) { h = surf(o.x, o.y, l); if (h === h && z0 >= h - 0.5 && o.z <= h) { o.lv = l; o.z = h; o.air = false; o.vz = 0; return; } }
+      }
       if (o.z < -64) { o.air = false; o.vz = 0; o.lv = 0; o.z = 0; if (LV.pit && inPoly(o.x, o.y, LV.pit)) { o.lv = -1; o.z = lvH(-1); } }
       return;
     }
     for (i = 0; i < LV.stairs.length; i++) { s = LV.stairs[i]; if ((L === s.a || L === s.b) && o.x >= s.x && o.x <= s.x + s.w && o.y >= s.y && o.y <= s.y + s.h) { st = s; break; } }
     if (st) { t = stairT(st, o.x, o.y); o.lv = t < 0.5 ? st.a : st.b; o.z = lvH(st.a) + (lvH(st.b) - lvH(st.a)) * t; return; }
     h = surf(o.x, o.y, L);
-    if (h === h) { o.z = h; return; }
+    var tp = topAt(o.x, o.y, L, o.z + 3);   // standing on a crate or bench: stay up there while you are over it, drop off its edge
+    if (tp === tp && !(tp < h)) { if (h === h && tp > h) { o.z = tp; return; } if (h !== h) { o.z = tp; return; } }
+    if (h === h) { if (o.z > h + 3 && tp !== tp) { o.air = true; o.vz = 0; return; } o.z = h; return; }
     o.air = true; o.vz = 0;
   }
   function collide(o) {
-    var hit = null, i, r, n, L = LV.on ? (o.lv | 0) : 0, jmp = LV.on && o.air;
+    var hit = null, i, r, n, L = LV.on ? (o.lv | 0) : 0, jmp = LV.on && o.air && !colZ, oz = o.z || 0;
     for (i = 0; i < RECTS.length; i++) {
       r = RECTS[i];
       if ((r.bar && r.planks <= 0) || (r.door && r.open)) continue;
-      if (LV.on && ((r.l0 !== undefined && (L < r.l0 || L > r.l1)) || (jmp && r.rail))) continue;
+      if (LV.on && ((r.l0 !== undefined && (L < r.l0 || L > r.l1)) || (jmp && r.rail) || (r.top !== undefined && oz >= r.top - 6))) continue;
       n = pushOut(o, r);
       if (n) { hit = n; hit.door = !!r.door; }
     }
     return hit;
   }
   // zombies bump into walls as if they were the size of a player, so every zombie fits through any gap a player can. They still look their real size
-  function collideZ(z) { var r0 = z.r; if (r0 > PR - 1) z.r = PR - 1; var h = collide(z); z.r = r0; return h; }
+  var colZ = false;   // while a zombie is being pushed out of walls: zombies never vault rails or windows
+  function collideZ(z) { var r0 = z.r; if (r0 > PR - 1) z.r = PR - 1; colZ = true; var h = collide(z); colZ = false; z.r = r0; return h; }
   // anything dropped inside a sealed pen gets moved out in front of the barrier
   function evictFromPockets(o, push) {
     for (var i = 0; i < BLD.length; i++) {
@@ -3558,7 +3593,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   function addFx0(x, y, n, speed, life, r, c) {
     for (var i = 0; i < n && fx.length < 260; i++) {
       var a = rnd(0, 6.283), s = rnd(0.2, 1) * speed;
-      fx.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(life * 0.5, life), max: life, r: rnd(r * 0.6, r), c: c });
+      fx.push({ x: x, y: y, z: LV.on ? fxZ(x, y) : 0, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(life * 0.5, life), max: life, r: rnd(r * 0.6, r), c: c });
     }
   }
   function addBlood(x, y, dx, dy, n, speed) { addBlood0(x, y, dx, dy, n, speed); rec(['b', r1(x), r1(y), r2(dx), r2(dy), n, speed]); }
@@ -4485,11 +4520,11 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
   /* ---- small 3D visual effects: bits that fly (casings, smoke, sparks, dust, blood) and drift (embers). All local, nothing here touches the game state ---- */
   var deb = [], ftx = [], exGlow = null, hurtFl = 0;
   function dbOn() { return !!(V && V.shown && v3Active()); }
-  function addDeb(o) { if (deb.length < 260) { o.max = o.life; deb.push(o); } }
+  function addDeb(o) { if (deb.length < 260) { o.max = o.life; o.fz = LV.on ? lvFloorAt(o.x, o.y, o.h) : 0; deb.push(o); } }
   function casingFx(P) {
     if (!dbOn()) return;
     var a = P.ang + 1.5708, sp = rnd(30, 50);
-    addDeb({ k: 'cas', x: P.x + Math.cos(P.ang) * 16 + Math.cos(a) * 8, y: P.y + Math.sin(P.ang) * 16 + Math.sin(a) * 8, h: 24, vx: Math.cos(a) * sp + Math.cos(P.ang) * 8, vy: Math.sin(a) * sp + Math.sin(P.ang) * 8, vh: rnd(35, 60), life: 1.8, sp: rnd(-12, 12), rot: rnd(0, 6) });
+    addDeb({ k: 'cas', x: P.x + Math.cos(P.ang) * 16 + Math.cos(a) * 8, y: P.y + Math.sin(P.ang) * 16 + Math.sin(a) * 8, h: 24 + (LV.on ? (P.z || 0) : 0), vx: Math.cos(a) * sp + Math.cos(P.ang) * 8, vy: Math.sin(a) * sp + Math.sin(P.ang) * 8, vh: rnd(35, 60), life: 1.8, sp: rnd(-12, 12), rot: rnd(0, 6) });
   }
   function smokeFx(x, y, h) {
     if (!dbOn()) return;
@@ -4693,7 +4728,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (d.kind === 'zap') zapShoot(P, st, mx, my);
     P.flash = 0.06;
     shotN++;
-    if (!d.kind && !d.special && dbOn()) { casingFx(P); if (!(AM & 4) && (shotN & 1)) smokeFx(mx + (vox || 0), my + (voy || 0), 22); }
+    if (!d.kind && !d.special && dbOn()) { casingFx(P); if (!(AM & 4) && (shotN & 1)) smokeFx(mx + (vox || 0), my + (voy || 0), 22 + (LV.on ? (P.z || 0) : 0)); }
     var id = d.sid || ref.id, cls = d.cls;
     hapFor(P, d.special ? id : cls);
     if (AM & 4) { if (shotN % 2 === 0) snoise(0.03, 1500, 0.02); }
@@ -5146,7 +5181,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
             for (kk = 0; kk < nr; kk++) {
               var rid = zid++;
               var ra = ta + (kk - (nr - 1) / 2) * 0.22;
-              ebullets.push({ x: z.x + Math.cos(ra) * z.r, y: z.y + Math.sin(ra) * z.r, dx: Math.cos(ra), dy: Math.sin(ra), spd: 250, dmg: z.dmg * 0.8, r: 8, life: 2.4, spin: 0, rock: true, id: rid, shape: rockShape(rid) });
+              ebullets.push({ z: z.z || 0, x: z.x + Math.cos(ra) * z.r, y: z.y + Math.sin(ra) * z.r, dx: Math.cos(ra), dy: Math.sin(ra), spd: 250, dmg: z.dmg * 0.8, r: 8, life: 2.4, spin: 0, rock: true, id: rid, shape: rockShape(rid) });
             }
             stone(200, 90, 0.18, 'square', 0.06);
           }
@@ -5243,7 +5278,18 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       collideZ(z);
       z.x = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.x));
       z.y = Math.max(WALL + z.r, Math.min(WORLD - WALL - z.r, z.y));
-      if (LV.on) lvStep(z, dt);
+      if (LV.on) {
+        lvStep(z, dt);
+        // a zombie hops onto a crate or bench only when a survivor is standing up on one and it cannot walk to them any other way
+        z.jt = (z.jt || 0) - dt;
+        if (!z.air && z.jt <= 0 && !z.boss && !(z.stun > 0)) {
+          for (j = 0; j < players.length; j++) {
+            P = players[j];
+            if (P.down || P.air || (P.lv | 0) !== (z.lv | 0) || P.z - z.z < 12 || P.z - z.z > 46) continue;
+            if (Math.hypot(P.x - z.x, P.y - z.y) < z.r + PR + 34 && topAt(P.x, P.y, P.lv | 0, P.z + 3) === topAt(P.x, P.y, P.lv | 0, P.z + 3)) { var hd = Math.hypot(P.x - z.x, P.y - z.y) || 1; z.air = true; z.vz = 330; z.jt = 1; z.vx += (P.x - z.x) / hd * 230; z.vy += (P.y - z.y) / hd * 230; break; }
+          }
+        }
+      }
     }
 
     // barriers: stand next to one to rebuild it (the coins go to whoever is repairing)
@@ -5629,7 +5675,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     if (screen === 'gun') { if (!gAnim || gAnim.id !== armGun) gunAnimStart(armGun); else if (!gAnim.raf) { gAnim.last = performance.now(); gunAnimFrame(); } }
     if (screen === 'help' || screen === 'guide' || screen === 'intro' || screen === 'pvpintro') initHelp();
   }
-  var updMsg = '', VERSION = 'Version 216';
+  var updMsg = '', VERSION = 'Version 217';
   // wipe the saved copy of the app and reload it fresh from GitHub (only if we can really reach it, so offline play is never broken)
   function refreshApp() {
     updMsg = 'Checking for the latest version...'; renderScreen();
@@ -9022,7 +9068,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       }
     }
     if (me && me.flash > 0 && !me.down) { var fzp = v3loc(40 + V.mz, -10, 9); v3put(V.or, on++, fzp.x, fzp.y, fzp.z, 0, 3.2, 3.2, 3.2, v3col('#ffe3a6')); }
-    for (i = 0; i < ebullets.length; i++) { e = ebullets[i]; v3put(V.or, on++, e.x, e.r + 6, e.y, 0, e.r * 1.2, e.r * 1.2, e.r * 1.2, v3col('#7b736a')); }
+    for (i = 0; i < ebullets.length; i++) { e = ebullets[i]; v3put(V.or, on++, e.x, e.r + 6 + (LV.on ? (e.z || 0) : 0), e.y, 0, e.r * 1.2, e.r * 1.2, e.r * 1.2, v3col('#7b736a')); }
     for (i = 0; i < grenades.length; i++) {
       var g = grenades[i], gp = Math.min(1, g.t / g.T), gh = Math.sin(gp * Math.PI) * 30 * (gp < 1 ? 1 : 0);
       if ((g.k | 0) === 4) {   // claymore: a flat green slab facing away from you, with a red light once it is down
@@ -9050,7 +9096,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       dlf = db.life / db.max;
       if (db.k === 'cas' || db.k === 'spark' || db.k === 'blood') {
         db.vh -= (db.k === 'spark' ? 200 : 260) * dd0; db.h += db.vh * dd0; db.x += db.vx * dd0; db.y += db.vy * dd0;
-        if (db.h < 0.5) { if (db.k === 'blood') { deb.splice(i, 1); continue; } db.h = 0.5; db.vh = 0; db.vx *= 0.2; db.vy *= 0.2; db.sp = 0; }
+        if (db.h < (db.fz || 0) + 0.5) { if (db.k === 'blood') { deb.splice(i, 1); continue; } db.h = (db.fz || 0) + 0.5; db.vh = 0; db.vx *= 0.2; db.vy *= 0.2; db.sp = 0; }
         if (db.k === 'cas') { db.rot += (db.sp || 0) * dd0; v3x(db.x, db.h, db.y, 1.8, 0.8, 0.8, '#d9b24a', 1, 0, db.rot, 0.3); }
         else if (db.k === 'spark') v3x(db.x, db.h, db.y, 0.9, 0.9, 0.9, dlf > 0.5 ? '#ffd890' : '#ff7a30', 1);
         else { dsz = db.big ? 1.6 : 1.1; v3x(db.x, db.h, db.y, dsz, dsz, dsz, '#6e0b0b', 0); }
@@ -9107,7 +9153,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
     for (i = 0; i < fx.length && pc < 499; i++) {
       e = fx[i]; if (!e._c) { var sp = e.c.split(','); e._c = [sp[0] / 255, sp[1] / 255, sp[2] / 255]; }
       var lf = Math.max(0, e.life / e.max);
-      pp[pc * 3] = e.x; pp[pc * 3 + 1] = 16; pp[pc * 3 + 2] = e.y;
+      pp[pc * 3] = e.x; pp[pc * 3 + 1] = 16 + (e.z || 0); pp[pc * 3 + 2] = e.y;
       pcc[pc * 3] = e._c[0] * lf; pcc[pc * 3 + 1] = e._c[1] * lf; pcc[pc * 3 + 2] = e._c[2] * lf; pc++;
     }
     V.pts.geometry.setDrawRange(0, pc); V.pts.geometry.attributes.position.needsUpdate = true; V.pts.geometry.attributes.color.needsUpdate = true;
@@ -9124,7 +9170,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (z.x < focus.x - 700 || z.x > focus.x + 700 || z.y < focus.y - 800 || z.y > focus.y + 600) continue;
       if (z.hp < z.maxhp || z.type === 'tank' || z.type === 'armoured' || z.type === 'ghost' || z.boss) {
         var zs2 = (ZS[z.type] || ZS.walker)[0];
-        q = v3proj(z.x, 40 * zs2, z.y); if (!q.ok) continue;
+        q = v3proj(z.x, 40 * zs2 + (LV.on ? (z.z || 0) : 0), z.y); if (!q.ok) continue;
         var bw2 = (z.boss ? 56 : z.r * 2 + 6) * zoom * 0.8, bh2 = (z.boss ? 5 : 3.5) * zoom * 0.8, fr = Math.max(0, z.hp / z.maxhp);
         ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(q.x - bw2 / 2 - 1, q.y - 1, bw2 + 2, bh2 + 2);
         ctx.fillStyle = z.boss ? '#ff6a2a' : fr > 0.5 ? '#c43a2a' : (fr > 0.25 ? '#d2692a' : '#e8c03a');
@@ -9147,12 +9193,12 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       if (P.down && P === me) {
         if (!pvp) { ctx.font = '700 18px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var mtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(mtx, W / 2, H / 2 - 40); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(mtx, W / 2, H / 2 - 40); }
       } else if (P.down) {
-        q = v3proj(P.x, 10, P.y); if (!q.ok) continue;
+        q = v3proj(P.x, 10 + (LV.on ? (P.z || 0) : 0), P.y); if (!q.ok) continue;
         ctx.strokeStyle = P.rev > 0 ? '#78e0a0' : 'rgba(255,255,255,0.5)'; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.arc(q.x, q.y, 22 * zoom * 0.8, -1.57, -1.57 + 6.283 * Math.max(0.04, P.rev)); ctx.stroke();
         if (!pvp) { ctx.font = '700 15px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; var dtx = P.dead ? 'next wave' : String(Math.ceil(P.dtT || 0)); ctx.strokeText(dtx, q.x, q.y - 30); ctx.fillStyle = P.dead ? '#9c8f7e' : ((P.dtT || 0) < 6 ? '#ff5a4a' : '#ebe3d4'); ctx.fillText(dtx, q.x, q.y - 30); }
       } else if (players.length > 1 && P !== me && !pvp) {
-        q = v3proj(P.x, 48, P.y); if (!q.ok) continue;
+        q = v3proj(P.x, 48 + (LV.on ? (P.z || 0) : 0), P.y); if (!q.ok) continue;
         ctx.font = '700 12px "Barlow Condensed", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(P.name, q.x, q.y); ctx.fillStyle = LOOK_COLS[P.look.c]; ctx.fillText(P.name, q.x, q.y);
       }
     }
@@ -9171,7 +9217,7 @@ crate(570,1262,30,12,'#7a5a2a');c.fillStyle='#d8d8cc';for(let k=0;k<3;k++)c.fill
       var LP = players[i], LR = viewRef(LP);
       if (LP === me || LP.down || !LR || !WEAPONS[LR.id] || !(atM(LP, LR.id) & 16) || isSpecialActive(LP) || isGhost(LP)) continue;
       var lan = (!pvp && LP === me && LP.cone && LP.aimAng !== null && LP.aimAng !== undefined) ? LP.aimAng : LP.ang;
-      var l0 = v3proj(LP.x + Math.cos(lan) * 24, 23, LP.y + Math.sin(lan) * 24), l1 = v3proj(LP.x + Math.cos(lan) * 320, 23, LP.y + Math.sin(lan) * 320);
+      var lz = 23 + (LV.on ? (LP.z || 0) : 0), l0 = v3proj(LP.x + Math.cos(lan) * 24, lz, LP.y + Math.sin(lan) * 24), l1 = v3proj(LP.x + Math.cos(lan) * 320, lz, LP.y + Math.sin(lan) * 320);
       if (!l0.ok || !l1.ok) continue;
       ctx.strokeStyle = 'rgba(255,60,50,0.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(l0.x, l0.y); ctx.lineTo(l1.x, l1.y); ctx.stroke();
     }
